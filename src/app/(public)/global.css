@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: rgba(120, 17, 45, 1); /* Brand primary color */
+  --color-secondary: rgba(216, 224, 50, 1); /* Brand secondary */
+  --color-text: rgb(240, 238, 238);
+  --color-accent: rgba(216, 224, 50, 0.2);
+  --color-bg: rgba(255, 245, 246, 1);
+  --color-surface: rgba(120, 17, 45, 0.2);
+
+  --font-primary: "Inter", sans-serif;
+  --font-secondary: "Poppins", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
