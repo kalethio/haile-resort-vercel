@@ -1,194 +1,148 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import Image from "next/image";
 import CheckBooking from "./checkbooking";
 
+// Static data for hero section
 export const DATA = {
-  headline: "EXPERIENCE ETHIOPIA, THE HAILE WAY",
+  headline: "EXPERIENCE ETHIOPIA THE HAILE WAY",
   subheadline: "Hospitality redefined across Ethiopia's finest destinations.",
-  branches: [
-    {
-      slug: "addis",
-      display: "Addis Ababa",
-      short: "AA",
-      image: "/images/main-hero/hero1.jpg",
-    },
-    {
-      slug: "hawassa",
-      display: "Hawassa",
-      short: "HW",
-      image: "/images/main-hero/hero2.jpg",
-    },
-    {
-      slug: "arbaminch",
-      display: "Arba Minch",
-      short: "AM",
-      image: "/images/main-hero/hero3.jpg",
-    },
-    {
-      slug: "ziway",
-      display: "Ziway",
-      short: "ZW",
-      image: "/images/main-hero/hero4.jpg",
-    },
+  services: [
+    { title: "Scenic Destinations", image: "/images/main-hero/hero1.jpg" },
+    { title: "Luxurious treats", image: "/images/main-hero/hero2.jpg" },
+    { title: "Lakeside Adventures", image: "/images/main-hero/hero3.jpg" },
+    { title: "Nature Within Reach", image: "/images/main-hero/hero4.jpg" },
   ],
-  autoAdvanceMs: 7000,
+  branches: ["Addis Ababa", "Hawassa", "Arba Minch", "Ziway", "Shashemene"],
+  autoAdvanceMs: 7000, // milliseconds for auto-advance
 };
 
-type Branch = (typeof DATA)["branches"][number];
+type Service = (typeof DATA)["services"][number];
 
 export default function HeroHybridCarousel(): JSX.Element {
-  const { headline, subheadline, branches, autoAdvanceMs } = DATA;
+  const { headline, subheadline, services, branches, autoAdvanceMs } = DATA;
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
 
-  // Auto-advance carousel
-  useEffect(() => {
-    if (paused) return;
+  // Scroll-based parallax effects
+  const { scrollY } = useScroll();
+  const bgY = useTransform(scrollY, [0, 500], [0, 100]); // background parallax
+  const headlineY = useTransform(scrollY, [0, 500], [0, 200]); // headline
+  const subheadlineY = useTransform(scrollY, [0, 500], [0, 300]); // subheadline
+
+  // Auto-advance service carousel
+  React.useEffect(() => {
     const t = setInterval(
-      () => setIndex((i) => (i + 1) % branches.length),
+      () => setIndex((i) => (i + 1) % services.length),
       autoAdvanceMs
     );
     return () => clearInterval(t);
-  }, [branches.length, autoAdvanceMs, paused]);
+  }, [services.length, autoAdvanceMs]);
 
-  const prev = () =>
-    setIndex((i) => (i - 1 + branches.length) % branches.length);
-  const next = () => setIndex((i) => (i + 1) % branches.length);
-
+  // Animation variants for background images
   const bgVariants = {
-    enter: (direction: number) => ({ opacity: 0, x: 40 * direction }),
-    center: { opacity: 1, x: 0 },
-    exit: (direction: number) => ({ opacity: 0, x: -40 * direction }),
+    enter: { opacity: 0, scale: 1.05 },
+    center: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 },
   };
 
   return (
     <section
-      aria-label="Haile Resorts featured locations"
-      className="relative w-full h-screen overflow-hidden text-primary"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      aria-label="Haile Resorts premium hero"
+      className="relative max-w-screen-screen h-screen overflow-hidden text-text"
     >
       {/* Background carousel */}
-      <div className="absolute inset-0 -z-10">
-        <AnimatePresence initial={false} custom={1}>
-          {branches.map((b, i) =>
-            i === index ? (
-              <motion.div
-                key={b.slug}
-                className="relative w-full h-full"
-                custom={1}
-                variants={bgVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.9 }}
-              >
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-black/40 z-10" />
-                {/* Next.js Image */}
-                <Image
-                  src={b.image}
-                  alt={b.display}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </motion.div>
-            ) : null
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Content container */}
-      <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-28 h-full flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center h-full">
-          {/* LEFT: Text and Booking */}
-          <div className="lg:col-span-14 col-span-1 z-20">
-            <h1 className="mt-6 max-w-xl text-3xl sm:text-4xl md:text-5xl leading-tight font-display tracking-widest text-white">
-              <span
-                className="text-2xl sm:text-3xl md:text-4xl block"
-                style={{ fontFamily: "Lithos, serif" }}
-              >
-                {headline}
-              </span>
-            </h1>
-
-            <p className="mt-4 max-w-md text-sm sm:text-base text-white/90 font-sans">
-              {subheadline}
-            </p>
-
-            {/* Modular Booking Form */}
-            <CheckBooking />
-
-            {/* Secondary CTA */}
-
-            <p className="mt-4 text-xs text-white/70 max-w-sm">
-              Free cancellation up to 24 hours before check-in.
-            </p>
-          </div>
-
-          {/* RIGHT: spacing / visual carousel */}
-          <div className="lg:col-span-7 col-span-1 z-10">
-            <div className="hidden lg:block h-96" />
-          </div>
-        </div>
-
-        {/* Carousel controls */}
-        <div className="absolute right-6 top-1/2 z-30 hidden md:flex flex-col gap-2 transform -translate-y-1/2">
-          <button
-            aria-label="Previous slide"
-            onClick={prev}
-            className="rounded-full bg-white/10 p-2 shadow hover:bg-white/20"
-          >
-            ‹
-          </button>
-          <button
-            aria-label="Next slide"
-            onClick={next}
-            className="rounded-full bg-white/10 p-2 shadow hover:bg-white/20"
-          >
-            ›
-          </button>
-        </div>
-
-        {/* Branch indicators */}
-        <div className="absolute left-6 bottom-6 z-30 flex items-center gap-3">
-          {branches.map((b, i) => (
-            <button
-              key={b.slug}
-              onClick={() => setIndex(i)}
-              className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                i === index
-                  ? "bg-white/90 text-black shadow-lg scale-105"
-                  : "bg-white/10 text-white/80 hover:bg-white/20"
-              }`}
-              aria-current={i === index}
-              aria-label={`View ${b.display} branch`}
+      <AnimatePresence initial={false}>
+        {services.map((s, i) =>
+          i === index ? (
+            <motion.div
+              key={s.title}
+              className="absolute inset-0 -z-10"
+              variants={bgVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              style={{ y: bgY }}
             >
-              <span className="font-mono tracking-tight">{b.short}</span>
-              <span className="hidden sm:inline">{b.display}</span>
-            </button>
-          ))}
+              <Image
+                src={s.image}
+                alt={s.title}
+                fill
+                priority
+                className="object-cover scale-105"
+              />
+              {/* Overlay gradient for better text visibility */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/40 via-black/30 to-transparent" />
+            </motion.div>
+          ) : null
+        )}
+      </AnimatePresence>
+
+      {/* Content wrapper */}
+      <div className="relative z-20 h-full flex flex-col justify-center px-4 sm:px-6 lg:px-12">
+        <div className="w-full max-w-full sm:max-w-xl lg:w-3/5 lg:max-w-2xl">
+          {/* Headline */}
+          <motion.h1
+            className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight text-white drop-shadow-2xl tracking-tight"
+            style={{ y: headlineY }}
+          >
+            {headline}
+          </motion.h1>
+
+          {/* Subheadline */}
+          <motion.p
+            className="mt-4 sm:mt-6 max-w-full sm:max-w-lg text-base sm:text-lg text-white/90 leading-relaxed"
+            style={{ y: subheadlineY }}
+          >
+            {subheadline}
+          </motion.p>
+
+          {/* Booking Form */}
+          <div className="mt-6 sm:mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-xl border border-white/20">
+            <CheckBooking />
+          </div>
+
+          {/* Dynamic Service Heading */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={services[index].title}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="mt-6 sm:mt-10"
+            >
+              <h2 className="text-lg sm:text-2xl font-semibold text-primary drop-shadow">
+                {services[index].title}
+              </h2>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Branch ticker */}
+          <div className="mt-6 sm:mt-10 overflow-hidden">
+            <motion.div
+              className="flex gap-6 sm:gap-10 py-2 text-xs sm:text-base uppercase tracking-wider whitespace-nowrap text-white/70"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+            >
+              {[...branches, ...branches].map((b, i) => (
+                <span
+                  key={i}
+                  className="hover:text-primary transition-colors cursor-pointer"
+                >
+                  {b}
+                </span>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </div>
-
-      {/* Decorative SVG motif */}
-      <svg
-        className="pointer-events-none absolute right-0 top-0 h-full w-40 opacity-5"
-        viewBox="0 0 200 800"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="g" x1="0" x2="1">
-            <stop offset="0%" stopColor="#78112D" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#D8E032" stopOpacity="0.12" />
-          </linearGradient>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#g)" />
-      </svg>
     </section>
   );
 }

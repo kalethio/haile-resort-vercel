@@ -1,7 +1,7 @@
 // app/components/footer/Footer.tsx
 export default function Footer() {
   return (
-    <footer className=" text-primary py-12 bg-amber-500">
+    <footer className=" text-primary py-12 max-w-screen">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8 text-sm">
         {/* About Section */}
         <div>

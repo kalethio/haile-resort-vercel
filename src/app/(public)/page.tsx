@@ -18,7 +18,7 @@ const fadeInUp = {
 
 export default function Home() {
   return (
-    <div>
+    <div className="max-w-screen overflow-hidden">
       {/* Hero - simple entrance animation (no scroll trigger) */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -29,14 +29,14 @@ export default function Home() {
       </motion.div>
 
       {/* Scroll reveal sections */}
-      <motion.div
+      {/* <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
         variants={fadeInUp}
       >
-        <DestinationSection />
+        <ServicesSection />
       </motion.div>
 
       <motion.div
@@ -46,7 +46,7 @@ export default function Home() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         variants={fadeInUp}
       >
-        <ServicesSection />
+        <DestinationSection />
       </motion.div>
 
       <motion.div
@@ -87,7 +87,14 @@ export default function Home() {
         variants={fadeInUp}
       >
         <SubscribeSection />
-      </motion.div>
+      </motion.div> */}
+
+      <ServicesSection />
+      <DestinationSection />
+      <FavPackageSection />
+      <TestimonialSection />
+      <LatestNewsSection />
+      <SubscribeSection />
     </div>
   );
 }

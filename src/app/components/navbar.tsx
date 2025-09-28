@@ -5,43 +5,56 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import BookingForm from "./bookingform";
+import { BRANCHES } from "@/app/data/branches";
 
+// ---------------------------
 // Static navigation links
+// ---------------------------
 const navLinks = [
   { label: "Home", path: "/" },
   { label: "About Us", path: "/about-us" },
-  { label: "Favorite Packages", path: "/fav-package" },
   { label: "Gallery", path: "/gallery" },
+  { label: "Career", path: "/career" },
 ];
 
-// Destination links
-const destinations = [
-  { label: "Hawassa", path: "/destinations/hawassa" },
-  { label: "Jimma", path: "/destinations/jimma" },
-  { label: "Shashemene", path: "/destinations/shashemene" },
-];
+// ---------------------------
+// Destination dropdown links
+// ---------------------------
+const destinations = Object.keys(BRANCHES).map((slug) => ({
+  label: BRANCHES[slug].name,
+  path: `/branches/${slug}`,
+}));
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [destOpen, setDestOpen] = useState(false);
+  // ---------------------------
+  // Local state
+  // ---------------------------
+  const [scrolled, setScrolled] = useState(false); // track if user scrolled past threshold
+  const [menuOpen, setMenuOpen] = useState(false); // mobile menu toggle
+  const [bookingOpen, setBookingOpen] = useState(false); // booking modal toggle
+  const [destOpen, setDestOpen] = useState(false); // destinations dropdown toggle
 
-  const pathname = usePathname();
+  const pathname = usePathname(); // current route for active link highlighting
 
-  // Scroll handler
+  // ---------------------------
+  // Scroll handler: adds shadow and background to navbar when scrolling
+  // ---------------------------
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Prevent background scroll when mobile menu or booking modal is open
+  // ---------------------------
+  // Prevent background scroll when overlays are open
+  // ---------------------------
   useEffect(() => {
     document.body.style.overflow = menuOpen || bookingOpen ? "hidden" : "auto";
   }, [menuOpen, bookingOpen]);
 
-  // Escape key closes overlays
+  // ---------------------------
+  // Close overlays with Escape key
+  // ---------------------------
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -54,12 +67,21 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
 
+  // ---------------------------
+  // Toggle functions
+  // ---------------------------
   const toggleMenu = useCallback(() => setMenuOpen((p) => !p), []);
   const toggleBooking = () => setBookingOpen((p) => !p);
   const closeBooking = () => setBookingOpen(false);
 
+  // ---------------------------
+  // Active link checker
+  // ---------------------------
   const isActive = (path: string) => pathname === path;
 
+  // ---------------------------
+  // Class generator for links
+  // ---------------------------
   const linkCls = (active = false) =>
     `block px-4 rounded-md transition-all duration-200 ease-out hover:scale-105 hover:shadow-sm hover:text-primary-dark ${
       active
@@ -67,9 +89,13 @@ export default function Navbar() {
         : ""
     }`;
 
-  // NavLinks reusable (accepts isMobile flag so links can auto-close mobile menu)
+  // ---------------------------
+  // Navigation links component
+  // Accepts `isMobile` to auto-close menu when a link is clicked
+  // ---------------------------
   const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
+      {/* Primary navigation links */}
       {navLinks.map(({ label, path }) => (
         <Link
           key={path}
@@ -109,11 +135,11 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Booking CTA (TOGGLE behavior) */}
+      {/* Booking CTA button */}
       <button
         onClick={() => {
           if (isMobile) setMenuOpen(false);
-          toggleBooking(); // toggle open/close
+          toggleBooking();
         }}
         className="block px-4 py-2 cursor-pointer rounded-md font-semibold bg-gradient-to-r from-primary/40 to-primary/80 text-text shadow transition-all duration-300 hover:scale-105 hover:from-primary/50 hover:to-primary/90"
         aria-expanded={bookingOpen}
@@ -125,14 +151,17 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Sticky Navbar */}
+      {/* ---------------------------
+          Sticky Navbar
+      --------------------------- */}
       <nav
         aria-label="Main Navigation"
-        className={`w-full z-40 transition-all duration-500 fixed top-0 ${
+        className={`w-full max-w-screen z-40 transition-all duration-500 fixed top-0 ${
           scrolled ? "bg-white/60 backdrop-blur-lg shadow-md" : "bg-transparent"
         }`}
       >
         <div className="max-w-screen-xl mx-auto flex justify-between items-center px-6 py-3">
+          {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
               src="/logo.svg"
@@ -143,12 +172,12 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* Desktop */}
+          {/* Desktop links */}
           <div className="hidden md:flex space-x-6 text-primary font-medium items-center">
             <NavLinks />
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger menu */}
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
@@ -183,7 +212,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Panel */}
+      {/* ---------------------------
+          Mobile Menu Panel
+      --------------------------- */}
       <div
         id="mobile-menu"
         className={`md:hidden fixed top-14 right-4 rounded-xl bg-white/80 backdrop-blur-lg shadow-xl transform transition-all duration-300 z-40 p-4 ${
@@ -197,26 +228,41 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* Backdrop for menu and destinations */}
+      {/* ---------------------------
+          Backdrop for mobile menu or destinations dropdown
+      --------------------------- */}
       {(menuOpen || destOpen) && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
+          className="fixed inset-0 z-30 cursor-pointer"
           onClick={() => {
             setMenuOpen(false);
             setDestOpen(false);
           }}
           aria-hidden="true"
-        />
+        >
+          {/* Backdrop image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-300 opacity-100"
+            style={{
+              backgroundImage: "url('/images/backdrop.jpg')",
+            }}
+          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        </div>
       )}
 
-      {/* Booking Modal */}
+      {/* ---------------------------
+          Booking Modal
+      --------------------------- */}
       {bookingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/70"
             onClick={() => setBookingOpen(false)}
             aria-hidden="true"
           />
+          {/* Modal content */}
           <div
             className="relative bg-bg rounded-2xl shadow-2xl max-w-3xl w-full mx-4 overflow-hidden transform transition-all duration-300 hover:scale-[1.01]"
             onClick={(e) => e.stopPropagation()}
@@ -224,6 +270,7 @@ export default function Navbar() {
             aria-modal="true"
             aria-label="Booking modal"
           >
+            {/* Close button */}
             <button
               onClick={closeBooking}
               className="absolute top-4 right-4 z-20 text-gray-600 hover:text-gray-900 transition-colors"
@@ -231,11 +278,15 @@ export default function Navbar() {
             >
               ✕
             </button>
+
+            {/* Modal header */}
             <div className="p-6 sm:p-8">
               <h2 className="text-2xl font-semibold text-red-900">
                 Reserve Your Stay
               </h2>
             </div>
+
+            {/* Booking form */}
             <div className="p-6 sm:p-8 bg-white/10">
               <BookingForm />
             </div>

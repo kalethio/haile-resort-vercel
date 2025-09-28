@@ -3,15 +3,64 @@ import { useState } from "react";
 
 export default function BookingForm() {
   const [guests, setGuests] = useState(2);
+  const [form, setForm] = useState({
+    destination: "Addis Ababa",
+    checkin: "",
+    checkout: "",
+    name: "",
+    email: "",
+    phone: "",
+    requests: "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!form.name || !form.email || !form.phone) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      alert("Please enter a valid email.");
+      return;
+    }
+    if (!/^\+?\d{7,15}$/.test(form.phone)) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+    if (form.checkout && form.checkin > form.checkout) {
+      alert("Check-out date cannot be earlier than check-in date.");
+      return;
+    }
+
+    alert(
+      `Booking confirmed for ${form.name}, ${guests} guests at ${form.destination}.`
+    );
+  };
 
   return (
-    <form className="space-y-6">
+    <form
+      className="space-y-3 text-sm text-primary max-w-md mx-auto px-4 sm:px-0"
+      onSubmit={handleSubmit}
+    >
       {/* Destination */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Destination
-        </label>
-        <select className="mt-2 w-full p-3 rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-primary outline-none">
+        <label className="block font-medium mb-0.5">Destination</label>
+        <select
+          name="destination"
+          value={form.destination}
+          onChange={handleChange}
+          className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
+        >
           <option>Addis Ababa</option>
           <option>Hawassa</option>
           <option>Arba Minch</option>
@@ -20,45 +69,47 @@ export default function BookingForm() {
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Check-In
-          </label>
+          <label className="block font-medium mb-0.5">Check-In</label>
           <input
             type="date"
-            className="mt-2 w-full p-3 rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-primary outline-none"
+            name="checkin"
+            value={form.checkin}
+            onChange={handleChange}
+            min={new Date().toISOString().slice(0, 10)}
+            className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Check-Out
-          </label>
+          <label className="block font-medium mb-0.5">Check-Out</label>
           <input
             type="date"
-            className="mt-2 w-full p-3 rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-primary outline-none"
+            name="checkout"
+            value={form.checkout}
+            onChange={handleChange}
+            min={form.checkin || new Date().toISOString().slice(0, 10)}
+            className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
           />
         </div>
       </div>
 
       {/* Guests */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Guests
-        </label>
-        <div className="mt-2 flex items-center gap-4">
+        <label className="block font-medium mb-0.5">Guests</label>
+        <div className="mt-1 flex items-center gap-2 justify-start">
           <button
             type="button"
             onClick={() => setGuests(Math.max(1, guests - 1))}
-            className="px-3 py-2 bg-gray-200 rounded-full text-lg hover:bg-primary hover:text-white transition"
+            className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition"
           >
             -
           </button>
-          <span className="text-lg font-medium">{guests}</span>
+          <span className="text-sm font-medium">{guests}</span>
           <button
             type="button"
             onClick={() => setGuests(guests + 1)}
-            className="px-3 py-2 bg-gray-200 rounded-full text-lg hover:bg-primary hover:text-white transition"
+            className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition"
           >
             +
           </button>
@@ -66,34 +117,49 @@ export default function BookingForm() {
       </div>
 
       {/* Contact Info */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <input
           type="text"
+          name="name"
           placeholder="Full Name"
-          className="w-full p-3 rounded-xl bg-gray-100 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+          value={form.name}
+          onChange={handleChange}
+          className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
+          required
         />
         <input
           type="email"
+          name="email"
           placeholder="Email Address"
-          className="w-full p-3 rounded-xl bg-gray-100 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+          value={form.email}
+          onChange={handleChange}
+          className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
+          required
         />
       </div>
       <input
         type="tel"
+        name="phone"
         placeholder="Phone Number"
-        className="w-full p-3 rounded-xl bg-gray-100 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+        value={form.phone}
+        onChange={handleChange}
+        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
+        required
       />
 
       {/* Special Requests */}
       <textarea
+        name="requests"
         placeholder="Special Requests"
-        className="w-full p-3 rounded-xl bg-gray-100 border border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none"
+        value={form.requests}
+        onChange={handleChange}
+        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
       />
 
       {/* Submit */}
       <button
         type="submit"
-        className="w-full py-4 rounded-xl text-lg font-semibold text-white bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 shadow-lg transition"
+        className="w-full py-2 rounded-lg font-medium bg-primary text-white text-sm shadow-sm hover:brightness-90 transition"
       >
         Confirm Booking
       </button>

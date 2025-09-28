@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${rubik.variable} ${roboto.variable}`}>
-      <body className="bg-black text-text font-[var(--font-rubik)] w-full">
+      <body className="bg-bg text-text font-[var(--font-rubik)] w-full">
         {/* Full-width wrapper */}
         {children}
       </body>

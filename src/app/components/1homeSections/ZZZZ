@@ -1,0 +1,248 @@
+"use client";
+
+import React, { useRef } from "react";
+import Image from "next/image";
+import { motion, useScroll, useTransform } from "framer-motion";
+
+type Package = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  ctaLabel?: string;
+};
+
+const PACKAGES: Package[] = [
+  {
+    id: "family",
+    title: "Family Vacation",
+    subtitle: "Unforgettable Moments Together",
+    description: `Create lasting memories with your loved ones at Haile Hotels. Our family-friendly amenities, spacious rooms, and curated activities ensure fun and relaxation for all ages.`,
+    image: "/images/family-vacation.jpg",
+    ctaLabel: "View Package",
+  },
+  {
+    id: "romantic",
+    title: "Romantic Getaway",
+    subtitle: "A Retreat for Two",
+    description: `Escape with your special someone to our serene settings. Enjoy candlelit dinners, couples’ spa experiences, and breathtaking views for the perfect romantic retreat.`,
+    image: "/images/romantic-getaway.jpg",
+    ctaLabel: "View Package",
+  },
+  {
+    id: "wellness",
+    title: "Wellness Retreat",
+    subtitle: "Rejuvenate Your Mind & Body",
+    description: `Refresh and recharge with holistic wellness programs. From yoga sessions to spa therapies, our retreat is designed to nurture your body, mind, and soul.`,
+    image: "/images/wellness-retreat.jpg",
+    ctaLabel: "View Package",
+  },
+  {
+    id: "cultural",
+    title: "Cultural Discovery",
+    subtitle: "Explore Local Heritage",
+    description: `Immerse yourself in Ethiopia’s rich culture. Guided tours, local cuisine experiences, and curated workshops make your stay an authentic journey of discovery.`,
+    image: "/images/cultural-discovery.jpg",
+    ctaLabel: "View Package",
+  },
+  {
+    id: "nature",
+    title: "Nature Escape",
+    subtitle: "Connect with the Outdoors",
+    description: `Experience tranquility amidst lush landscapes. Hiking, scenic views, and eco-friendly activities allow you to reconnect with nature in style and comfort.`,
+    image: "/images/nature-escape.jpg",
+    ctaLabel: "View Package",
+  },
+];
+
+export default function HaileFavouritePackages() {
+  const containerRef = useRef<HTMLElement | null>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start center", "end center"],
+  });
+
+  const globalScale = useTransform(
+    scrollYProgress,
+    [0, 0.2, 0.65, 1],
+    [0.9, 1, 1.2, 1.28]
+  );
+  const globalOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.6, 1],
+    [1, 1, 0.95]
+  );
+
+  return (
+    <section
+      ref={containerRef}
+      className="relative overflow-hidden py-28"
+      aria-labelledby="haile-packages-title"
+    >
+      {/* Heading */}
+      <div className="max-w-5xl mx-auto px-6 md:px-12 lg:px-20 pt-20">
+        <h2
+          id="haile-packages-title"
+          className="text-3xl md:text-4xl lg:text-5xl font-serif font-light text-center tracking-tight"
+        >
+          Favourite Packages at Haile Hotels
+        </h2>
+      </div>
+
+      {/* Desktop Takeover */}
+      <div className="hidden md:block">
+        {/* Top spacer */}
+        <div className="h-[80vh]" />
+
+        <motion.div
+          style={{ scale: globalScale, opacity: globalOpacity }}
+          className="pointer-events-none sticky top-0 left-0 right-0 z-30 flex items-center"
+        >
+          <div className="max-w-6xl mx-auto w-full px-6 md:px-12 lg:px-20">
+            <div className="space-y-28">
+              {PACKAGES.map((pkg, index) => (
+                <PackageCard key={pkg.id} pkg={pkg} index={index} />
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Bottom spacer dynamic */}
+        <div style={{ height: `${PACKAGES.length * 18}vh` }} />
+      </div>
+
+      {/* Mobile Version */}
+      <div className="md:hidden max-w-3xl mx-auto px-4 space-y-6">
+        {PACKAGES.map((pkg) => (
+          <MobilePackageCard key={pkg.id} pkg={pkg} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "center center"],
+  });
+
+  const imgScale = useTransform(
+    scrollYProgress,
+    [0, 0.3, 1],
+    [0.98, 1.05, 1.1]
+  );
+  const cardY = useTransform(scrollYProgress, [0, 0.4, 1], [28, 0, -20]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.45], [0, 1, 1]);
+
+  const isReversed = index % 2 === 1;
+
+  return (
+    <div ref={ref} className="relative">
+      <motion.div
+        style={{ y: cardY, opacity }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center py-10 md:py-14 pointer-events-auto"
+      >
+        {/* Image */}
+        <div
+          className={`${isReversed ? "order-2 md:order-1" : "order-1"} md:pr-10`}
+        >
+          <div className="relative h-72 md:h-[480px] w-full overflow-hidden rounded-2xl shadow-xl">
+            <motion.div
+              style={{ scale: imgScale }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={pkg.image}
+                alt={pkg.title}
+                fill
+                style={{ objectFit: "cover" }}
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Text */}
+        <div
+          className={`${
+            isReversed ? "order-1 md:order-2 md:pl-10" : "order-2 md:pl-10"
+          } flex flex-col justify-center`}
+        >
+          <h3 className="text-2xl md:text-3xl lg:text-3xl font-serif font-semibold text-gray-800 leading-snug">
+            {pkg.title}
+          </h3>
+          <h4 className="text-base md:text-lg lg:text-xl font-light text-gray-600 mt-1">
+            {pkg.subtitle}
+          </h4>
+          <p className="mt-4 text-base md:text-base lg:text-lg text-gray-700 leading-relaxed max-w-xl whitespace-pre-line">
+            {pkg.description}
+          </p>
+          {pkg.ctaLabel && (
+            <a
+              href="#"
+              className="inline-block mt-5 rounded-lg px-8 py-3 text-sm font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
+            >
+              {pkg.ctaLabel}
+            </a>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// Mobile card with toggle
+function MobilePackageCard({ pkg }: { pkg: Package }) {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <div
+      className="flex flex-col items-center text-center cursor-pointer"
+      onClick={() => setOpen(!open)}
+    >
+      <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-lg mb-3">
+        <Image
+          src={pkg.image}
+          alt={pkg.title}
+          fill
+          style={{ objectFit: "cover" }}
+          className="rounded-2xl"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent rounded-2xl" />
+      </div>
+
+      <h3 className="text-xl font-serif font-semibold text-gray-800">
+        {pkg.title}
+      </h3>
+      <h4 className="text-sm font-light text-gray-600 mt-0.5">
+        {pkg.subtitle}
+      </h4>
+
+      <motion.div
+        initial={{ height: 0, opacity: 0 }}
+        animate={
+          open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }
+        }
+        className="overflow-hidden mt-2 px-2"
+      >
+        <p className="text-xs text-gray-700 leading-relaxed mb-2">
+          {pkg.description}
+        </p>
+        {pkg.ctaLabel && (
+          <a
+            href="#"
+            className="inline-block rounded-lg px-5 py-2 text-xs font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
+          >
+            {pkg.ctaLabel}
+          </a>
+        )}
+      </motion.div>
+    </div>
+  );
+}
