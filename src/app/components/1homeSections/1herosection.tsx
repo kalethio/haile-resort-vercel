@@ -8,6 +8,11 @@ import {
 } from "framer-motion";
 import Image from "next/image";
 import CheckBooking from "./checkbooking";
+import { BRANCHES } from "@/app/data/branches";
+
+const branchNames = Object.keys(BRANCHES).map(
+  (slug) => BRANCHES[slug].branchName
+);
 
 // Static data for hero section
 export const DATA = {
@@ -125,13 +130,14 @@ export default function HeroHybridCarousel(): JSX.Element {
           </AnimatePresence>
 
           {/* Branch ticker */}
+          {/* Branch ticker */}
           <div className="mt-6 sm:mt-10 overflow-hidden">
             <motion.div
               className="flex gap-6 sm:gap-10 py-2 text-xs sm:text-base uppercase tracking-wider whitespace-nowrap text-white/70"
               animate={{ x: ["0%", "-50%"] }}
               transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
             >
-              {[...branches, ...branches].map((b, i) => (
+              {[...branchNames, ...branchNames].map((b, i) => (
                 <span
                   key={i}
                   className="hover:text-primary transition-colors cursor-pointer"

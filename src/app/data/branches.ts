@@ -47,41 +47,52 @@ export const BRANCHES: Record<string, Branch> = {
   "addis-ababa": {
     branchName: "Addis Ababa",
     description: "Luxury stay in the heart of Ethiopia's capital.",
-    heroImage: "/images/branches/addis-hero.jpg",
-    directionsUrl: "https://maps.google.com?q=Addis+Ababa",
-    contact: {
-      phone: "+251 911 000 111",
-      email: "addis@example.com",
-    },
+    heroImage: "/images/branchesPictures/branchHero1.jpg",
+    directionsUrl: "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    contact: { phone: "+251 911 000 111", email: "addis@example.com" },
     attractions: [
       {
         id: "a1",
         label: "Lagoon View",
-        image: "/images/branches/addis-lagoon.jpg",
+        image: "/images/branchesPictures/attraction-tabor.jpg",
       },
       {
         id: "a2",
         label: "Cliff Dining",
-        image: "/images/branches/addis-cliff.jpg",
+        image: "/images/branchesPictures/attraction-chembelala.jpg",
       },
       {
         id: "a3",
         label: "Sunset Terrace",
-        image: "/images/branches/addis-sunset.jpg",
+        image: "/images/branchesPictures/attraction-St_Gabriel_Church.jpg",
       },
     ],
     accommodations: [
       {
         title: "FIVE-BEDROOM BEACHFRONT VILLA",
-        image: "/images/branches/addis-villa.jpg",
-        description:
-          "Experience ultimate luxury and breathtaking ocean views in our expansive five-bedroom beachfront villa.",
+        description: "Experience ultimate luxury and ocean views...",
+        image: "/images/branchesPictures/Accomodation1.jpg",
       },
       {
         title: "DELUXE OCEAN-VIEW ROOM",
-        image: "/images/branches/addis-room.jpg",
+        description: "Relax in our deluxe ocean-view room...",
+        image: "/images/branchesPictures/Accomodation2.jpg",
+      },
+      {
+        title: "TROPICAL GARDEN SUITE",
         description:
-          "Wake up to stunning panoramic views of the ocean in our elegantly designed deluxe rooms.",
+          "Surrounded by lush gardens, this suite offers tranquility...",
+        image: "/images/branchesPictures/Accomodation3.jpg",
+      },
+      {
+        title: "PENTHOUSE SUITE WITH TERRACE",
+        description: "Enjoy panoramic city views from the private terrace...",
+        image: "/images/branchesPictures/Accomodation4.jpg",
+      },
+      {
+        title: "COZY MOUNTAIN COTTAGE",
+        description: "Nestled in the mountains, this cozy cottage is ideal...",
+        image: "/images/branchesPictures/Accomodation5.jpg",
       },
     ],
     experiences: {
@@ -91,18 +102,16 @@ export const BRANCHES: Record<string, Branch> = {
           id: "family",
           title: "Family Vacation",
           subtitle: "Unforgettable Moments Together",
-          description:
-            "Create lasting memories with your loved ones at Haile Hotels. Our family-friendly amenities ensure fun and relaxation for all ages.",
-          image: "/images/packages/family.jpg",
+          description: "Create lasting memories...",
+          image: "/images/branchesPictures/Experience1.jpg",
           ctaLabel: "View Package",
         },
         {
           id: "romantic",
           title: "Romantic Getaway",
           subtitle: "A Retreat for Two",
-          description:
-            "Escape with your special someone to our serene settings. Enjoy candlelit dinners, couples’ spa experiences, and breathtaking views.",
-          image: "/images/packages/romantic.jpg",
+          description: "Escape with your special someone...",
+          image: "/images/branchesPictures/Experience2.jpg",
           ctaLabel: "View Package",
         },
       ],
@@ -112,87 +121,195 @@ export const BRANCHES: Record<string, Branch> = {
   hawassa: {
     branchName: "Hawassa",
     description: "Relaxing lakeside escape with premium amenities.",
-    heroImage: "/images/branches/hawassa-hero.jpg",
-    directionsUrl: "https://maps.google.com?q=Hawassa",
-    contact: {
-      phone: "+251 911 111 222",
-      email: "hawassa@example.com",
-    },
+    heroImage: "/images/branchesPictures/branchHero2.jpg",
+    directionsUrl: "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    contact: { phone: "+251 911 111 222", email: "hawassa@example.com" },
     attractions: [
       {
         id: "a1",
-        label: "Lakefront Lounge",
-        image: "/images/branches/hawassa-lake.jpg",
+        label: "Lagoon View",
+        image: "/images/branchesPictures/attraction-tabor.jpg",
       },
       {
         id: "a2",
-        label: "Sunset Cruise",
-        image: "/images/branches/hawassa-sunset.jpg",
+        label: "Cliff Dining",
+        image: "/images/branchesPictures/attraction-chembelala.jpg",
+      },
+      {
+        id: "a3",
+        label: "Sunset Terrace",
+        image: "/images/branchesPictures/attraction-St_Gabriel_Church.jpg",
       },
     ],
     accommodations: [
       {
-        title: "LAKESIDE VILLA",
-        image: "/images/branches/hawassa-villa.jpg",
+        title: "FIVE-BEDROOM BEACHFRONT VILLA",
+        description: "Experience ultimate luxury and ocean views...",
+        image: "/images/branchesPictures/Accomodation1.jpg",
+      },
+      {
+        title: "DELUXE OCEAN-VIEW ROOM",
+        description: "Relax in our deluxe ocean-view room...",
+        image: "/images/branchesPictures/Accomodation2.jpg",
+      },
+      {
+        title: "TROPICAL GARDEN SUITE",
         description:
-          "Enjoy panoramic lake views from our luxurious lakeside villa.",
+          "Surrounded by lush gardens, this suite offers tranquility...",
+        image: "/images/branchesPictures/Accomodation3.jpg",
+      },
+      {
+        title: "PENTHOUSE SUITE WITH TERRACE",
+        description: "Enjoy panoramic city views from the private terrace...",
+        image: "/images/branchesPictures/Accomodation4.jpg",
+      },
+      {
+        title: "COZY MOUNTAIN COTTAGE",
+        description: "Nestled in the mountains, this cozy cottage is ideal...",
+        image: "/images/branchesPictures/Accomodation5.jpg",
       },
     ],
     experiences: {
       highlightImage: "/images/branches/hawassa-experience.jpg",
       packages: [
         {
-          id: "wellness",
-          title: "Wellness Retreat",
-          subtitle: "Rejuvenate Your Mind & Body",
-          description:
-            "Refresh and recharge with holistic wellness programs. Yoga, spa, and nature walks await.",
-          image: "/images/packages/wellness.jpg",
+          id: "family",
+          title: "Family Vacation",
+          subtitle: "Unforgettable Moments Together",
+          description: "Create lasting memories...",
+          image: "/images/branchesPictures/Experience1.jpg",
+          ctaLabel: "View Package",
+        },
+        {
+          id: "romantic",
+          title: "Romantic Getaway",
+          subtitle: "A Retreat for Two",
+          description: "Escape with your special someone...",
+          image: "/images/branchesPictures/Experience2.jpg",
           ctaLabel: "View Package",
         },
       ],
     },
   },
 
-  "bahir-dar": {
-    branchName: "Bahir Dar",
+  arbaminch: {
+    branchName: "Arbaminch",
     description: "Riverside luxury with cultural experiences.",
-    heroImage: "/images/branches/bahir-dar-hero.jpg",
-    directionsUrl: "https://maps.google.com?q=Bahir+Dar",
-    contact: {
-      phone: "+251 911 222 333",
-      email: "bahirdar@example.com",
-    },
+    heroImage: "/images/branchesPictures/branchHero3.jpg",
+    directionsUrl: "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    contact: { phone: "+251 911 222 333", email: "arbaminch@example.com" },
     attractions: [
       {
         id: "a1",
-        label: "Blue Nile Falls",
-        image: "/images/branches/bahir-dar-falls.jpg",
+        label: "Lagoon View",
+        image: "/images/branchesPictures/attraction-tabor.jpg",
       },
       {
         id: "a2",
-        label: "Riverfront Dining",
-        image: "/images/branches/bahir-dar-river.jpg",
+        label: "Cliff Dining",
+        image: "/images/branchesPictures/attraction-chembelala.jpg",
+      },
+      {
+        id: "a3",
+        label: "Sunset Terrace",
+        image: "/images/branchesPictures/attraction-St_Gabriel_Church.jpg",
       },
     ],
     accommodations: [
       {
-        title: "RIVERSIDE SUITE",
-        image: "/images/branches/bahir-dar-suite.jpg",
+        title: "FIVE-BEDROOM BEACHFRONT VILLA",
+        description: "Experience ultimate luxury and ocean views...",
+        image: "/images/branchesPictures/Accomodation1.jpg",
+      },
+      {
+        title: "DELUXE OCEAN-VIEW ROOM",
+        description: "Relax in our deluxe ocean-view room...",
+        image: "/images/branchesPictures/Accomodation2.jpg",
+      },
+      {
+        title: "TROPICAL GARDEN SUITE",
         description:
-          "Premium riverside suite with private terrace and luxury amenities.",
+          "Surrounded by lush gardens, this suite offers tranquility...",
+        image: "/images/branchesPictures/Accomodation3.jpg",
+      },
+      {
+        title: "PENTHOUSE SUITE WITH TERRACE",
+        description: "Enjoy panoramic city views from the private terrace...",
+        image: "/images/branchesPictures/Accomodation4.jpg",
+      },
+      {
+        title: "COZY MOUNTAIN COTTAGE",
+        description: "Nestled in the mountains, this cozy cottage is ideal...",
+        image: "/images/branchesPictures/Accomodation5.jpg",
       },
     ],
     experiences: {
-      highlightImage: "/images/branches/bahir-dar-experience.jpg",
+      highlightImage: "/images/branches/arbaminch-experience.jpg",
+      packages: [
+        {
+          id: "family",
+          title: "Family Vacation",
+          subtitle: "Unforgettable Moments Together",
+          description: "Create lasting memories...",
+          image: "/images/branchesPictures/Experience1.jpg",
+          ctaLabel: "View Package",
+        },
+        {
+          id: "romantic",
+          title: "Romantic Getaway",
+          subtitle: "A Retreat for Two",
+          description: "Escape with your special someone...",
+          image: "/images/branchesPictures/Experience2.jpg",
+          ctaLabel: "View Package",
+        },
+      ],
+    },
+  },
+
+  gondar: {
+    branchName: "Gondar",
+    description: "Historic city stay with modern luxury.",
+    heroImage: "/images/branchesPictures/branchHero4.jpg",
+    directionsUrl: "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    contact: { phone: "+251 911 333 444", email: "gondar@example.com" },
+    attractions: [
+      {
+        id: "a1",
+        label: "Royal Castle",
+        image: "/images/branchesPictures/attraction-castle.jpg",
+      },
+      {
+        id: "a2",
+        label: "Fasil Falls",
+        image: "/images/branchesPictures/attraction-fasil.jpg",
+      },
+      {
+        id: "a3",
+        label: "Market Square",
+        image: "/images/branchesPictures/attraction-market.jpg",
+      },
+    ],
+    accommodations: [
+      {
+        title: "Royal Suite",
+        description: "Luxurious suite with historic views...",
+        image: "/images/branchesPictures/Accomodation6.jpg",
+      },
+      {
+        title: "Standard Room",
+        description: "Comfortable room with modern amenities...",
+        image: "/images/branchesPictures/Accomodation7.jpg",
+      },
+    ],
+    experiences: {
+      highlightImage: "/images/branches/gondar-experience.jpg",
       packages: [
         {
           id: "cultural",
-          title: "Cultural Discovery",
-          subtitle: "Explore Local Heritage",
-          description:
-            "Immerse yourself in Ethiopia’s rich culture with guided tours, local cuisine, and curated workshops.",
-          image: "/images/packages/cultural.jpg",
+          title: "Cultural Experience",
+          subtitle: "Discover Heritage",
+          description: "Explore Gondar's rich history...",
+          image: "/images/branchesPictures/Experience3.jpg",
           ctaLabel: "View Package",
         },
       ],

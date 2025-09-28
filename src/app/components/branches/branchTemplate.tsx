@@ -11,12 +11,17 @@ interface BranchTemplateProps {
   branch: {
     branchName: string;
     heroImage: string;
+    description?: string;
     shortDescription?: string;
+    directionsUrl?: string;
     location?: { mapsUrl?: string };
+    contact?: {
+      phone?: string;
+      email?: string;
+    };
     attractions?: { image: string; label: string }[];
     accommodations: any[];
     experiences?: {
-      // Make optional
       highlightImage: string;
       packages: any[];
     };
@@ -49,9 +54,10 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
           branch={{
             heroImage: heroImage,
             branchName: branch.branchName,
-            shortDescription: branch.shortDescription,
-            locationUrl: branch.location?.mapsUrl,
-            attractions: branch.attractions,
+            description: branch.description || branch.shortDescription || "",
+            directionsUrl: branch.directionsUrl ?? branch.location?.mapsUrl, // ✅ correct property name
+            contact: branch.contact,
+            attractions: branch.attractions || [],
           }}
           onOpenBooking={() => setBookingOpen(true)}
         />

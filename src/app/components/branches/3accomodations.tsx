@@ -1,16 +1,21 @@
+"use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Accommodation } from "@/app/data/branches";
 
 interface Props {
-  items: Accommodation[]; // updated to receive prop
+  items: Accommodation[]; // Accepts data as prop
 }
 
-const Accommodations: React.FC<Props> = ({ items }) => {
-  const [cards, setCards] = useState(items); // use passed items
+const AccommodationCarousel: React.FC<Props> = ({ items }) => {
+  // State to manage carousel cards
+  const [cards, setCards] = useState(items);
+
+  // Dynamically calculate center card
   const centerIndex = Math.floor(cards.length / 2);
 
+  // Rotate carousel forward
   const rotateNext = () => {
     const newCards = [...cards];
     const first = newCards.shift()!;
@@ -18,6 +23,7 @@ const Accommodations: React.FC<Props> = ({ items }) => {
     setCards(newCards);
   };
 
+  // Rotate carousel backward
   const rotatePrev = () => {
     const newCards = [...cards];
     const last = newCards.pop()!;
@@ -27,10 +33,12 @@ const Accommodations: React.FC<Props> = ({ items }) => {
 
   return (
     <section className="w-full py-28">
+      {/* Section Title */}
       <h2 className="text-center text-primary m-4 text-3xl md:text-4xl font-serif tracking-widest uppercase mb-16">
         Accommodations
       </h2>
 
+      {/* Carousel Cards */}
       <div className="relative flex justify-center items-center gap-10 md:gap-12 overflow-hidden py-8 px-4">
         {cards.map((item, index) => {
           const distanceFromCenter = Math.abs(index - centerIndex);
@@ -56,6 +64,7 @@ const Accommodations: React.FC<Props> = ({ items }) => {
               }}
             >
               <div className="flex flex-col items-center">
+                {/* Image */}
                 <div
                   className={`rounded-2xl overflow-hidden shadow-md ${
                     isCenter ? "shadow-2xl" : "shadow-lg"
@@ -68,6 +77,7 @@ const Accommodations: React.FC<Props> = ({ items }) => {
                   />
                 </div>
 
+                {/* Title */}
                 <h3
                   className={`mt-4 font-serif uppercase text-center ${
                     isCenter
@@ -78,6 +88,7 @@ const Accommodations: React.FC<Props> = ({ items }) => {
                   {item.title}
                 </h3>
 
+                {/* Description only for center card */}
                 {isCenter && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -93,6 +104,7 @@ const Accommodations: React.FC<Props> = ({ items }) => {
         })}
       </div>
 
+      {/* Navigation Buttons */}
       <div className="flex justify-center mt-16 gap-12">
         <button
           onClick={rotatePrev}
@@ -111,4 +123,4 @@ const Accommodations: React.FC<Props> = ({ items }) => {
   );
 };
 
-export default Accommodations;
+export default AccommodationCarousel;

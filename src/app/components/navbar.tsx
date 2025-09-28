@@ -90,6 +90,14 @@ export default function Navbar() {
     }`;
 
   // ---------------------------
+  // Destination dropdown links
+  // ---------------------------
+  const destinations = Object.keys(BRANCHES).map((slug) => ({
+    label: BRANCHES[slug].branchName, // <-- use branchName
+    path: `/branches/${slug}`,
+  }));
+
+  // ---------------------------
   // Navigation links component
   // Accepts `isMobile` to auto-close menu when a link is clicked
   // ---------------------------

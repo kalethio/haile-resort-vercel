@@ -1,4 +1,5 @@
 // app/components/footer/Footer.tsx
+import Link from "next/link";
 export default function Footer() {
   return (
     <footer className=" text-primary py-12 max-w-screen">
@@ -60,6 +61,11 @@ export default function Footer() {
             <a href="#" aria-label="YouTube" className="hover:text-primary">
               YT
             </a>
+          </div>
+          <div className="mt-6 bg-accent/20 text-white py-2 px-4 rounded max-w-fit">
+            <Link href="/admin" className="hover:underline">
+              Admin Panel
+            </Link>
           </div>
         </div>
       </div>
