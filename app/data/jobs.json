@@ -1,0 +1,71 @@
+[
+  {
+    "id": "J-1001",
+    "title": "Front Desk Supervisor",
+    "department": "Reception",
+    "branches": ["Haile Hawassa", "Haile Addis"],
+    "type": "Full-time",
+    "location": "Haile Hawassa Resort",
+    "experienceLevel": "Mid",
+    "salaryRange": "Negotiable",
+    "deadline": "2025-11-15",
+    "description": "Manage front desk operations, staff scheduling and guest check-in/out. Ensure service level standards.",
+    "responsibilities": [
+      "Oversee daily reception operations",
+      "Coordinate shift schedules",
+      "Resolve guest issues and escalations"
+    ],
+    "requirements": [
+      "2+ years hotel front desk experience",
+      "Excellent communication skills",
+      "English and Amharic"
+    ],
+    "applicants": 0
+  },
+  {
+    "id": "J-1002",
+    "title": "Sous Chef",
+    "department": "Kitchen",
+    "branches": ["Haile Arba Minch"],
+    "type": "Full-time",
+    "location": "Haile Arba Minch - Main Kitchen",
+    "experienceLevel": "Senior",
+    "salaryRange": "Competitive",
+    "deadline": "2025-11-01",
+    "description": "Support head chef in kitchen operations, menu implementation and quality control.",
+    "responsibilities": [
+      "Assist in menu preparation",
+      "Supervise kitchen staff",
+      "Ensure food safety protocols"
+    ],
+    "requirements": [
+      "3+ years experience in hotel kitchens",
+      "Culinary diploma preferred",
+      "Leadership capability"
+    ],
+    "applicants": 2
+  },
+  {
+    "id": "J-1003",
+    "title": "Housekeeping Attendant",
+    "department": "Housekeeping",
+    "branches": ["Haile Hawassa", "Haile Arba Minch", "Haile Shashemene"],
+    "type": "Part-time",
+    "location": "Multiple properties",
+    "experienceLevel": "Entry",
+    "salaryRange": "Hourly",
+    "deadline": "2025-12-01",
+    "description": "Deliver high quality housekeeping services across assigned rooms and public areas.",
+    "responsibilities": [
+      "Clean guest rooms to standard",
+      "Report maintenance issues",
+      "Maintain linen inventory"
+    ],
+    "requirements": [
+      "Attention to detail",
+      "Physical stamina",
+      "Customer service orientation"
+    ],
+    "applicants": 1
+  }
+]
