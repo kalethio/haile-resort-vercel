@@ -1,18 +1,26 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { PrismaClient } from "@prisma/client";
 
-const filePath = path.join(process.cwd(), "app/data/latestNews.json");
+const prisma = new PrismaClient();
 
-// GET → return news
+// GET → fetch all news
 export async function GET() {
-  const data = fs.readFileSync(filePath, "utf-8");
-  return NextResponse.json(JSON.parse(data));
+  const news = await prisma.news.findMany();
+  return NextResponse.json(news);
 }
 
-// PUT → update news
+// PUT → update news (replace all)
 export async function PUT(req: Request) {
-  const body = await req.json(); // expects array of news
-  fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+  const body: { title: string; desc: string; detail: string }[] =
+    await req.json();
+
+  // delete all existing
+  await prisma.news.deleteMany();
+
+  // insert new
+  for (const n of body) {
+    await prisma.news.create({ data: n });
+  }
+
   return NextResponse.json({ message: "News updated" });
 }

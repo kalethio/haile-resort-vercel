@@ -10,6 +10,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@prisma/client": "^6.17.1",
     "framer-motion": "^12.23.18",
     "lucide-react": "^0.544.0",
     "next": "15.5.3",
@@ -28,7 +29,10 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "prettier": "^3.6.2",
+    "prisma": "^6.17.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
