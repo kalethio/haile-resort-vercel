@@ -2,8 +2,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { BRANCHES } from "@/app/data/branches";
-import BranchTemplate from "@/app/components/branches/branchTemplate";
+import { BRANCHES } from "../../../data/branches";
+import BranchTemplate from "../../../components/branches/branchTemplate";
 
 export default function BranchPage() {
   const params = useParams();

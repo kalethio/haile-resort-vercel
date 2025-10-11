@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import BranchHero from "@/app/components/branches/1branchHero";
-import Accommodations from "@/app/components/branches/3accomodations";
-import Experience from "@/app/components/branches/4experience";
-import BookingForm from "@/app/components/bookingform";
+import BranchHero from "../branches/1branchHero";
+import Accommodations from "../branches/3accomodations";
+import Experience from "../branches/4experience";
+import BookingForm from "../bookingform";
 
 interface BranchTemplateProps {
   branch: {

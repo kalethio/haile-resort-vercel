@@ -50,7 +50,6 @@ export default function Review() {
       // Reset form and show success message
       setForm({ name: "", text: "" });
       setSubmitted(true);
-      alert("Review submitted and pending admin approval.");
     } catch (err: any) {
       console.error(err);
       alert("Failed to submit review: " + (err.message || "Unknown error"));
