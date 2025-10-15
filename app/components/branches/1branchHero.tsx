@@ -63,6 +63,9 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
     });
   };
 
+  // ✅ Fix: define contact outside JSX
+  const contact = branch.contact || { phone: null, email: null };
+
   return (
     <section className="relative w-full h-screen overflow-hidden text-white">
       {/* Hero Background */}
@@ -128,8 +131,8 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
             <p className="text-lg font-bold tracking-wide mb-2">Contact Us</p>
 
             {/* Phone */}
-            {branch?.contact?.phone ? (
-              <p className="text-sm font-semibold">{branch.contact.phone}</p>
+            {contact.phone ? (
+              <p className="text-sm font-semibold">{contact.phone}</p>
             ) : (
               <p className="text-sm text-gray-300 italic">
                 Phone not available
@@ -137,12 +140,12 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
             )}
 
             {/* Email */}
-            {branch?.contact?.email ? (
+            {contact.email ? (
               <a
-                href={`mailto:${branch.contact.email}`}
+                href={`mailto:${contact.email}`}
                 className="block text-sm mt-1 hover:underline"
               >
-                {branch.contact.email}
+                {contact.email}
               </a>
             ) : (
               <p className="text-sm text-gray-300 italic">

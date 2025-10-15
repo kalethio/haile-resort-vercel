@@ -9,6 +9,9 @@
     "lint": "eslint",
     "format": "prettier --write ."
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^6.17.1",
     "framer-motion": "^12.23.18",

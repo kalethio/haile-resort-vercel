@@ -15,13 +15,13 @@ export interface Package {
 
 interface ExperienceProps {
   image?: string;
-  packages: Package[];
+  packages?: Package[]; // optional
   serviceDescription?: string[];
 }
 
 export default function Experience({
   image,
-  packages,
+  packages = [], // default to empty array
   serviceDescription = [
     "Discover Special Offers",
     "Curated Experiences Awaiting You",

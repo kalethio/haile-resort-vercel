@@ -7,22 +7,124 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String?
+  email     String     @unique
+  role      Role       @default(EDITOR)
+  createdAt DateTime   @default(now())
+  auditLogs AuditLog[]
+}
+
 model Branch {
-  id            String   @id
-  branchName    String
-  description   String
-  heroImage     String
-  directionsUrl String
-  contact       Json
-  attractions   Json
-  accommodations Json
-  experiences   Json
-  starRating    Int
-  seo           Json
-  location      Json
-  published     Boolean
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int             @id @default(autoincrement())
+  slug           String          @unique
+  branchName     String
+  description    String?
+  heroImage      String?
+  directionsUrl  String?
+  starRating     Int?
+  published      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  email          String?
+  phone          String?
+  accommodations Accommodation[]
+  attractions    Attraction[]
+  auditLogs      AuditLog[]
+  seo            BranchSeo?
+  contact        Contact?
+  experiences    Experience[]
+  location       Location?
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  phone     String?
+  email     String?
+  address   String?
+  socials   Json?
+  branchId  Int      @unique
+  createdAt DateTime @default(now())
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Attraction {
+  id         Int      @id @default(autoincrement())
+  externalId String?
+  label      String
+  image      String?
+  branchId   Int
+  createdAt  DateTime @default(now())
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Accommodation {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  image       String?
+  branchId    Int
+  createdAt   DateTime @default(now())
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Experience {
+  id             Int       @id @default(autoincrement())
+  externalId     String?
+  title          String
+  description    String?
+  highlightImage String?
+  branchId       Int
+  createdAt      DateTime  @default(now())
+  branch         Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  packages       Package[]
+}
+
+model Package {
+  id           Int        @id @default(autoincrement())
+  externalId   String?
+  title        String
+  subtitle     String?
+  description  String?
+  image        String?
+  ctaLabel     String?
+  experienceId Int
+  createdAt    DateTime   @default(now())
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model BranchSeo {
+  id          Int      @id @default(autoincrement())
+  title       String?
+  description String?
+  keywords    Json?
+  branchId    Int      @unique
+  createdAt   DateTime @default(now())
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id        Int      @id @default(autoincrement())
+  city      String?
+  region    String?
+  country   String?
+  branchId  Int      @unique
+  createdAt DateTime @default(now())
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  userId     Int?
+  targetType String?
+  targetId   Int?
+  diff       Json?
+  createdAt  DateTime @default(now())
+  branchId   Int?
+  Branch     Branch?  @relation(fields: [branchId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
 model News {
@@ -39,4 +141,9 @@ model Review {
   text      String
   approved  Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  EDITOR
 }

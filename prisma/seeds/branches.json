@@ -89,7 +89,8 @@
       "region": "Addis Ababa",
       "country": "Ethiopia"
     },
-    "published": true
+    "published": true,
+    "heroImageAlt": "Haile Grand Addis Ababa hero"
   },
   "hawassa": {
     "branchName": "Hawassa",

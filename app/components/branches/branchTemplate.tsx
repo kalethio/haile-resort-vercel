@@ -29,6 +29,7 @@ interface BranchTemplateProps {
 }
 
 export default function BranchTemplate({ branch }: BranchTemplateProps) {
+  console.log("Branch data:", branch);
   const [heroImage, setHeroImage] = useState(branch.heroImage);
   const [bookingOpen, setBookingOpen] = useState(false);
 
@@ -74,8 +75,17 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
       </motion.div>
 
       {/* Experiences Section */}
-      {branch.experiences && (
-        <Experience packages={branch.experiences.packages} />
+      {branch.experiences && branch.experiences.length > 0 && (
+        <>
+          {branch.experiences.map((exp, index) => (
+            <Experience
+              key={exp.id || index}
+              image={exp.highlightImage}
+              packages={exp.packages}
+              serviceDescription={[exp.title, exp.description || ""]}
+            />
+          ))}
+        </>
       )}
 
       {/* Booking Form Modal */}

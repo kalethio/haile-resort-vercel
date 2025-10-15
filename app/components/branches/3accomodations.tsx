@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { Accommodation } from "@/app/data/branches";
+import { Accommodation } from "../../data/branches";
 
 interface Props {
   items: Accommodation[]; // Accepts data as prop
