@@ -1,6 +1,6 @@
+// app/api/reviews/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const reviews = await prisma.review.findMany();
@@ -8,19 +8,32 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body: { name: string; text: string } = await req.json();
-  if (!body.name || !body.text)
+  try {
+    const body: { name: string; text: string } = await req.json();
+
+    if (!body.name?.trim() || !body.text?.trim()) {
+      return NextResponse.json(
+        { error: "Name and text are required" },
+        { status: 400 }
+      );
+    }
+
+    const newReview = await prisma.review.create({
+      data: {
+        name: body.name.trim(),
+        text: body.text.trim(),
+        approved: false,
+      },
+    });
+
     return NextResponse.json(
-      { error: "Missing name or text" },
-      { status: 400 }
+      { message: "Review submitted", id: newReview.id },
+      { status: 201 }
     );
-
-  const newReview = await prisma.review.create({
-    data: { name: body.name, text: body.text, approved: false },
-  });
-
-  return NextResponse.json(
-    { message: "Review submitted", id: newReview.id },
-    { status: 201 }
-  );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

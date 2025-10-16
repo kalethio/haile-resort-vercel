@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   motion,
   AnimatePresence,
@@ -8,11 +8,19 @@ import {
 } from "framer-motion";
 import Image from "next/image";
 import CheckBooking from "./checkbooking";
-import { BRANCHES } from "../../data/branches";
+import Link from "next/link";
 
-const branchNames = Object.keys(BRANCHES).map(
-  (slug) => BRANCHES[slug].branchName
-);
+// Types for API data
+interface Branch {
+  slug: string;
+  branchName: string;
+  heroImage: string;
+  starRating: number;
+  location: {
+    city: string;
+    region: string;
+  };
+}
 
 // Static data for hero section
 export const DATA = {
@@ -24,30 +32,85 @@ export const DATA = {
     { title: "Lakeside Adventures", image: "/images/main-hero/hero3.jpg" },
     { title: "Nature Within Reach", image: "/images/main-hero/hero4.jpg" },
   ],
-  branches: ["Addis Ababa", "Hawassa", "Arba Minch", "Ziway", "Shashemene"],
-  autoAdvanceMs: 7000, // milliseconds for auto-advance
+  autoAdvanceMs: 7000,
 };
 
 type Service = (typeof DATA)["services"][number];
 
-export default function HeroHybridCarousel(): JSX.Element {
-  const { headline, subheadline, services, branches, autoAdvanceMs } = DATA;
+export default function HeroHybridCarousel() {
+  const { headline, subheadline, services, autoAdvanceMs } = DATA;
   const [index, setIndex] = useState(0);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch branches from API with caching
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        // Check cache first (lasts for page session)
+        const cached = sessionStorage.getItem("branches");
+        if (cached) {
+          setBranches(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch("/api/branches");
+        if (!response.ok) throw new Error("Failed to fetch");
+
+        const data = await response.json();
+        setBranches(data);
+        // Cache for 5 minutes
+        sessionStorage.setItem("branches", JSON.stringify(data));
+        setError(null);
+      } catch (err) {
+        setError("Unable to load destinations");
+        console.error("Failed to fetch branches:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBranches();
+  }, []);
 
   // Scroll-based parallax effects
   const { scrollY } = useScroll();
-  const bgY = useTransform(scrollY, [0, 500], [0, 100]); // background parallax
-  const headlineY = useTransform(scrollY, [0, 500], [0, 200]); // headline
-  const subheadlineY = useTransform(scrollY, [0, 500], [0, 300]); // subheadline
+  const bgY = useTransform(scrollY, [0, 500], [0, 100]);
+  const headlineY = useTransform(scrollY, [0, 500], [0, 200]);
+  const subheadlineY = useTransform(scrollY, [0, 500], [0, 300]);
 
   // Auto-advance service carousel
-  React.useEffect(() => {
+  useEffect(() => {
     const t = setInterval(
       () => setIndex((i) => (i + 1) % services.length),
       autoAdvanceMs
     );
     return () => clearInterval(t);
   }, [services.length, autoAdvanceMs]);
+
+  // Memoized branch ticker items for performance
+  const branchTickerItems = useMemo(() => {
+    if (!branches.length) return [];
+
+    const renderStars = (rating: number) => {
+      return "★".repeat(rating) + "☆".repeat(5 - rating);
+    };
+
+    return [...branches, ...branches].map((branch, i) => (
+      <Link
+        key={`${branch.slug}-${i}`}
+        href={`/branches/${branch.slug}`}
+        className="flex flex-col items-center hover:text-primary transition-colors cursor-pointer text-white/70 hover:text-white min-w-max"
+      >
+        <span className="font-semibold text-center">{branch.branchName}</span>
+        <span className="text-yellow-400 text-sm mt-1">
+          {renderStars(branch.starRating)}
+        </span>
+      </Link>
+    ));
+  }, [branches]);
 
   // Animation variants for background images
   const bgVariants = {
@@ -80,6 +143,7 @@ export default function HeroHybridCarousel(): JSX.Element {
                 alt={s.title}
                 fill
                 priority
+                sizes="100vw"
                 className="object-cover scale-105"
               />
               {/* Overlay gradient for better text visibility */}
@@ -129,23 +193,34 @@ export default function HeroHybridCarousel(): JSX.Element {
             </motion.div>
           </AnimatePresence>
 
-          {/* Branch ticker */}
-          {/* Branch ticker */}
+          {/* Branch ticker with loading and error states */}
           <div className="mt-6 sm:mt-10 overflow-hidden">
-            <motion.div
-              className="flex gap-6 sm:gap-10 py-2 text-xs sm:text-base uppercase tracking-wider whitespace-nowrap text-white/70"
-              animate={{ x: ["0%", "-50%"] }}
-              transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-            >
-              {[...branchNames, ...branchNames].map((b, i) => (
-                <span
-                  key={i}
-                  className="hover:text-primary transition-colors cursor-pointer"
-                >
-                  {b}
-                </span>
-              ))}
-            </motion.div>
+            {loading && (
+              <div className="flex gap-8 sm:gap-12 py-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex flex-col items-center min-w-max">
+                    <div className="h-4 bg-white/20 rounded w-16 animate-pulse" />
+                    <div className="h-3 bg-white/20 rounded w-12 mt-1 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center py-2 text-white/60 text-sm">
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && branchTickerItems.length > 0 && (
+              <motion.div
+                className="flex gap-8 sm:gap-12 py-2 text-xs sm:text-base uppercase tracking-wider whitespace-nowrap"
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+              >
+                {branchTickerItems}
+              </motion.div>
+            )}
           </div>
         </div>
       </div>

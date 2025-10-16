@@ -1,16 +1,44 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { DATA } from "./1herosection"; // import branch data
 
-type Branch = string; // now branches are just strings
+interface Branch {
+  slug: string;
+  branchName: string;
+  heroImage: string;
+  starRating: number;
+  location: {
+    city: string;
+    region: string;
+  };
+}
 
 export default function CheckBooking() {
-  const { branches } = DATA;
-
-  const [branch, setBranch] = useState<Branch>(branches[0]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branch, setBranch] = useState<string>("");
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [guests, setGuests] = useState<number>(2);
+
+  // Fetch branches from API
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const response = await fetch("/api/branches");
+        if (response.ok) {
+          const data = await response.json();
+          setBranches(data);
+          // Set default branch to first one's name
+          if (data.length > 0) {
+            setBranch(data[0].branchName);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch branches:", error);
+      }
+    };
+
+    fetchBranches();
+  }, []);
 
   // Ensure hydration-safe date initialization
   useEffect(() => {
@@ -44,9 +72,9 @@ export default function CheckBooking() {
             onChange={(e) => setBranch(e.target.value)}
             className="w-full rounded-lg border border-white/10 bg-white/6 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"
           >
-            {branches.map((b, index) => (
-              <option key={`${b}-${index}`} value={b} className="text-black">
-                {b}
+            {branches.map((b) => (
+              <option key={b.slug} value={b.branchName} className="text-black">
+                {b.branchName}
               </option>
             ))}
           </select>

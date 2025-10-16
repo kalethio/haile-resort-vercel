@@ -1,28 +1,53 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { BRANCHES } from "../../data/branches"; // ✅ import data
 import Link from "next/link";
 
-// ✅ Build DESTINATIONS dynamically from BRANCHES
-const DESTINATIONS = Object.entries(BRANCHES).map(([id, branch]) => ({
-  id,
-  name: `${branch.branchName} — ${branch.seo.title}`, // fallback to seo.title for the tagline
-  rating: branch.starRating,
-  location: `${branch.location.city}, ${branch.location.country}`,
-  image: branch.heroImage,
-}));
+interface Branch {
+  slug: string;
+  branchName: string;
+  starRating: number;
+  heroImage: string;
+  location: {
+    city: string;
+    country: string;
+  };
+  seo: {
+    title: string;
+  };
+}
 
-export default function SpotlightLargeCard(): JSX.Element {
+export default function SpotlightLargeCard() {
+  const [destinations, setDestinations] = useState<Branch[]>([]);
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Fetch branches from API
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const response = await fetch("/api/branches");
+        if (response.ok) {
+          const data = await response.json();
+          setDestinations(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch branches:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBranches();
+  }, []);
 
   // expand animation on scroll
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || destinations.length === 0) return;
     let pending: number | null = null;
 
     const io = new IntersectionObserver(
@@ -53,7 +78,7 @@ export default function SpotlightLargeCard(): JSX.Element {
       io.disconnect();
       if (pending) clearTimeout(pending);
     };
-  }, [expanded]);
+  }, [expanded, destinations.length]);
 
   const handleSelect = (i: number) => {
     setActive(i);
@@ -61,8 +86,47 @@ export default function SpotlightLargeCard(): JSX.Element {
   };
 
   const handleNext = () => {
-    setActive((prev) => (prev + 1) % DESTINATIONS.length);
+    setActive((prev) => (prev + 1) % destinations.length);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <section className="w-full flex justify-center py-5 lg:py-20">
+        <div className="w-screen lg:w-[75vw] lg:max-w-screen-lg mx-auto">
+          <div className="bg-gradient-to-br from-white/90 via-white/80 to-white/90 border border-primary/20 shadow-2xl rounded-3xl overflow-hidden backdrop-blur-xl">
+            <div className="flex flex-col lg:flex-row min-h-[75vh]">
+              <div className="flex-1 relative bg-gray-200 animate-pulse" />
+              <div className="w-full lg:w-80 xl:w-96 p-6 bg-white/90">
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-xl bg-gray-100 animate-pulse"
+                    >
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // No data state
+  if (destinations.length === 0) {
+    return (
+      <section className="w-full flex justify-center py-5 lg:py-20">
+        <div className="text-center text-gray-500">
+          No destinations available
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full flex justify-center py-5 lg:py-20">
@@ -80,28 +144,28 @@ export default function SpotlightLargeCard(): JSX.Element {
           <div className="flex flex-col lg:flex-row min-h-[75vh]">
             {/* LEFT: hero */}
             <div className="flex-1 relative">
-              {DESTINATIONS.map((d, i) => {
+              {destinations.map((d, i) => {
                 const isActive = i === active;
                 return (
                   <div
-                    key={d.id}
+                    key={d.slug}
                     className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
                       isActive ? "opacity-100 z-20" : "opacity-0 z-0"
                     }`}
                   >
                     <img
-                      src={d.image}
-                      alt={d.name}
+                      src={d.heroImage}
+                      alt={d.branchName}
                       className={`w-full h-full object-cover transition-transform duration-[3000ms] ${
                         isActive ? "scale-100" : "scale-110"
                       }`}
                     />
                     <div className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 md:left-10 md:bottom-10 bg-black/50 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-primary/30">
                       <h3 className="text-lg sm:text-xl md:text-3xl font-serif text-white leading-snug drop-shadow-md">
-                        {d.name}
+                        {d.branchName} — {d.seo?.title || "Haile Resort"}
                       </h3>
                       <p className="mt-1 text-xs sm:text-sm text-primary/80">
-                        {d.location}
+                        {d.location.city}, {d.location.country}
                       </p>
                     </div>
                   </div>
@@ -117,7 +181,9 @@ export default function SpotlightLargeCard(): JSX.Element {
                   onClick={() => setMobileOpen(!mobileOpen)}
                   className="lg:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/80 shadow-sm border border-primary/30 text-gray-800 font-medium"
                 >
-                  <span className="truncate">{DESTINATIONS[active].name}</span>
+                  <span className="truncate">
+                    {destinations[active].branchName}
+                  </span>
                   <svg
                     className={`w-5 h-5 transform transition-transform ${
                       mobileOpen ? "rotate-180" : "rotate-0"
@@ -149,11 +215,11 @@ export default function SpotlightLargeCard(): JSX.Element {
                   <div className="rounded-2xl border border-primary/20 bg-white/70 shadow-inner">
                     <div className="p-3">
                       <div className="flex flex-col gap-3">
-                        {DESTINATIONS.map((d, i) => {
+                        {destinations.map((d, i) => {
                           const isActive = i === active;
                           return (
                             <button
-                              key={d.id}
+                              key={d.slug}
                               onClick={() => handleSelect(i)}
                               className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
                                 isActive
@@ -167,10 +233,10 @@ export default function SpotlightLargeCard(): JSX.Element {
                                     isActive ? "text-primary" : "text-gray-700"
                                   }`}
                                 >
-                                  {d.name}
+                                  {d.branchName}
                                 </span>
                                 <span className="text-xs text-gray-500 mt-1">
-                                  {d.location}
+                                  {d.location.city}, {d.location.country}
                                 </span>
                               </div>
                             </button>
@@ -192,18 +258,12 @@ export default function SpotlightLargeCard(): JSX.Element {
                     ›
                   </button>
                   <Link
-                    href={`/branches/${DESTINATIONS[active].id}`}
+                    href={`/branches/${destinations[active].slug}`}
                     className="flex-1 sm:flex-none max-w-fit inline-flex items-center justify-center gap-2 px-2 py-2 rounded-full bg-primary text-text text-xs font-medium shadow hover:brightness-105 transition"
                   >
                     View details
                   </Link>
                 </div>
-                {/* <div>
-                  <span className="text-xs text-gray-400">Selected</span>
-                  <div className="text-sm font-medium text-primary">
-                    {DESTINATIONS[active].name}
-                  </div>
-                </div> */}
               </div>
             </aside>
           </div>

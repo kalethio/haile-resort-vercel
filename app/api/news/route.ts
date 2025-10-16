@@ -1,26 +1,70 @@
+// app/api/news/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
-// GET → fetch all news
 export async function GET() {
-  const news = await prisma.news.findMany();
+  const news = await prisma.news.findMany({
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json(news);
 }
 
-// PUT → update news (replace all)
-export async function PUT(req: Request) {
-  const body: { title: string; desc: string; detail: string }[] =
-    await req.json();
+export async function POST(req: Request) {
+  try {
+    const body: { title: string; desc: string; detail: string } =
+      await req.json();
 
-  // delete all existing
-  await prisma.news.deleteMany();
+    if (!body.title?.trim() || !body.desc?.trim() || !body.detail?.trim()) {
+      return NextResponse.json(
+        { error: "Title, description and detail are required" },
+        { status: 400 }
+      );
+    }
 
-  // insert new
-  for (const n of body) {
-    await prisma.news.create({ data: n });
+    const news = await prisma.news.create({
+      data: {
+        title: body.title.trim(),
+        desc: body.desc.trim(),
+        detail: body.detail.trim(),
+      },
+    });
+
+    return NextResponse.json(news, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
 
-  return NextResponse.json({ message: "News updated" });
+export async function PUT(req: Request) {
+  try {
+    const updates: {
+      id?: number;
+      title: string;
+      desc: string;
+      detail: string;
+    }[] = await req.json();
+
+    await prisma.news.deleteMany();
+
+    const createdNews = await prisma.news.createMany({
+      data: updates.map((news) => ({
+        title: news.title,
+        desc: news.desc,
+        detail: news.detail,
+      })),
+    });
+
+    return NextResponse.json({
+      message: "News replaced",
+      count: createdNews.count,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

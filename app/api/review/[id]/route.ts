@@ -1,34 +1,43 @@
-// app/api/review/[id]/route.ts
+// app/api/reviews/[id]/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
-  if (Number.isNaN(id))
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  try {
+    const id = Number(params.id);
+    if (Number.isNaN(id) || id < 1) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
 
-  const body: { action?: "approve" } = await req.json();
+    const body: { approved?: boolean } = await req.json();
 
-  if (body.action === "approve") {
-    await prisma.review.update({ where: { id }, data: { approved: true } });
-    return NextResponse.json({ message: "Approved" });
+    const updatedReview = await prisma.review.update({
+      where: { id },
+      data: { approved: body.appointed },
+    });
+
+    return NextResponse.json(updatedReview);
+  } catch (error) {
+    return NextResponse.json({ error: "Review not found" }, { status: 404 });
   }
-
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }
 
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
-  if (Number.isNaN(id))
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  try {
+    const id = Number(params.id);
+    if (Number.isNaN(id) || id < 1) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
 
-  await prisma.review.delete({ where: { id } });
-  return NextResponse.json({ message: "Deleted successfully" });
+    await prisma.review.delete({ where: { id } });
+    return NextResponse.json({ message: "Review deleted" });
+  } catch (error) {
+    return NextResponse.json({ error: "Review not found" }, { status: 404 });
+  }
 }

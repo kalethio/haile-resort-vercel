@@ -1,31 +1,29 @@
-// src/app/api/branches/[slug]/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+interface Params {
+  params: Promise<{ slug: string }>;
+}
 
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ slug: string }> }
-) {
-  const { slug } = await context.params;
-
+export async function GET(req: Request, { params }: Params) {
   try {
-    // ✅ Explicitly select phone and email
-    const branch = await prisma.branch.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        branchName: true,
-        heroImage: true,
-        description: true,
-        directionsUrl: true,
-        phone: true, // include phone
-        email: true, // include email
+    const { slug } = await params; // ✅ Await params
+
+    const branch = await prisma.branch.findFirst({
+      where: {
+        slug: slug, // ✅ Use the awaited slug
+        published: true,
+      },
+      include: {
+        location: true,
+        contact: true,
+        seo: true,
         attractions: true,
         accommodations: true,
         experiences: {
-          include: { packages: true },
+          include: {
+            packages: true,
+          },
         },
       },
     });
@@ -34,20 +32,11 @@ export async function GET(
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // ✅ Create a consistent contact object
-    const response = {
-      ...branch,
-      contact: {
-        phone: branch.phone || null,
-        email: branch.email || null,
-      },
-    };
-
-    return NextResponse.json(response);
-  } catch (err) {
-    console.error(err);
+    return NextResponse.json(branch);
+  } catch (error) {
+    console.error("Get branch error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -2,15 +2,13 @@
   "name": "haile-resort",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write ."
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",

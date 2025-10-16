@@ -29,12 +29,13 @@ export const ceoData = {
   ],
 };
 
+// Updated with numeric values for counting animation
 export const statsData = [
-  { label: "Locations", value: "10" },
-  { label: "Upcoming Destinations", value: "3" },
-  { label: "Years of Experience", value: "13" },
-  { label: "Conference Halls", value: "35+" },
-  { label: "Rooms", value: "650+" },
+  { label: "Locations", value: 10, suffix: "" },
+  { label: "Upcoming Destinations", value: 3, suffix: "" },
+  { label: "Years of Experience", value: 13, suffix: "+" },
+  { label: "Conference Halls", value: 35, suffix: "+" },
+  { label: "Rooms", value: 650, suffix: "+" },
 ];
 
 export const historyData = {
