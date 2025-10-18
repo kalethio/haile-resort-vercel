@@ -1,101 +1,178 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronRight } from "react-icons/fi";
+import Image from "next/image";
 import { Accommodation } from "../../data/branches";
 
 interface Props {
-  items: Accommodation[]; // Accepts data as prop
+  items: Accommodation[];
 }
 
-const AccommodationCarousel: React.FC<Props> = ({ items }) => {
-  // State to manage carousel cards
-  const [cards, setCards] = useState(items);
+// Animation constants
+const cardAnimations = {
+  center: {
+    scale: 1.12,
+    opacity: 1,
+    filter: "blur(0px) brightness(100%)",
+    zIndex: 20,
+  },
+  side: {
+    scale: 0.88,
+    opacity: 1,
+    filter: "blur(2px) brightness(75%)",
+    zIndex: 5,
+  },
+  hidden: {
+    scale: 0.8,
+    opacity: 0,
+    filter: "blur(4px) brightness(50%)",
+    zIndex: 1,
+  },
+};
 
-  // Dynamically calculate center card
+const transition = {
+  type: "spring" as const,
+  stiffness: 280,
+  damping: 35,
+  duration: 0.5,
+};
+
+const AccommodationCarousel: React.FC<Props> = ({ items }) => {
+  const [cards, setCards] = useState(items);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const centerIndex = Math.floor(cards.length / 2);
 
-  // Rotate carousel forward
-  const rotateNext = () => {
+  const rotateNext = useCallback(() => {
+    if (isAnimating) return;
+
+    setIsAnimating(true);
     const newCards = [...cards];
     const first = newCards.shift()!;
     newCards.push(first);
-    setCards(newCards);
-  };
 
-  // Rotate carousel backward
-  const rotatePrev = () => {
-    const newCards = [...cards];
-    const last = newCards.pop()!;
-    newCards.unshift(last);
     setCards(newCards);
+    setTimeout(() => setIsAnimating(false), 400);
+  }, [cards, isAnimating]);
+
+  const handleCardClick = (index: number) => {
+    if (index === centerIndex) return;
+
+    const clicksNeeded =
+      index > centerIndex
+        ? index - centerIndex
+        : cards.length - centerIndex + index;
+
+    let rotations = 0;
+    const rotateToCenter = () => {
+      if (rotations < clicksNeeded) {
+        rotateNext();
+        rotations++;
+        setTimeout(rotateToCenter, 150);
+      }
+    };
+    rotateToCenter();
   };
 
   return (
-    <section className="w-full py-28">
+    <motion.section
+      className="w-full py-20 md:py-28 bg-gradient-to-b from-white to-gray-50/30"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6 }}
+    >
       {/* Section Title */}
-      <h2 className="text-center text-primary m-4 text-3xl md:text-4xl font-serif tracking-widest uppercase mb-16">
-        Accommodations
-      </h2>
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1 }}
+        className="text-center text-primary mb-12 md:mb-16 px-4"
+      >
+        <span className="text-3xl md:text-4xl font-serif tracking-widest uppercase block">
+          Accommodations
+        </span>
+      </motion.h2>
 
       {/* Carousel Cards */}
-      <div className="relative flex justify-center items-center gap-10 md:gap-12 overflow-hidden py-8 px-4">
+      <div className="relative flex justify-center items-center gap-6 md:gap-8 lg:gap-10 overflow-hidden py-6 md:py-8 px-4">
         {cards.map((item, index) => {
           const distanceFromCenter = Math.abs(index - centerIndex);
           const isCenter = index === centerIndex;
+          const isVisible = distanceFromCenter <= 2;
+
+          let animationState = cardAnimations.side;
+          if (isCenter) animationState = cardAnimations.center;
+          if (!isVisible) animationState = cardAnimations.hidden;
 
           return (
             <motion.div
-              key={item.title}
+              key={`${item.title}-${index}`}
               className="flex-shrink-0 cursor-pointer"
-              animate={{
-                scale: isCenter ? 1.15 : 0.85,
-                opacity: distanceFromCenter > 2 ? 0 : 1,
-                filter: isCenter
-                  ? "blur(0px) brightness(100%)"
-                  : "blur(3px) brightness(70%)",
-                zIndex: isCenter ? 20 : 5,
+              animate={animationState}
+              whileHover={{
+                scale: isCenter ? 1.15 : 0.92,
+                transition: { duration: 0.2 },
               }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-                duration: 0.6,
-              }}
+              whileTap={{ scale: 0.95 }}
+              transition={transition}
+              onClick={() => handleCardClick(index)}
             >
               <div className="flex flex-col items-center">
-                {/* Image */}
+                {/* Image with gradient overlay */}
                 <div
-                  className={`rounded-2xl overflow-hidden shadow-md ${
-                    isCenter ? "shadow-2xl" : "shadow-lg"
-                  } w-64 md:w-80`}
+                  className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${
+                    isCenter
+                      ? "shadow-2xl ring-3 ring-primary/30"
+                      : "shadow-lg ring-1 ring-gray-200/50"
+                  } w-60 md:w-72 lg:w-80`}
                 >
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-56 md:h-64 object-cover"
-                  />
+                  <div className="relative w-full h-52 md:h-60 lg:h-64">
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 240px, (max-width: 1024px) 288px, 320px"
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  </div>
                 </div>
 
                 {/* Title */}
                 <h3
-                  className={`mt-4 font-serif uppercase text-center ${
+                  className={`mt-4 font-serif uppercase text-center font-medium ${
                     isCenter
-                      ? "text-gray-900 text-lg md:text-xl"
-                      : "text-gray-500 text-sm md:text-base"
+                      ? "text-gray-900 text-lg md:text-xl font-semibold"
+                      : "text-gray-600 text-base"
                   }`}
                 >
                   {item.title}
                 </h3>
+
+                {/* Price if available */}
+                {item.price && isCenter && (
+                  <div className="mt-2 text-primary text-lg font-bold">
+                    {item.price}
+                  </div>
+                )}
 
                 {/* Description only for center card */}
                 {isCenter && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-2 text-center max-w-xs md:max-w-sm"
+                    transition={{ delay: 0.1 }}
+                    className="mt-3 text-center max-w-xs md:max-w-sm"
                   >
-                    <p className="text-gray-600 mb-4">{item.description}</p>
+                    <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                      {item.description}
+                    </p>
                   </motion.div>
                 )}
               </div>
@@ -104,22 +181,55 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
         })}
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-center mt-16 gap-12">
-        <button
-          onClick={rotatePrev}
-          className="w-12 h-12 cursor-pointer bg-primary/20 rounded-full flex items-center justify-center shadow hover:bg-primary/50 transition"
-        >
-          <FiChevronLeft size={24} />
-        </button>
-        <button
+      {/* Dot Indicators with Next Button */}
+      <div className="flex justify-center items-center mt-8 gap-4">
+        {/* Dot Indicators */}
+        <div className="flex gap-2">
+          {items.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                const targetIndex = index;
+                const currentCenterTitle = cards[centerIndex]?.title;
+                if (items[targetIndex]?.title !== currentCenterTitle) {
+                  rotateNext();
+                }
+              }}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                cards[centerIndex]?.title === items[index]?.title
+                  ? "bg-primary w-4"
+                  : "bg-gray-300"
+              }`}
+              aria-label={`Go to accommodation ${index + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Next Button */}
+        <motion.button
           onClick={rotateNext}
-          className="w-12 h-12 cursor-pointer bg-primary/20 rounded-full flex items-center justify-center shadow hover:bg-primary/50 transition"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          disabled={isAnimating}
+          className="w-8 h-8 cursor-pointer bg-primary/15 rounded-full flex items-center justify-center shadow hover:shadow-md hover:bg-primary/25 transition-all duration-300 border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/30"
+          aria-label="Next accommodation"
         >
-          <FiChevronRight size={24} />
-        </button>
+          <FiChevronRight size={16} className="text-primary" />
+        </motion.button>
       </div>
-    </section>
+
+      {/* Loading Skeleton */}
+      {!items.length && (
+        <div className="flex justify-center items-center gap-6 md:gap-8 py-8">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="w-60 md:w-72 rounded-2xl bg-gray-200 animate-pulse h-80"
+            />
+          ))}
+        </div>
+      )}
+    </motion.section>
   );
 };
 

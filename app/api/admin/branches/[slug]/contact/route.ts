@@ -1,4 +1,3 @@
-// app/api/admin/branches/[slug]/contact/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -8,13 +7,13 @@ interface Params {
 
 export async function POST(req: Request, { params }: Params) {
   try {
-    const { slug } = await params; // ✅ Await params
+    const { slug } = await params; // ✅ Add this line
     const body = await req.json();
     const { phone, email, address, socials } = body;
 
     // Find branch ID
     const branch = await prisma.branch.findFirst({
-      where: { slug: slug },
+      where: { slug: slug }, // ✅ Use awaited slug
       select: { id: true },
     });
 

@@ -1,19 +1,19 @@
-// app/api/admin/branches/[slug]/experiences/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function POST(req: Request, { params }: Params) {
   try {
+    const { slug } = await params;
     const body = await req.json();
     const experiences = body.experiences || [];
 
     // Find branch ID
     const branch = await prisma.branch.findFirst({
-      where: { slug: params.slug },
+      where: { slug: slug },
       select: { id: true },
     });
 
@@ -43,12 +43,19 @@ export async function POST(req: Request, { params }: Params) {
             branchId: branch.id,
             packages: {
               create: (exp.packages || []).map((pkg: any) => ({
+                // ✅ UPDATED: Include all new fields
                 externalId: pkg.id || pkg.externalId || null,
                 title: pkg.title,
                 subtitle: pkg.subtitle || null,
                 description: pkg.description || null,
                 image: pkg.image || null,
+                price: pkg.price || null, // ✅ NEW
+                duration: pkg.duration || null, // ✅ NEW
+                inclusions: pkg.inclusions || null, // ✅ NEW
+                category: pkg.category || "CULTURAL", // ✅ NEW (default category)
+                available: pkg.available ?? true, // ✅ NEW
                 ctaLabel: pkg.ctaLabel || null,
+                branchId: branch.id, // ✅ NEW: Required field
               })),
             },
           },

@@ -1,14 +1,29 @@
-// app/api/news/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const news = await prisma.news.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(news);
-}
+  try {
+    const news = await prisma.newsArticle.findMany({
+      orderBy: { createdAt: "desc" },
+    });
 
+    // Map back to frontend expected format
+    const mappedNews = news.map((article) => ({
+      id: article.id,
+      title: article.title,
+      desc: article.excerpt, // Map excerpt back to desc
+      detail: article.content, // Map content back to detail
+      createdAt: article.createdAt,
+    }));
+
+    return NextResponse.json(mappedNews);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
 export async function POST(req: Request) {
   try {
     const body: { title: string; desc: string; detail: string } =
@@ -21,16 +36,28 @@ export async function POST(req: Request) {
       );
     }
 
-    const news = await prisma.news.create({
+    // Get first branch as default
+    const defaultBranch = await prisma.branch.findFirst();
+    if (!defaultBranch) {
+      return NextResponse.json(
+        { error: "No branch available" },
+        { status: 500 }
+      );
+    }
+
+    const news = await prisma.newsArticle.create({
       data: {
         title: body.title.trim(),
-        desc: body.desc.trim(),
-        detail: body.detail.trim(),
+        content: body.detail.trim(), // Map detail to content
+        excerpt: body.desc.trim(), // Map desc to excerpt
+        published: false,
+        branchId: defaultBranch.id, // Required field
       },
     });
 
     return NextResponse.json(news, { status: 201 });
   } catch (error) {
+    console.error("News creation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -47,13 +74,24 @@ export async function PUT(req: Request) {
       detail: string;
     }[] = await req.json();
 
-    await prisma.news.deleteMany();
+    // Get first branch as default
+    const defaultBranch = await prisma.branch.findFirst();
+    if (!defaultBranch) {
+      return NextResponse.json(
+        { error: "No branch available" },
+        { status: 500 }
+      );
+    }
 
-    const createdNews = await prisma.news.createMany({
+    await prisma.newsArticle.deleteMany();
+
+    const createdNews = await prisma.newsArticle.createMany({
       data: updates.map((news) => ({
         title: news.title,
-        desc: news.desc,
-        detail: news.detail,
+        content: news.detail, // Map detail to content
+        excerpt: news.desc, // Map desc to excerpt
+        published: false,
+        branchId: defaultBranch.id, // Required field
       })),
     });
 
@@ -62,6 +100,7 @@ export async function PUT(req: Request) {
       count: createdNews.count,
     });
   } catch (error) {
+    console.error("News update error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

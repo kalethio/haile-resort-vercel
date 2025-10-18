@@ -105,7 +105,7 @@ export default function HeroHybridCarousel() {
         className="flex flex-col items-center hover:text-primary transition-colors cursor-pointer text-white/70 hover:text-white min-w-max"
       >
         <span className="font-semibold text-center">{branch.branchName}</span>
-        <span className="text-yellow-400 text-sm mt-1">
+        <span className="text-secondary text-sm mt-1">
           {renderStars(branch.starRating)}
         </span>
       </Link>
@@ -158,22 +158,22 @@ export default function HeroHybridCarousel() {
         <div className="w-full max-w-full sm:max-w-xl lg:w-3/5 lg:max-w-2xl">
           {/* Headline */}
           <motion.h1
-            className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight text-white drop-shadow-2xl tracking-tight"
+            className="text-2xl sm:text-4xl md:text-6xl font-extrabold leading-tight text-white drop-shadow-2xl tracking-tight"
             style={{ y: headlineY }}
           >
             {headline}
           </motion.h1>
 
-          {/* Subheadline */}
+          {/* Subheadline
           <motion.p
             className="mt-4 sm:mt-6 max-w-full sm:max-w-lg text-base sm:text-lg text-white/90 leading-relaxed"
             style={{ y: subheadlineY }}
           >
             {subheadline}
-          </motion.p>
+          </motion.p> */}
 
           {/* Booking Form */}
-          <div className="mt-6 sm:mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-xl border border-white/20">
+          <div className="mt-6 sm:mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-primary/50">
             <CheckBooking />
           </div>
 
@@ -187,7 +187,7 @@ export default function HeroHybridCarousel() {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="mt-6 sm:mt-10"
             >
-              <h2 className="text-lg sm:text-2xl font-semibold text-primary drop-shadow">
+              <h2 className="text-lg sm:text-2xl font-bold text-bg drop-shadow">
                 {services[index].title}
               </h2>
             </motion.div>

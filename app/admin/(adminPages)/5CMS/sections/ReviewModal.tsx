@@ -157,6 +157,9 @@ export default function ReviewModal() {
                 <div className="mt-2 text-xs font-semibold text-[rgb(50,57,6)]">
                   — {r.name}
                 </div>
+                {r.email && ( // Add email display
+                  <div className="mt-1 text-xs text-gray-600">{r.email}</div>
+                )}
                 <div className="mt-1 text-xs text-gray-500">ID: {r.id}</div>
               </div>
 

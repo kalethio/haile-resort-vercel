@@ -21,11 +21,11 @@ export const ceoData = {
   portrait: "/images/about/lead-haile.jpg",
   greetingAmharic: "“Tena Yistilign” ጤና ይስጥልኝ!",
   letter: [
-    `Welcome and thank you for visiting our website – I believe Haile Hotels and Resorts have grouped together a remarkable team of devoted managers and staff to administer your needs.`,
-    `We are still at an early stage of our five-year plan, but everything seems to indicate that we are on the track of becoming the best locally-owned chained hotel group owning 20 hotels and resorts. So far we have reached six hotels while Adama and Addis Hotels bring us to 8th in the near future.`,
-    `Our upcoming projects in Wolaita Sodo, Konso, Debre Birhan and other hotel constructions and partnerships will be significant strides toward our strategic objective: to be the preeminent locally-owned hospitality brand across Ethiopia and an admired presence in the region.`,
-    `We invest in our people, our communities, and operational excellence. Our organizational culture is guided by a simple mantra: "It is Possible" — ይቻላል — a reflection of discipline, humility and relentless customer-focus.`,
-    `All of us appreciate the trust you have put into Haile Hotels and Resorts. We look forward to welcoming you as our guest and — ideally — as a de facto ambassador of our hotels, resorts and people. Thank you for your continued support.`,
+    `Welcome, and thank you for visiting the official website of Haile Hotels and Resorts. It is with great pride that I introduce you to our family of dedicated professionals, who collectively embody the spirit of Ethiopian hospitality and resilience. Our group stands as a symbol of unwavering commitment to excellence, warm service, and memorable guest experiences.`,
+    `Since our inception, Haile Hotels and Resorts has been driven by a clear vision: to become Ethiopia's great locally-owned chain of hotels and resorts. We are currently proud to operate 10 distinguished properties across the country, and through our strategic growth plan, we are well underway toward expanding our footprint to 20 exceptional destinations.`,
+    `Our upcoming projects, including new developments in Konso, Debre Birhan, and several other key locations, reflect both our confidence in Ethiopia's tourism potential and our dedication to raising industry standards. Each hotel and resort in our portfolio not only offer world-class amenities but also stands as a testament to the resilient spirit of our people and the rich cultural heritage of our nation.`,
+    `We are deeply grateful for the trust that our guests, partners, and communities have placed in us. We look forward to welcoming you to our hotels and resorts—whether as valued guests or as ambassadors who share and celebrate the unique story of Haile Hotels and Resorts.`,
+    `Thank you for being part of this journey with us.`,
   ],
 };
 

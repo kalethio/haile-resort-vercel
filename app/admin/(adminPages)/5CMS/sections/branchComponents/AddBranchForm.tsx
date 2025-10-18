@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import ImageUpload from "@/app/components/ImageUpload";
+import { ImageIcon } from "lucide-react";
 
 interface AddBranchFormProps {
   onCancel: () => void;
@@ -57,13 +59,23 @@ export default function AddBranchForm({
     setFormData((prev) => {
       if (field.includes(".")) {
         const [parent, child] = field.split(".");
-        return {
-          ...prev,
-          [parent]: {
-            ...prev[parent as keyof FormData],
-            [child]: value,
-          },
-        };
+        if (parent === "location") {
+          return {
+            ...prev,
+            location: {
+              ...prev.location,
+              [child]: value,
+            },
+          };
+        } else if (parent === "seo") {
+          return {
+            ...prev,
+            seo: {
+              ...prev.seo,
+              [child]: value,
+            },
+          };
+        }
       }
       return { ...prev, [field]: value };
     });
@@ -129,196 +141,241 @@ export default function AddBranchForm({
   };
 
   return (
-    <div className="max-h-[60vh] overflow-y-auto">
+    <div className="max-h-[60vh] overflow-y-auto p-1">
       {errors.submit && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm font-medium">
           {errors.submit}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Slug *
-            </label>
-            <input
-              type="text"
-              value={formData.slug}
-              onChange={(e) => handleChange("slug", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 ${
-                errors.slug ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="addis-ababa"
-            />
-            {errors.slug && (
-              <p className="text-red-500 text-xs mt-1">{errors.slug}</p>
-            )}
-          </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Slug *
+              </label>
+              <input
+                type="text"
+                value={formData.slug}
+                onChange={(e) => handleChange("slug", e.target.value)}
+                className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-primary/50 bg-white text-gray-900 placeholder-gray-500 ${
+                  errors.slug
+                    ? "border-red-500"
+                    : "border-gray-300 focus:border-primary"
+                }`}
+                placeholder="addis-ababa"
+              />
+              {errors.slug && (
+                <p className="text-red-600 text-sm font-medium mt-2">
+                  {errors.slug}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Branch Name *
-            </label>
-            <input
-              type="text"
-              value={formData.branchName}
-              onChange={(e) => handleChange("branchName", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 ${
-                errors.branchName ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Addis Ababa"
-            />
-            {errors.branchName && (
-              <p className="text-red-500 text-xs mt-1">{errors.branchName}</p>
-            )}
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Branch Name *
+              </label>
+              <input
+                type="text"
+                value={formData.branchName}
+                onChange={(e) => handleChange("branchName", e.target.value)}
+                className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-primary/50 bg-white text-gray-900 placeholder-gray-500 ${
+                  errors.branchName
+                    ? "border-red-500"
+                    : "border-gray-300 focus:border-primary"
+                }`}
+                placeholder="Addis Ababa"
+              />
+              {errors.branchName && (
+                <p className="text-red-600 text-sm font-medium mt-2">
+                  {errors.branchName}
+                </p>
+              )}
+            </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              rows={2}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 ${
-                errors.description ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Luxury stay in the heart of Ethiopia's capital..."
-            />
-            {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-            )}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Description *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleChange("description", e.target.value)}
+                rows={3}
+                className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-primary/50 bg-white text-gray-900 placeholder-gray-500 resize-none ${
+                  errors.description
+                    ? "border-red-500"
+                    : "border-gray-300 focus:border-primary"
+                }`}
+                placeholder="Luxury stay in the heart of Ethiopia's capital..."
+              />
+              {errors.description && (
+                <p className="text-red-600 text-sm font-medium mt-2">
+                  {errors.description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Location */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              City *
-            </label>
-            <input
-              type="text"
-              value={formData.location.city}
-              onChange={(e) => handleChange("location.city", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/50 ${
-                errors["location.city"] ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Addis Ababa"
-            />
-            {errors["location.city"] && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors["location.city"]}
-              </p>
-            )}
-          </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+            Location Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                City *
+              </label>
+              <input
+                type="text"
+                value={formData.location.city}
+                onChange={(e) => handleChange("location.city", e.target.value)}
+                className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-primary/50 bg-white text-gray-900 placeholder-gray-500 ${
+                  errors["location.city"]
+                    ? "border-red-500"
+                    : "border-gray-300 focus:border-primary"
+                }`}
+                placeholder="Addis Ababa"
+              />
+              {errors["location.city"] && (
+                <p className="text-red-600 text-sm font-medium mt-2">
+                  {errors["location.city"]}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Region
-            </label>
-            <input
-              type="text"
-              value={formData.location.region}
-              onChange={(e) => handleChange("location.region", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50"
-              placeholder="Addis Ababa"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Region
+              </label>
+              <input
+                type="text"
+                value={formData.location.region}
+                onChange={(e) =>
+                  handleChange("location.region", e.target.value)
+                }
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="Addis Ababa"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country
-            </label>
-            <input
-              type="text"
-              value={formData.location.country}
-              onChange={(e) => handleChange("location.country", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50"
-              placeholder="Ethiopia"
-            />
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Country
+              </label>
+              <input
+                type="text"
+                value={formData.location.country}
+                onChange={(e) =>
+                  handleChange("location.country", e.target.value)
+                }
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="Ethiopia"
+              />
+            </div>
           </div>
         </div>
 
         {/* Additional Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Hero Image URL
-            </label>
-            <input
-              type="url"
-              value={formData.heroImage}
-              onChange={(e) => handleChange("heroImage", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50"
-              placeholder="/images/branchesPictures/branchHero1.jpg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Directions URL
-            </label>
-            <input
-              type="url"
-              value={formData.directionsUrl}
-              onChange={(e) => handleChange("directionsUrl", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50"
-              placeholder="https://maps.app.goo.gl/..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Star Rating
-            </label>
-            <select
-              value={formData.starRating}
-              onChange={(e) =>
-                handleChange("starRating", parseInt(e.target.value))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50"
-            >
-              {[3, 4, 5].map((rating) => (
-                <option key={rating} value={rating}>
-                  {rating} Stars
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="published"
-              checked={formData.published}
-              onChange={(e) => handleChange("published", e.target.checked)}
-              className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-            />
-            <label htmlFor="published" className="ml-2 text-sm text-gray-700">
-              Publish immediately
-            </label>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+            Additional Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" />
+                Hero Image
+              </label>
+              {/* ✅ Use URL directly */}
+              <ImageUpload
+                value={formData.heroImage}
+                onChange={(url) => handleChange("heroImage", url)}
+                subfolder="branches"
+              />
+              {formData.heroImage && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Current image: {formData.heroImage}
+                </p>
+              )}
+              {errors.heroImage && (
+                <p className="text-red-600 text-sm font-medium mt-2">
+                  {errors.heroImage}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Directions URL
+              </label>
+              <input
+                type="url"
+                value={formData.directionsUrl}
+                onChange={(e) => handleChange("directionsUrl", e.target.value)}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="https://maps.app.goo.gl/..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Star Rating
+              </label>
+              <select
+                value={formData.starRating}
+                onChange={(e) =>
+                  handleChange("starRating", parseInt(e.target.value))
+                }
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900"
+              >
+                {[3, 4, 5].map((rating) => (
+                  <option key={rating} value={rating}>
+                    {rating} Stars
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center justify-start md:justify-end">
+              <div className="flex items-center h-14 bg-gray-50 rounded-lg px-4 border-2 border-gray-200">
+                <input
+                  type="checkbox"
+                  id="published"
+                  checked={formData.published}
+                  onChange={(e) => handleChange("published", e.target.checked)}
+                  className="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="published"
+                  className="ml-3 text-sm font-semibold text-gray-800"
+                >
+                  Publish immediately
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            className="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 disabled:bg-primary/70"
+            className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
-            {loading ? "Creating..." : "Create Branch"}
+            {loading ? "Creating Branch..." : "Create Branch"}
           </button>
         </div>
       </form>

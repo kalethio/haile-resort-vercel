@@ -1,22 +1,27 @@
-// app/api/reviews/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+interface Params {
+  params: Promise<{ id: string }>;
+}
+
+export async function PATCH(req: Request, { params }: Params) {
   try {
-    const id = Number(params.id);
-    if (Number.isNaN(id) || id < 1) {
+    const { id } = await params;
+    const reviewId = Number(id);
+
+    if (Number.isNaN(reviewId) || reviewId < 1) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    const body: { approved?: boolean } = await req.json();
+    const body: { action?: string; approved?: boolean } = await req.json();
+
+    // Handle both action format and direct approved format
+    const approved = body.action === "approve" ? true : body.approved;
 
     const updatedReview = await prisma.review.update({
-      where: { id },
-      data: { approved: body.appointed },
+      where: { id: reviewId },
+      data: { approved: approved },
     });
 
     return NextResponse.json(updatedReview);
@@ -25,17 +30,16 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, { params }: Params) {
   try {
-    const id = Number(params.id);
-    if (Number.isNaN(id) || id < 1) {
+    const { id } = await params;
+    const reviewId = Number(id);
+
+    if (Number.isNaN(reviewId) || reviewId < 1) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    await prisma.review.delete({ where: { id } });
+    await prisma.review.delete({ where: { id: reviewId } });
     return NextResponse.json({ message: "Review deleted" });
   } catch (error) {
     return NextResponse.json({ error: "Review not found" }, { status: 404 });

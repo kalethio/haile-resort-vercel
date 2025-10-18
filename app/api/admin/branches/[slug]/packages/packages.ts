@@ -1,4 +1,3 @@
-// app/api/admin/branches/[slug]/packages/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -24,6 +23,11 @@ export async function POST(req: Request, { params }: Params) {
         id: experienceId,
         branch: { slug: params.slug },
       },
+      include: {
+        branch: {
+          select: { id: true },
+        },
+      },
     });
 
     if (!experience) {
@@ -41,13 +45,20 @@ export async function POST(req: Request, { params }: Params) {
       ...packages.map((pkg: any) =>
         prisma.package.create({
           data: {
+            // ✅ UPDATED: Include all new fields
             externalId: pkg.id || pkg.externalId || null,
             title: pkg.title,
             subtitle: pkg.subtitle || null,
             description: pkg.description || null,
             image: pkg.image || null,
+            price: pkg.price || null, // ✅ NEW
+            duration: pkg.duration || null, // ✅ NEW
+            inclusions: pkg.inclusions || null, // ✅ NEW
+            category: pkg.category || "CULTURAL", // ✅ NEW
+            available: pkg.available ?? true, // ✅ NEW
             ctaLabel: pkg.ctaLabel || null,
             experienceId,
+            branchId: experience.branch.id, // ✅ NEW: Required field
           },
         })
       ),

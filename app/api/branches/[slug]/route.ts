@@ -7,11 +7,11 @@ interface Params {
 
 export async function GET(req: Request, { params }: Params) {
   try {
-    const { slug } = await params; // ✅ Await params
+    const { slug } = await params;
 
     const branch = await prisma.branch.findFirst({
       where: {
-        slug: slug, // ✅ Use the awaited slug
+        slug: slug,
         published: true,
       },
       include: {
@@ -22,8 +22,20 @@ export async function GET(req: Request, { params }: Params) {
         accommodations: true,
         experiences: {
           include: {
-            packages: true,
+            packages: {
+              where: { available: true }, // ✅ Only include available packages
+              orderBy: { price: "asc" }, // ✅ Order by price for better UX
+            },
           },
+          orderBy: { title: "asc" },
+        },
+        // ✅ ADD: Include standalone packages (not linked to experiences)
+        packages: {
+          where: {
+            available: true,
+            experienceId: null, // ✅ Packages without experience relation
+          },
+          orderBy: { price: "asc" },
         },
       },
     });

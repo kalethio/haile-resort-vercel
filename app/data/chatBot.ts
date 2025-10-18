@@ -16,7 +16,7 @@ export const INITIAL_MESSAGES = [
 
 export const QUICK_REPLIES = [
   "📍 Locations",
-  "🏨 Book a Room",
+  "🏨 Reservation",
   "🍽 Restaurants & Dining",
   "💆 Spa & Wellness",
   "🎉 Events & Conferences",
@@ -43,9 +43,16 @@ export const BOT_RESPONSES: BotResponse[] = [
 
   // Locations
   {
-    triggers: ["location", "where", "resort locations", "branches", "cities"],
+    triggers: [
+      "location",
+      "where",
+      "resort locations",
+      "branches",
+      "airport shuttles",
+      "destinations",
+    ],
     response:
-      "📍 Our resorts are located across Ethiopia: Addis Ababa, Hawassa, Arba Minch, and more coming soon. Visit /locations for a full map and details.",
+      "📍Haile Hotels and Resorts operate in 10 destinations across Ethiopia: namely we are operational in Addis Ababa, Hawassa, Arba Minch, Adama, Wolaita Sodo, Gondar, Batu (Ziway), Shashemene, Jimma, and Sululta (Yaya Athletics Village).",
   },
 
   // Room Booking
@@ -58,8 +65,9 @@ export const BOT_RESPONSES: BotResponse[] = [
       "booking",
       "availability",
     ],
-    response:
-      "🏨 You can check room availability and book online at /booking. For personalized assistance, contact reception on WhatsApp.",
+    response: `🏨 You can book your stay through our official website, or by contacting us directly. 
+Mobile: +251 956 79 79 79 | Hotline: 8169 | Telephone: +251 116 92 20 56/57/58
+E-mail: book@haileresorts.com | groupreservation@haileresorts.com`,
     role: "booking",
   },
 
@@ -76,7 +84,7 @@ export const BOT_RESPONSES: BotResponse[] = [
       "dinner",
     ],
     response:
-      "🍽 Our restaurants serve Ethiopian cuisine, international dishes, and seasonal specialties. Opening hours: 7 AM - 11 PM. For reservations, contact the restaurant staff on WhatsApp.",
+      "Yes, we feature multiple restaurants and bars offering local and international cuisines",
     role: "restaurant",
   },
 
@@ -100,7 +108,7 @@ export const BOT_RESPONSES: BotResponse[] = [
       "whatsapp",
     ],
     response:
-      "📞 You can reach our staff via WhatsApp for quick support. Choose the department you want to contact: reception, booking, restaurant, or spa.",
+      "📞 You can reach our 24/7 customer support team via the front desk, phone, or email",
     role: "reception",
   },
 
@@ -138,7 +146,7 @@ export const BOT_RESPONSES: BotResponse[] = [
       "late check-out",
     ],
     response:
-      "🛎 Standard check-in: 2 PM, check-out: 12 PM. For early check-in or late check-out, contact reception via WhatsApp.",
+      "🛎 Early check-in and late check-out are subject to availability. Please inform us ahead of time to accommodate your request",
     role: "reception",
   },
 
@@ -153,7 +161,7 @@ export const BOT_RESPONSES: BotResponse[] = [
       "celebration",
     ],
     response:
-      "🎉 We host weddings, conferences, and special events. Our event team can assist with booking, setup, and catering. Contact reception or booking for arrangements.",
+      "🎉  Haile Hotels and Resorts provide elegant venues and tailored packages for weddings, conferences, and special events.",
     role: "reception",
   },
 
@@ -161,7 +169,7 @@ export const BOT_RESPONSES: BotResponse[] = [
   {
     triggers: ["policy", "rules", "covid", "safety", "child", "pets"],
     response:
-      "📋 Guests are requested to follow resort policies. Children are welcome; pets are not allowed. For full details, visit /policies or contact reception.",
+      "📋 We follow strict health protocols including regular sanitization and executing mandatory hygiene protocols in public areas. ",
     role: "reception",
   },
 ];
