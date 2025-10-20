@@ -28,6 +28,15 @@ export default function BookingPage() {
   const [bookingSummary, setBookingSummary] = useState<BookingSummary | null>(
     null
   );
+  const [paymentMethod, setPaymentMethod] = useState<"chapa" | "stripe" | null>(
+    null
+  );
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
+  // Calculate ETB amount (mock conversion rate)
+  const calculateETB = (usdAmount: number) => {
+    return Math.round(usdAmount * 55); // 1 USD = 55 ETB
+  };
 
   // Get parameters from URL
   const branch = searchParams.get("branch") || "";
@@ -47,7 +56,7 @@ export default function BookingPage() {
       const roomPrice = selectedRoom
         ? roomTypes.find((r) => r.id === selectedRoom)?.basePrice || 0
         : 0;
-      const taxes = roomPrice * nights * 0.1; // 10% tax
+      const taxes = roomPrice * nights * 0.1;
       const total = roomPrice * nights + taxes;
 
       setBookingSummary({
@@ -59,19 +68,71 @@ export default function BookingPage() {
     }
   }, [checkIn, checkOut, selectedRoom, roomTypes]);
 
-  // Fetch available rooms
+  // Handle guest info submission (creates booking but doesn't process payment)
+  const handleGuestInfoSubmit = async (formData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    specialRequests: string;
+  }) => {
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          branchSlug: branch,
+          roomTypeId: selectedRoom,
+          checkIn,
+          checkOut,
+          adults: parseInt(guests),
+          guestName: `${formData.firstName} ${formData.lastName}`,
+          guestEmail: formData.email,
+          guestPhone: formData.phone,
+          specialRequests: formData.specialRequests,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setBookingId(result.bookingId);
+        setStep(3); // Move to payment selection
+      } else {
+        alert(`Booking failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Booking submission error:", error);
+      alert("Failed to create booking. Please try again.");
+    }
+  };
+
+  // Handle payment completion (mock for now)
+  const handlePaymentComplete = () => {
+    // In future: Process actual payment based on selected method
+    // For now: Move to confirmation
+    setStep(4);
+  };
+
+  // Fetch available rooms - ONLY REAL API DATA
   useEffect(() => {
     const fetchAvailableRooms = async () => {
       try {
         const response = await fetch(
-          `/api/rooms/availability?branch=${branch}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`
+          `/api/availability?branch=${branch}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`
         );
         if (response.ok) {
           const data = await response.json();
-          setRoomTypes(data.roomTypes);
+          setRoomTypes(data.roomTypes || []); // ✅ Only real data
+        } else {
+          console.error("Failed to fetch available rooms");
+          setRoomTypes([]); // ✅ No mock data
         }
       } catch (error) {
         console.error("Failed to fetch rooms:", error);
+        setRoomTypes([]); // ✅ No mock data
       }
     };
 
@@ -80,69 +141,7 @@ export default function BookingPage() {
     }
   }, [branch, checkIn, checkOut, guests]);
 
-  // Mock room data for now
-  useEffect(() => {
-    if (roomTypes.length === 0) {
-      setRoomTypes([
-        {
-          id: 1,
-          name: "Deluxe King Room",
-          description:
-            "Spacious room with king-sized bed, mountain view, and modern amenities perfect for couples or solo travelers.",
-          capacity: 2,
-          basePrice: 199,
-          amenities: [
-            "Free WiFi",
-            "Air Conditioning",
-            "Smart TV",
-            "Mini Bar",
-            "Coffee Maker",
-            "Safe",
-          ],
-          images: ["/room-deluxe.jpg"],
-          available: true,
-        },
-        {
-          id: 2,
-          name: "Executive Suite",
-          description:
-            "Luxurious suite with separate living area, perfect for business travelers or families needing extra space.",
-          capacity: 4,
-          basePrice: 299,
-          amenities: [
-            "Free WiFi",
-            "Air Conditioning",
-            "2 Smart TVs",
-            "Mini Bar",
-            "Coffee Maker",
-            "Safe",
-            "Work Desk",
-          ],
-          images: ["/room-suite.jpg"],
-          available: true,
-        },
-        {
-          id: 3,
-          name: "Family Room",
-          description:
-            "Comfortable family accommodation with connecting rooms and child-friendly amenities.",
-          capacity: 5,
-          basePrice: 249,
-          amenities: [
-            "Free WiFi",
-            "Air Conditioning",
-            "Smart TV",
-            "Mini Bar",
-            "Coffee Maker",
-            "Safe",
-            "Baby Cot Available",
-          ],
-          images: ["/room-family.jpg"],
-          available: true,
-        },
-      ]);
-    }
-  }, [roomTypes.length]);
+  // 🚨 REMOVED MOCK DATA USEEFFECT COMPLETELY
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -414,7 +413,22 @@ export default function BookingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <form className="space-y-6">
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      await handleGuestInfoSubmit({
+                        firstName: formData.get("firstName") as string,
+                        lastName: formData.get("lastName") as string,
+                        email: formData.get("email") as string,
+                        phone: formData.get("phone") as string,
+                        specialRequests: formData.get(
+                          "specialRequests"
+                        ) as string,
+                      });
+                    }}
+                    className="space-y-6"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -422,6 +436,7 @@ export default function BookingPage() {
                         </label>
                         <input
                           type="text"
+                          name="firstName"
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="Enter first name"
@@ -433,6 +448,7 @@ export default function BookingPage() {
                         </label>
                         <input
                           type="text"
+                          name="lastName"
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="Enter last name"
@@ -447,6 +463,7 @@ export default function BookingPage() {
                         </label>
                         <input
                           type="email"
+                          name="email"
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="your@email.com"
@@ -458,6 +475,7 @@ export default function BookingPage() {
                         </label>
                         <input
                           type="tel"
+                          name="phone"
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="+1 (555) 000-0000"
@@ -470,6 +488,7 @@ export default function BookingPage() {
                         Special Requests
                       </label>
                       <textarea
+                        name="specialRequests"
                         rows={4}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Any special requirements, dietary restrictions, or room preferences..."
@@ -485,8 +504,7 @@ export default function BookingPage() {
                         ← Back to Rooms
                       </button>
                       <button
-                        type="button"
-                        onClick={() => setStep(3)}
+                        type="submit"
                         className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all"
                       >
                         Continue to Payment →
@@ -540,36 +558,229 @@ export default function BookingPage() {
         )}
 
         {/* Step 3: Payment & Confirmation */}
-        {step === 3 && (
-          <div className="max-w-4xl mx-auto">
+        {step === 3 && bookingSummary && (
+          <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900">
-                Payment Details
+                Secure Your Booking
               </h2>
-              <p className="text-gray-600 mt-2">Secure payment processing</p>
+              <p className="text-gray-600 mt-2">
+                Choose your preferred payment method
+              </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">💰</span>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              {/* Booking Summary */}
+              <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  Your Booking Summary
+                </h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Room:</span>
+                    <span className="font-medium">
+                      {roomTypes.find((r) => r.id === selectedRoom)?.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Duration:</span>
+                    <span>
+                      {bookingSummary.nights} nights • {checkIn} to {checkOut}
+                    </span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between font-semibold text-lg">
+                      <span>Total Amount:</span>
+                      <span className="text-blue-600">
+                        USD {bookingSummary.total.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Equivalent in ETB:</span>
+                      <span>
+                        ETB{" "}
+                        {calculateETB(bookingSummary.total).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Payment Integration
-              </h3>
-              <p className="text-gray-600 mb-6">
-                This is where you would integrate with your payment provider
-                (Stripe, PayPal, etc.)
-              </p>
 
+              {/* Payment Method Selection */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 mb-4">
+                  Available Payment Options
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Chapa Option */}
+                  <button
+                    onClick={() => setPaymentMethod("chapa")}
+                    className={`p-4 border-2 rounded-lg text-left transition-all group ${
+                      paymentMethod === "chapa"
+                        ? "border-green-500 bg-green-50 shadow-sm"
+                        : "border-gray-200 hover:border-green-300 hover:shadow-md"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                          paymentMethod === "chapa"
+                            ? "bg-green-100"
+                            : "bg-gray-100 group-hover:bg-green-50"
+                        }`}
+                      >
+                        <span className="text-xl">🇪🇹</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900">
+                          Chapa Payment
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Pay in Ethiopian Birr (ETB)
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                            Local Favorite
+                          </span>
+                        </div>
+                      </div>
+                      {paymentMethod === "chapa" && (
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm">✓</span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Stripe Option (fixed syntax) */}
+                  <button
+                    onClick={() => setPaymentMethod("stripe")}
+                    className={`p-4 border-2 rounded-lg text-left transition-all group ${
+                      paymentMethod === "stripe"
+                        ? "border-blue-500 bg-blue-50 shadow-sm"
+                        : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                          paymentMethod === "stripe"
+                            ? "bg-blue-100"
+                            : "bg-gray-100 group-hover:bg-blue-50"
+                        }`}
+                      >
+                        <span className="text-xl">🌍</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900">
+                          International Payment
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Pay in USD with credit card
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            Global Access
+                          </span>
+                        </div>
+                      </div>
+                      {paymentMethod === "stripe" && (
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm">✓</span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Action */}
+              <div className="border-t pt-6">
+                {paymentMethod ? (
+                  <div className="text-center">
+                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                      <div className="w-16 h-16 bg-white border border-blue-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span className="text-2xl">🚀</span>
+                      </div>
+                      <h4 className="font-semibold text-gray-900 mb-2">
+                        Almost There!
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-3">
+                        We are enhancing our payment system for a seamless
+                        experience. Your booking is ready - our team will assist
+                        you with the payment process.
+                      </p>
+                      <div className="bg-white rounded-lg p-3 border">
+                        <p className="text-xs text-gray-600 mb-1">
+                          Contact our booking specialists:
+                        </p>
+                        <p className="text-lg font-bold text-blue-600">
+                          +251 11 123 4567
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          bookings@haileresorts.com
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 justify-center">
+                      <button
+                        onClick={() => setStep(2)}
+                        className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                      >
+                        ← Back to Details
+                      </button>
+                      <button
+                        onClick={handlePaymentComplete}
+                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold shadow-sm transition-all"
+                      >
+                        Confirm Booking & Contact Support →
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-gray-500 flex items-center justify-center gap-2">
+                      <span>👆</span>
+                      <span>Select a payment method to continue</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Confirmation (if any downstream logic depends on it) */}
+        {step === 4 && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Booking Confirmed
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Your booking{bookingId ? ` (ID: ${bookingId})` : ""} has been
+                recorded. Our booking team will contact you to finalize payment.
+              </p>
               <div className="flex justify-center gap-4">
                 <button
-                  onClick={() => setStep(2)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                  onClick={() => {
+                    setStep(1);
+                    setSelectedRoom(null);
+                    setPaymentMethod(null);
+                    setBookingId(null);
+                  }}
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
-                  ← Back
+                  Create Another Booking
                 </button>
-                <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                  Complete Booking
+                <button
+                  onClick={() => {
+                    /* navigate or close modal in your app context as needed */
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                >
+                  Done
                 </button>
               </div>
             </div>
