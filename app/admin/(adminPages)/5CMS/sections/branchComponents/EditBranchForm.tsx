@@ -14,70 +14,15 @@ import {
   Trash2,
 } from "lucide-react";
 import ImageUpload from "@/app/components/ImageUpload";
-
-// ===== TYPE DEFINITIONS =====
-interface EditBranchFormProps {
-  branch: any; // Keep any for parent compatibility
-  onCancel: () => void;
-  onSuccess: () => void;
-}
-
-type TabType = "basic" | "contact" | "content";
-
-interface LocationData {
-  city: string;
-  region: string;
-  country: string;
-}
-
-interface ContactData {
-  phone: string;
-  email: string;
-  address: string;
-}
-
-interface Attraction {
-  label: string;
-  image: string;
-}
-
-interface Accommodation {
-  title: string;
-  description: string;
-  image: string;
-}
-
-// NEW: Experience and Package interfaces
-interface ExperiencePackage {
-  id?: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: string;
-}
-
-interface Experience {
-  id?: string;
-  title: string;
-  description: string;
-  highlightImage: string;
-  packages: ExperiencePackage[];
-}
-
-interface FormData {
-  slug: string;
-  branchName: string;
-  description: string;
-  starRating: number;
-  published: boolean;
-  location: LocationData;
-  heroImage: string;
-  directionsUrl: string;
-  contact: ContactData;
-  attractions: Attraction[];
-  accommodations: Accommodation[];
-  experiences: Experience[]; // NEW: Added experiences
-}
+import {
+  EditBranchFormProps,
+  TabType,
+  BranchFormData,
+  Attraction,
+  Accommodation,
+  Experience,
+  ExperiencePackage,
+} from "@/types";
 
 // ===== MAIN COMPONENT =====
 export default function EditBranchForm({
@@ -85,15 +30,22 @@ export default function EditBranchForm({
   onCancel,
   onSuccess,
 }: EditBranchFormProps) {
+  console.log("🔍 BRANCH PROP - Full object:", JSON.stringify(branch, null, 2));
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState<FormData | null>(null);
+  const [formData, setFormData] = useState<BranchFormData | null>(null);
 
   // Initialize form data from branch prop
   useEffect(() => {
     if (branch) {
+      console.log("🔍 USEEFFECT - Raw branch data:", {
+        attractions: branch.attractions,
+        accommodations: branch.accommodations,
+        experiences: branch.experiences,
+      });
+
       setFormData({
         // Basic Info
         slug: branch.slug || "",
@@ -120,40 +72,10 @@ export default function EditBranchForm({
           address: branch.contact?.address || "",
         },
 
-        // Content
-        attractions: Array.isArray(branch.attractions)
-          ? branch.attractions.map((att: any) => ({
-              label: att.label || "",
-              image: att.image || "",
-            }))
-          : [],
-
-        accommodations: Array.isArray(branch.accommodations)
-          ? branch.accommodations.map((acc: any) => ({
-              title: acc.title || "",
-              description: acc.description || "",
-              image: acc.image || "",
-            }))
-          : [],
-
-        // NEW: Experiences with packages
-        experiences: Array.isArray(branch.experiences)
-          ? branch.experiences.map((exp: any) => ({
-              id: exp.id || "",
-              title: exp.title || "",
-              description: exp.description || "",
-              highlightImage: exp.highlightImage || "",
-              packages: Array.isArray(exp.packages)
-                ? exp.packages.map((pkg: any) => ({
-                    id: pkg.id || "",
-                    name: pkg.name || "",
-                    description: pkg.description || "",
-                    price: pkg.price || 0,
-                    duration: pkg.duration || "",
-                  }))
-                : [],
-            }))
-          : [],
+        // ✅ FIX: Use raw arrays directly
+        attractions: branch.attractions || [],
+        accommodations: branch.accommodations || [],
+        experiences: branch.experiences || [],
       });
       setLoading(false);
     }
@@ -164,7 +86,6 @@ export default function EditBranchForm({
     setFormData((prev) => {
       if (!prev) return prev;
 
-      // Handle nested objects (location.xxx, contact.xxx)
       if (field.includes(".")) {
         const [parent, child] = field.split(".");
         if (parent === "location" || parent === "contact") {
@@ -178,16 +99,17 @@ export default function EditBranchForm({
         }
       }
 
-      // Handle top-level fields
       return { ...prev, [field]: value };
     });
   };
 
-  // Handle array data changes (attractions, accommodations, experiences)
+  // Handle array data changes
   const handleArrayChange = (
     type: "attractions" | "accommodations" | "experiences",
     items: Attraction[] | Accommodation[] | Experience[]
   ) => {
+    console.log(`🔄 ARRAY CHANGE - ${type}:`, items);
+
     setFormData((prev) => {
       if (!prev) return prev;
       return {
@@ -197,35 +119,144 @@ export default function EditBranchForm({
     });
   };
 
-  // Save form data to API
-  const handleSave = async () => {
-    if (!formData) return;
-
-    setSaving(true);
-    setErrors({}); // Clear previous errors
-
+  // Save all branch data to respective APIs
+  const saveAllBranchData = async (formData: BranchFormData) => {
     try {
-      const response = await fetch(`/api/admin/branches/${branch.slug}`, {
+      console.log("🔄 SAVE ALL - Starting to save branch data...");
+
+      // Save core branch data
+      console.log("🔄 SAVE ALL - Saving core branch data...");
+      const coreResponse = await fetch(`/api/admin/branches/${branch.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          branchName: formData.branchName,
+          description: formData.description,
+          heroImage: formData.heroImage,
+          directionsUrl: formData.directionsUrl,
+          starRating: formData.starRating,
+          published: formData.published,
+        }),
       });
 
-      if (response.ok) {
+      if (!coreResponse.ok) {
+        throw new Error("Failed to save core branch data");
+      }
+      console.log("✅ SAVE ALL - Core data saved");
+
+      // Save contact data
+      console.log("🔄 SAVE ALL - Saving contact data...");
+      const contactResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/contact`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData.contact),
+        }
+      );
+
+      if (!contactResponse.ok) {
+        throw new Error("Failed to save contact data");
+      }
+      console.log("✅ SAVE ALL - Contact data saved");
+
+      // Save attractions
+      console.log("🔄 SAVE ALL - Saving attractions...", formData.attractions);
+      const attractionsResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/attractions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ attractions: formData.attractions }),
+        }
+      );
+
+      if (!attractionsResponse.ok) {
+        throw new Error("Failed to save attractions");
+      }
+      console.log("✅ SAVE ALL - Attractions saved");
+
+      // Save accommodations
+      console.log(
+        "🔄 SAVE ALL - Saving accommodations...",
+        formData.accommodations
+      );
+      const accommodationsResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/accommodations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accommodations: formData.accommodations }),
+        }
+      );
+
+      if (!accommodationsResponse.ok) {
+        throw new Error("Failed to save accommodations");
+      }
+      console.log("✅ SAVE ALL - Accommodations saved");
+
+      // Save experiences
+      console.log("🔄 SAVE ALL - Saving experiences...", formData.experiences);
+      const experiencesResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/experiences`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ experiences: formData.experiences }),
+        }
+      );
+
+      if (!experiencesResponse.ok) {
+        throw new Error("Failed to save experiences");
+      }
+      console.log("✅ SAVE ALL - Experiences saved");
+
+      console.log("🎉 SAVE ALL - All data saved successfully!");
+      return { success: true };
+    } catch (error) {
+      console.error("❌ SAVE ALL - Error:", error);
+      return { success: false, error: "Failed to save all data" };
+    }
+  };
+
+  // Save form data to API
+  const handleSave = async () => {
+    console.log("🔄 HANDLE SAVE - Button clicked, formData:", formData);
+
+    if (!formData) {
+      console.log("❌ HANDLE SAVE - No formData");
+      return;
+    }
+
+    setSaving(true);
+    setErrors({});
+
+    try {
+      console.log("🔄 HANDLE SAVE - Calling saveAllBranchData...");
+      const result = await saveAllBranchData(formData);
+
+      console.log("🔄 HANDLE SAVE - saveAllBranchData result:", result);
+
+      if (result.success) {
+        console.log("✅ HANDLE SAVE - Success, calling onSuccess");
         onSuccess();
       } else {
-        setErrors({ submit: "Failed to save changes. Please try again." });
+        console.log("❌ HANDLE SAVE - Failed:", result.error);
+        setErrors({
+          submit: result.error || "Failed to save changes. Please try again.",
+        });
       }
     } catch (error) {
+      console.log("❌ HANDLE SAVE - Exception:", error);
       setErrors({
         submit: "Network error. Please check your connection and try again.",
       });
     } finally {
+      console.log("🔄 HANDLE SAVE - Setting saving to false");
       setSaving(false);
     }
   };
 
-  // Show loading state while data is being fetched
   if (loading || !formData) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -303,7 +334,11 @@ export default function EditBranchForm({
           Cancel
         </button>
         <button
-          onClick={handleSave}
+          onClick={() => {
+            console.log("🔄 SAVE BUTTON - Clicked!");
+            console.log("📝 Current formData:", formData);
+            handleSave();
+          }}
           disabled={saving}
           className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
         >
@@ -323,7 +358,7 @@ export default function EditBranchForm({
 
 // ===== BASIC INFO TAB COMPONENT =====
 interface BasicInfoTabProps {
-  formData: FormData;
+  formData: BranchFormData;
   onChange: (field: string, value: string | number | boolean) => void;
 }
 
@@ -564,7 +599,7 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
 
 // ===== CONTENT TAB COMPONENT =====
 interface ContentTabProps {
-  formData: FormData;
+  formData: BranchFormData;
   onAttractionsChange: (items: Attraction[]) => void;
   onAccommodationsChange: (items: Accommodation[]) => void;
   onExperiencesChange: (items: Experience[]) => void;
@@ -654,7 +689,6 @@ function SimpleArrayEditor({
                     placeholder={field.placeholder}
                   />
                 ) : field.name === "image" ? (
-                  // Use ImageUpload component for image fields
                   <ImageUpload
                     value={
                       item[
@@ -736,10 +770,15 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
   const addPackage = (expIndex: number) => {
     const newExperiences = [...experiences];
     newExperiences[expIndex].packages.push({
-      name: "",
+      title: "",
+      subtitle: "",
       description: "",
       price: 0,
       duration: "",
+      inclusions: undefined,
+      category: "CULTURAL",
+      available: true,
+      ctaLabel: "",
     });
     onChange(newExperiences);
   };
@@ -748,7 +787,7 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
     expIndex: number,
     pkgIndex: number,
     field: string,
-    value: string | number
+    value: string | number | boolean
   ) => {
     const newExperiences = [...experiences];
     newExperiences[expIndex].packages[pkgIndex] = {
@@ -882,16 +921,16 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Package Name *
+                      Package Title *
                     </label>
                     <input
                       type="text"
-                      value={pkg.name}
+                      value={pkg.title}
                       onChange={(e) =>
                         updatePackage(
                           expIndex,
                           pkgIndex,
-                          "name",
+                          "title",
                           e.target.value
                         )
                       }
@@ -902,31 +941,31 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
 
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Duration *
+                      Subtitle
                     </label>
                     <input
                       type="text"
-                      value={pkg.duration}
+                      value={pkg.subtitle || ""}
                       onChange={(e) =>
                         updatePackage(
                           expIndex,
                           pkgIndex,
-                          "duration",
+                          "subtitle",
                           e.target.value
                         )
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="2 hours"
+                      placeholder="All-inclusive experience"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Price ($) *
+                      Price ($)
                     </label>
                     <input
                       type="number"
-                      value={pkg.price}
+                      value={pkg.price || 0}
                       onChange={(e) =>
                         updatePackage(
                           expIndex,
@@ -942,12 +981,80 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={pkg.duration || ""}
+                      onChange={(e) =>
+                        updatePackage(
+                          expIndex,
+                          pkgIndex,
+                          "duration",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
+                      placeholder="2 hours"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={pkg.category}
+                      onChange={(e) =>
+                        updatePackage(
+                          expIndex,
+                          pkgIndex,
+                          "category",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
+                    >
+                      <option value="CULTURAL">Cultural</option>
+                      <option value="NATURE">Nature</option>
+                      <option value="ADVENTURE">Adventure</option>
+                      <option value="WELLNESS">Wellness</option>
+                      <option value="ROMANTIC">Romantic</option>
+                      <option value="FAMILY">Family</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`available-${expIndex}-${pkgIndex}`}
+                      checked={pkg.available}
+                      onChange={(e) =>
+                        updatePackage(
+                          expIndex,
+                          pkgIndex,
+                          "available",
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <label
+                      htmlFor={`available-${expIndex}-${pkgIndex}`}
+                      className="ml-2 text-xs font-semibold text-gray-600"
+                    >
+                      Available
+                    </label>
+                  </div>
+
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Description *
+                      Description
                     </label>
                     <textarea
-                      value={pkg.description}
+                      value={pkg.description || ""}
                       onChange={(e) =>
                         updatePackage(
                           expIndex,
@@ -959,6 +1066,26 @@ function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
                       rows={2}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm resize-none"
                       placeholder="Describe what's included in this package..."
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      CTA Label
+                    </label>
+                    <input
+                      type="text"
+                      value={pkg.ctaLabel || ""}
+                      onChange={(e) =>
+                        updatePackage(
+                          expIndex,
+                          pkgIndex,
+                          "ctaLabel",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
+                      placeholder="Book Now"
                     />
                   </div>
                 </div>
@@ -994,6 +1121,11 @@ function ContentTab({
   onAccommodationsChange,
   onExperiencesChange,
 }: ContentTabProps) {
+  console.log("🔍 CONTENT TAB - Rendering with:", {
+    attractions: formData.attractions,
+    accommodations: formData.accommodations,
+    experiences: formData.experiences,
+  });
   return (
     <div className="space-y-8">
       {/* Attractions Section */}

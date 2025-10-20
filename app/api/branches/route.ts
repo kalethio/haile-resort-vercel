@@ -17,11 +17,10 @@ export async function GET() {
             region: true,
           },
         },
-        // ✅ ADD: Include package counts for frontend display
         _count: {
           select: {
             packages: {
-              where: { available: true }, // ✅ Only count available packages
+              where: { available: true },
             },
           },
         },
@@ -29,7 +28,16 @@ export async function GET() {
       orderBy: { branchName: "asc" },
     });
 
-    return NextResponse.json(branches);
+    // ✅ ADD CACHING HEADERS for better performance
+    const response = NextResponse.json(branches);
+
+    // Cache for 5 minutes, serve stale while revalidating for 10 minutes
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+
+    return response;
   } catch (error) {
     console.error("Get branches error:", error);
     return NextResponse.json(

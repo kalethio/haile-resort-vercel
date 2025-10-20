@@ -10,32 +10,16 @@ export async function GET(req: Request, { params }: Params) {
     const { slug } = await params;
 
     const branch = await prisma.branch.findFirst({
-      where: {
-        slug: slug,
-        published: true,
-      },
+      where: { slug },
       include: {
         location: true,
         contact: true,
-        seo: true,
         attractions: true,
         accommodations: true,
         experiences: {
           include: {
-            packages: {
-              where: { available: true }, // ✅ Only include available packages
-              orderBy: { price: "asc" }, // ✅ Order by price for better UX
-            },
+            packages: true,
           },
-          orderBy: { title: "asc" },
-        },
-        // ✅ ADD: Include standalone packages (not linked to experiences)
-        packages: {
-          where: {
-            available: true,
-            experienceId: null, // ✅ Packages without experience relation
-          },
-          orderBy: { price: "asc" },
         },
       },
     });
@@ -44,11 +28,49 @@ export async function GET(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    return NextResponse.json(branch);
+    console.log("🔄 EDIT API - Loading data for:", slug, {
+      attractions: branch.attractions.length,
+      accommodations: branch.accommodations.length,
+      experiences: branch.experiences.length,
+    });
+
+    // ✅ Return the EXACT structure that EditBranchForm expects
+    return NextResponse.json({
+      // Basic Info
+      slug: branch.slug,
+      branchName: branch.branchName,
+      description: branch.description || "",
+      heroImage: branch.heroImage || "",
+      directionsUrl: branch.directionsUrl || "",
+      starRating: branch.starRating || 4,
+      published: branch.published || false,
+
+      // Location
+      location: {
+        city: branch.location?.city || "",
+        region: branch.location?.region || "",
+        country: branch.location?.country || "Ethiopia",
+      },
+
+      // Contact
+      contact: {
+        phone: branch.contact?.phone || "",
+        email: branch.contact?.email || "",
+        address: branch.contact?.address || "",
+      },
+
+      // ✅ CRITICAL: Return the actual arrays from database
+      attractions: branch.attractions,
+      accommodations: branch.accommodations,
+      experiences: branch.experiences.map((exp) => ({
+        ...exp,
+        packages: exp.packages || [],
+      })),
+    });
   } catch (error) {
-    console.error("Get branch error:", error);
+    console.error("Edit form GET error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to load branch data" },
       { status: 500 }
     );
   }

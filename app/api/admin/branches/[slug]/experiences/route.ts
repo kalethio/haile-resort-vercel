@@ -21,19 +21,9 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Delete existing experiences and packages
-    await prisma.$transaction([
-      prisma.package.deleteMany({
-        where: {
-          experience: {
-            branchId: branch.id,
-          },
-        },
-      }),
-      prisma.experience.deleteMany({
-        where: { branchId: branch.id },
-      }),
-      ...experiences.map((exp: any) =>
+    // ✅ FIX: Only create new experiences, don't delete existing ones
+    const createdExperiences = await Promise.all(
+      experiences.map((exp: any) =>
         prisma.experience.create({
           data: {
             externalId: exp.externalId || null,
@@ -43,25 +33,24 @@ export async function POST(req: Request, { params }: Params) {
             branchId: branch.id,
             packages: {
               create: (exp.packages || []).map((pkg: any) => ({
-                // ✅ UPDATED: Include all new fields
                 externalId: pkg.id || pkg.externalId || null,
                 title: pkg.title,
                 subtitle: pkg.subtitle || null,
                 description: pkg.description || null,
                 image: pkg.image || null,
-                price: pkg.price || null, // ✅ NEW
-                duration: pkg.duration || null, // ✅ NEW
-                inclusions: pkg.inclusions || null, // ✅ NEW
-                category: pkg.category || "CULTURAL", // ✅ NEW (default category)
-                available: pkg.available ?? true, // ✅ NEW
+                price: pkg.price || null,
+                duration: pkg.duration || null,
+                inclusions: pkg.inclusions || null,
+                category: pkg.category || "CULTURAL",
+                available: pkg.available ?? true,
                 ctaLabel: pkg.ctaLabel || null,
-                branchId: branch.id, // ✅ NEW: Required field
+                branchId: branch.id,
               })),
             },
           },
         })
-      ),
-    ]);
+      )
+    );
 
     const updatedExperiences = await prisma.experience.findMany({
       where: { branchId: branch.id },

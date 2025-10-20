@@ -3,52 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import BranchTemplate from "../../../components/branches/branchTemplate";
-
-// ---------------------------
-// Types
-// ---------------------------
-export interface Attraction {
-  id: number;
-  externalId?: string;
-  label: string;
-  image?: string;
-}
-
-export interface Accommodation {
-  id: number;
-  title: string;
-  description?: string;
-  image?: string;
-}
-
-export interface ExperiencePackage {
-  id: number;
-  externalId?: string;
-  title: string;
-  subtitle?: string;
-  description?: string;
-  image?: string;
-  ctaLabel?: string;
-}
-
-export interface Experience {
-  id: number;
-  externalId?: string;
-  title: string;
-  description?: string;
-  highlightImage?: string;
-  packages?: ExperiencePackage[];
-}
-
-export interface BranchType {
-  branchName: string;
-  description?: string;
-  heroImage?: string;
-  directionsUrl?: string;
-  attractions?: Attraction[];
-  accommodations?: Accommodation[];
-  experiences?: Experience[];
-}
+import { BranchType } from "@/types";
 
 // ---------------------------
 // Component

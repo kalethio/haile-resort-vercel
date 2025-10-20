@@ -37,38 +37,30 @@ export async function POST(req: Request, { params }: Params) {
       );
     }
 
-    // Update packages for specific experience
-    await prisma.$transaction([
-      prisma.package.deleteMany({
-        where: { experienceId },
-      }),
-      ...packages.map((pkg: any) =>
+    // ✅ FIX: Only create new packages, don't delete existing ones
+    const createdPackages = await Promise.all(
+      packages.map((pkg: any) =>
         prisma.package.create({
           data: {
-            // ✅ UPDATED: Include all new fields
             externalId: pkg.id || pkg.externalId || null,
             title: pkg.title,
             subtitle: pkg.subtitle || null,
             description: pkg.description || null,
             image: pkg.image || null,
-            price: pkg.price || null, // ✅ NEW
-            duration: pkg.duration || null, // ✅ NEW
-            inclusions: pkg.inclusions || null, // ✅ NEW
-            category: pkg.category || "CULTURAL", // ✅ NEW
-            available: pkg.available ?? true, // ✅ NEW
+            price: pkg.price || null,
+            duration: pkg.duration || null,
+            inclusions: pkg.inclusions || null,
+            category: pkg.category || "CULTURAL",
+            available: pkg.available ?? true,
             ctaLabel: pkg.ctaLabel || null,
             experienceId,
-            branchId: experience.branch.id, // ✅ NEW: Required field
+            branchId: experience.branch.id,
           },
         })
-      ),
-    ]);
+      )
+    );
 
-    const updatedPackages = await prisma.package.findMany({
-      where: { experienceId },
-    });
-
-    return NextResponse.json(updatedPackages);
+    return NextResponse.json(createdPackages);
   } catch (error) {
     console.error("Packages update error:", error);
     return NextResponse.json(

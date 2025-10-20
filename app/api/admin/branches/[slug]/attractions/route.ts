@@ -7,13 +7,13 @@ interface Params {
 
 export async function POST(req: Request, { params }: Params) {
   try {
-    const { slug } = await params; // ✅ Add this line
+    const { slug } = await params;
     const body = await req.json();
     const attractions = body.attractions || [];
 
     // Find branch ID
     const branch = await prisma.branch.findFirst({
-      where: { slug: slug }, // ✅ Use awaited slug
+      where: { slug: slug },
       select: { id: true },
     });
 
@@ -21,12 +21,9 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Delete existing and create new attractions
-    await prisma.$transaction([
-      prisma.attraction.deleteMany({
-        where: { branchId: branch.id },
-      }),
-      ...attractions.map((attraction: any) =>
+    // ✅ FIX: Only create new attractions, don't delete existing ones
+    const createdAttractions = await Promise.all(
+      attractions.map((attraction: any) =>
         prisma.attraction.create({
           data: {
             externalId: attraction.id || null,
@@ -35,14 +32,10 @@ export async function POST(req: Request, { params }: Params) {
             branchId: branch.id,
           },
         })
-      ),
-    ]);
+      )
+    );
 
-    const updatedAttractions = await prisma.attraction.findMany({
-      where: { branchId: branch.id },
-    });
-
-    return NextResponse.json(updatedAttractions);
+    return NextResponse.json(createdAttractions);
   } catch (error) {
     console.error("Attractions update error:", error);
     return NextResponse.json(

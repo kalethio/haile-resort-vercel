@@ -7,26 +7,32 @@ interface Params {
 
 export async function POST(req: Request, { params }: Params) {
   try {
-    const { slug } = await params; // ✅ Add this line
+    const { slug } = await params;
     const body = await req.json();
     const accommodations = body.accommodations || [];
 
+    console.log("🔄 ACCOMMODATIONS API - Saving:", {
+      slug,
+      accommodationsCount: accommodations.length,
+      accommodationsData: accommodations,
+    });
+
     // Find branch ID
     const branch = await prisma.branch.findFirst({
-      where: { slug: slug }, // ✅ Use awaited slug
+      where: { slug: slug },
       select: { id: true },
     });
 
     if (!branch) {
+      console.log("❌ ACCOMMODATIONS API - Branch not found:", slug);
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Delete existing and create new accommodations
-    await prisma.$transaction([
-      prisma.accommodation.deleteMany({
-        where: { branchId: branch.id },
-      }),
-      ...accommodations.map((acc: any) =>
+    console.log("🔄 ACCOMMODATIONS API - Found branch ID:", branch.id);
+
+    // ✅ FIX: Only create new accommodations, don't delete existing ones
+    const createdAccommodations = await Promise.all(
+      accommodations.map((acc: any) =>
         prisma.accommodation.create({
           data: {
             title: acc.title,
@@ -35,16 +41,17 @@ export async function POST(req: Request, { params }: Params) {
             branchId: branch.id,
           },
         })
-      ),
-    ]);
+      )
+    );
 
-    const updatedAccommodations = await prisma.accommodation.findMany({
-      where: { branchId: branch.id },
+    console.log("✅ ACCOMMODATIONS API - Saved successfully:", {
+      savedCount: createdAccommodations.length,
+      savedData: createdAccommodations,
     });
 
-    return NextResponse.json(updatedAccommodations);
+    return NextResponse.json(createdAccommodations);
   } catch (error) {
-    console.error("Accommodations update error:", error);
+    console.error("❌ ACCOMMODATIONS API - Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

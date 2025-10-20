@@ -178,6 +178,10 @@ model Booking {
   @@index([branchId, status])
   @@index([branchId, checkIn, checkOut])
   @@index([guestEmail])
+  // Add to Booking model
+@@index([checkIn, checkOut, status])
+@@index([branchId, status, checkIn])
+
 }
 
 model RoomBooking {

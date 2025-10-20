@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Branch {
   slug: string;
@@ -15,9 +16,11 @@ interface Branch {
 export default function CheckBooking() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branch, setBranch] = useState<string>("");
+  const [branchSlug, setBranchSlug] = useState<string>(""); // Store slug for URL
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [guests, setGuests] = useState<number>(2);
+  const router = useRouter();
 
   // Fetch branches from API
   useEffect(() => {
@@ -27,9 +30,10 @@ export default function CheckBooking() {
         if (response.ok) {
           const data = await response.json();
           setBranches(data);
-          // Set default branch to first one's name
+          // Set default branch to first one
           if (data.length > 0) {
             setBranch(data[0].branchName);
+            setBranchSlug(data[0].slug);
           }
         }
       } catch (error) {
@@ -49,16 +53,38 @@ export default function CheckBooking() {
     setCheckout(tomorrow.toISOString().slice(0, 10));
   }, []);
 
+  // Handle branch selection change
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedBranchName = e.target.value;
+    const selectedBranch = branches.find(
+      (b) => b.branchName === selectedBranchName
+    );
+    setBranch(selectedBranchName);
+    setBranchSlug(selectedBranch?.slug || "");
+  };
+
+  // Handle form submission - redirect to booking page
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!branchSlug || !checkin || !checkout) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    // Redirect to booking page with parameters
+    const params = new URLSearchParams({
+      branch: branchSlug,
+      checkIn: checkin,
+      checkOut: checkout,
+      guests: guests.toString(),
+    });
+
+    router.push(`/booking?${params.toString()}`);
+  };
+
   return (
-    <form
-      className="text-bg"
-      onSubmit={(e) => {
-        e.preventDefault();
-        alert(
-          `Booking: ${branch} | ${checkin} → ${checkout} | ${guests} guests`
-        );
-      }}
-    >
+    <form className="text-bg" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
         {/* Branch select - Mobile ultra compact */}
         <div className="flex flex-col w-full sm:w-48">
@@ -69,7 +95,7 @@ export default function CheckBooking() {
             id="branch-select"
             aria-label="Select branch"
             value={branch}
-            onChange={(e) => setBranch(e.target.value)}
+            onChange={handleBranchChange}
             className="w-full rounded-lg border border-white/10 bg-white/6 py-1.5 px-2 text-xs outline-none focus:ring-1 focus:ring-primary/40"
           >
             {branches.map((b) => (
