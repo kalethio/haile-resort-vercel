@@ -1,4 +1,4 @@
-///app/api/availability/route.ts
+// /app/api/availability/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -17,44 +17,78 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // For now, return mock data to test
-    const mockRoomTypes = [
-      {
-        id: 1,
-        name: "Deluxe King Room",
-        description: "Spacious room with king-sized bed and modern amenities",
-        capacity: 2,
-        basePrice: 199,
-        amenities: ["WiFi", "Air Conditioning", "TV", "Mini Bar"],
-        images: [],
-        available: true,
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    // 1. Get branch and room types
+    const branch = await prisma.branch.findUnique({
+      where: { slug: branchSlug },
+      include: {
+        roomTypes: {
+          where: { available: true },
+          include: {
+            rooms: {
+              include: {
+                roomBookings: {
+                  where: {
+                    booking: {
+                      OR: [
+                        { status: "CONFIRMED" },
+                        { status: "CHECKED_IN" },
+                        { status: "PENDING" },
+                      ],
+                      AND: [
+                        {
+                          checkIn: { lt: checkOutDate },
+                          checkOut: { gt: checkInDate },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
-      {
-        id: 2,
-        name: "Executive Suite",
-        description: "Luxurious suite with separate living area",
-        capacity: 4,
-        basePrice: 299,
-        amenities: [
-          "WiFi",
-          "Air Conditioning",
-          "2 TVs",
-          "Mini Bar",
-          "Work Desk",
-        ],
-        images: [],
-        available: true,
-      },
-    ];
+    });
+
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    // 2. Calculate available rooms for each room type
+    const availableRoomTypes = branch.roomTypes
+      .map((roomType) => {
+        const totalRooms = roomType.rooms.length;
+        const bookedRooms = roomType.rooms.filter(
+          (room) => room.roomBookings.length > 0
+        ).length;
+        const availableRooms = totalRooms - bookedRooms;
+
+        return {
+          id: roomType.id,
+          name: roomType.name,
+          description: roomType.description,
+          capacity: roomType.capacity,
+          basePrice: roomType.basePrice,
+          amenities: roomType.amenities || [],
+          images: [], // You can add media queries here
+          available: availableRooms > 0,
+          availableRoomsCount: availableRooms,
+          totalRooms: totalRooms,
+        };
+      })
+      .filter((roomType) => roomType.available && roomType.capacity >= guests);
 
     return NextResponse.json({
-      roomTypes: mockRoomTypes,
+      roomTypes: availableRoomTypes,
       summary: {
         checkIn,
         checkOut,
         guests,
-        totalAvailable: mockRoomTypes.length,
-        branchName: "Hawassa Resort",
+        totalAvailable: availableRoomTypes.length,
+        branchName: branch.branchName,
       },
     });
   } catch (error) {
