@@ -1,6 +1,6 @@
 // app/api/unsubscribe/route.ts
 import { NextResponse } from "next/server";
-import { verifySignedToken } from "@/app/lib/tokens";
+import { verifySignedToken } from "@/app/admin/lib/token";
 import { promises as fs } from "fs";
 import path from "path";
 

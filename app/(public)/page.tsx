@@ -11,10 +11,10 @@ import LatestNewsSection from "../components/1homeSections/6latestNews";
 import SubscribeSection from "../components/1homeSections/7subscribe";
 
 // Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-};
+// const fadeInUp = {
+//   hidden: { opacity: 0, y: 40 },
+//   visible: { opacity: 1, y: 0 },
+// };
 
 export default function Home() {
   return (

@@ -1,0 +1,6 @@
+export type ReviewType = {
+  id: number;
+  name: string;
+  text: string;
+  approved: boolean;
+};

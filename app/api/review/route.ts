@@ -1,91 +1,61 @@
-// app/api/review/route.ts
+// app/api/reviews/route.ts
 import { NextResponse } from "next/server";
-export const runtime = "nodejs";
+import { prisma } from "@/lib/prisma";
 
-import fs from "fs/promises";
-import path from "path";
-import { ReviewType } from "../../data/review";
-
-const filePath = path.join(process.cwd(), "app", "data", "review.json");
-const dirPath = path.dirname(filePath);
-
-async function ensureFileExists() {
-  try {
-    await fs.access(filePath);
-  } catch {
-    // create dir if missing and an initial empty array file
-    await fs.mkdir(dirPath, { recursive: true }).catch(() => {});
-    await fs.writeFile(filePath, "[]", "utf8");
-  }
-}
-
-async function readReviews(): Promise<ReviewType[]> {
-  await ensureFileExists();
-  const raw = await fs.readFile(filePath, "utf8");
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error("reviews root is not an array");
-    return parsed as ReviewType[];
-  } catch (err) {
-    // backup corrupted file and reset to an empty array to recover
-    const backup = `${filePath}.corrupt.${Date.now()}`;
-    await fs.writeFile(backup, raw, "utf8").catch(() => {}); // best effort
-    console.error(`review.json parse error — backing up to ${backup}`, err);
-    await fs.writeFile(filePath, "[]", "utf8");
-    return [];
-  }
-}
-
-async function writeReviews(reviews: ReviewType[]) {
-  const tempPath = `${filePath}.tmp`;
-  await fs.writeFile(tempPath, JSON.stringify(reviews, null, 2), "utf8");
-  await fs.rename(tempPath, filePath);
-}
-
-// GET → return all reviews
 export async function GET() {
   try {
-    const reviews = await readReviews();
-    return NextResponse.json(reviews, { status: 200 });
-  } catch (err) {
-    console.error("Error reading reviews:", err);
+    const reviews = await prisma.review.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(reviews);
+  } catch (error) {
     return NextResponse.json(
-      { error: "Failed to load reviews" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
-// POST → add a new review (unapproved by default)
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => null);
-    if (!body || !body.name || !body.text) {
+    const body: { name: string; text: string; email?: string } =
+      await req.json();
+
+    if (!body.name?.trim() || !body.text?.trim()) {
       return NextResponse.json(
-        { error: "Missing name or text" },
+        { error: "Name and text are required" },
         { status: 400 }
       );
     }
 
-    const reviews = await readReviews();
-    const newReview: ReviewType = {
-      id: reviews.length ? reviews[reviews.length - 1].id + 1 : 1,
-      name: String(body.name).slice(0, 100),
-      text: String(body.text).slice(0, 1000),
-      approved: false,
-    };
+    // Get first branch as default
+    const defaultBranch = await prisma.branch.findFirst();
+    if (!defaultBranch) {
+      return NextResponse.json(
+        { error: "No branch available" },
+        { status: 500 }
+      );
+    }
 
-    reviews.push(newReview);
-    await writeReviews(reviews);
+    const newReview = await prisma.review.create({
+      data: {
+        name: body.name.trim(),
+        text: body.text.trim(),
+        email: body.email?.trim() || null,
+        approved: false,
+        rating: 5, // Required field
+        branchId: defaultBranch.id, // Required field
+      },
+    });
 
     return NextResponse.json(
       { message: "Review submitted", id: newReview.id },
       { status: 201 }
     );
-  } catch (err) {
-    console.error("Error saving review:", err);
+  } catch (error) {
+    console.error("Review creation error:", error);
     return NextResponse.json(
-      { error: "Failed to save review" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -6,29 +6,10 @@ import BranchHero from "../branches/1branchHero";
 import Accommodations from "../branches/3accomodations";
 import Experience from "../branches/4experience";
 import BookingForm from "../bookingform";
-
-interface BranchTemplateProps {
-  branch: {
-    branchName: string;
-    heroImage: string;
-    description?: string;
-    shortDescription?: string;
-    directionsUrl?: string;
-    location?: { mapsUrl?: string };
-    contact?: {
-      phone?: string;
-      email?: string;
-    };
-    attractions?: { image: string; label: string }[];
-    accommodations: any[];
-    experiences?: {
-      highlightImage: string;
-      packages: any[];
-    };
-  };
-}
+import { BranchTemplateProps } from "@/types";
 
 export default function BranchTemplate({ branch }: BranchTemplateProps) {
+  console.log("Branch data:", branch);
   const [heroImage, setHeroImage] = useState(branch.heroImage);
   const [bookingOpen, setBookingOpen] = useState(false);
 
@@ -55,7 +36,7 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
             heroImage: heroImage,
             branchName: branch.branchName,
             description: branch.description || branch.shortDescription || "",
-            directionsUrl: branch.directionsUrl ?? branch.location?.mapsUrl, // ✅ correct property name
+            directionsUrl: branch.directionsUrl ?? branch.location?.mapsUrl,
             contact: branch.contact,
             attractions: branch.attractions || [],
           }}
@@ -74,8 +55,17 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
       </motion.div>
 
       {/* Experiences Section */}
-      {branch.experiences && (
-        <Experience packages={branch.experiences.packages} />
+      {branch.experiences && branch.experiences.length > 0 && (
+        <>
+          {branch.experiences.map((exp, index) => (
+            <Experience
+              key={exp.id || index}
+              image={exp.highlightImage}
+              packages={exp.packages}
+              serviceDescription={[exp.title, exp.description || ""]}
+            />
+          ))}
+        </>
       )}
 
       {/* Booking Form Modal */}

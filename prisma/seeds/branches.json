@@ -1,0 +1,187 @@
+{
+  "addis-ababa": {
+    "branchName": "Addis Ababa",
+    "description": "Luxury stay in the heart of Ethiopia's capital.",
+    "heroImage": "/images/branchesPictures/branchHero1.jpg",
+    "directionsUrl": "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    "contact": {
+      "phone": "+251 911 000 111",
+      "email": "addis@example.com"
+    },
+    "starRating": 5,
+    "published": true,
+    "location": {
+      "city": "Addis Ababa",
+      "region": "Addis Ababa",
+      "country": "Ethiopia"
+    },
+    "attractions": [
+      {
+        "id": "a1",
+        "label": "Lagoon View",
+        "image": "/images/branchesPictures/attraction-tabor.jpg"
+      },
+      {
+        "id": "a2",
+        "label": "Cliff Dining",
+        "image": "/images/branchesPictures/attraction-chembelala.jpg"
+      },
+      {
+        "id": "a3",
+        "label": "Sunset Terrace",
+        "image": "/images/branchesPictures/attraction-St_Gabriel_Church.jpg"
+      }
+    ],
+    "accommodations": [
+      {
+        "title": "FIVE-BEDROOM BEACHFRONT VILLA",
+        "description": "Experience ultimate luxury and ocean views...",
+        "image": "/images/branchesPictures/Accomodation1.jpg"
+      },
+      {
+        "title": "DELUXE OCEAN-VIEW ROOM",
+        "description": "Relax in our deluxe ocean-view room...",
+        "image": "/images/branchesPictures/Accomodation2.jpg"
+      },
+      {
+        "title": "TROPICAL GARDEN SUITE",
+        "description": "Surrounded by lush gardens, this suite offers tranquility...",
+        "image": "/images/branchesPictures/Accomodation3.jpg"
+      },
+      {
+        "title": "PENTHOUSE SUITE WITH TERRACE",
+        "description": "Enjoy panoramic city views from the private terrace...",
+        "image": "/images/branchesPictures/Accomodation4.jpg"
+      },
+      {
+        "title": "COZY MOUNTAIN COTTAGE",
+        "description": "Nestled in the mountains, this cozy cottage is ideal...",
+        "image": "/images/branchesPictures/Accomodation5.jpg"
+      }
+    ],
+    "experiences": {
+      "highlightImage": "/images/branches/addis-experience.jpg",
+      "packages": [
+        {
+          "id": "family",
+          "title": "Family Vacation",
+          "subtitle": "Unforgettable Moments Together",
+          "description": "Create lasting memories...",
+          "image": "/images/branchesPictures/Experience1.jpg",
+          "ctaLabel": "View Package"
+        },
+        {
+          "id": "romantic",
+          "title": "Romantic Getaway",
+          "subtitle": "A Retreat for Two",
+          "description": "Escape with your special someone...",
+          "image": "/images/branchesPictures/Experience2.jpg",
+          "ctaLabel": "View Package"
+        }
+      ]
+    },
+    "seo": {
+      "title": "Haile Grand Addis Ababa | Luxury Hotel",
+      "description": "Luxury stay in the heart of Addis Ababa with premium amenities.",
+      "keywords": [
+        "Addis Ababa",
+        "Haile Resort",
+        "Luxury Hotel",
+        "Ethiopia"
+      ]
+    }
+  },
+  "hawassa": {
+    "branchName": "Hawassa",
+    "description": "Relaxing lakeside escape with premium amenities.",
+    "heroImage": "/images/branchesPictures/branchHero2.jpg",
+    "directionsUrl": "https://maps.app.goo.gl/moSASbKtrToTsASs8",
+    "contact": {
+      "phone": "+251 911 111 222",
+      "email": "hawassa@example.com"
+    },
+    "starRating": 4,
+    "published": true,
+    "location": {
+      "city": "Hawassa",
+      "region": "Sidama",
+      "country": "Ethiopia"
+    },
+    "attractions": [
+      {
+        "id": "a1",
+        "label": "Lagoon View",
+        "image": "/images/branchesPictures/attraction-tabor.jpg"
+      },
+      {
+        "id": "a2",
+        "label": "Cliff Dining",
+        "image": "/images/branchesPictures/attraction-chembelala.jpg"
+      },
+      {
+        "id": "a3",
+        "label": "Sunset Terrace",
+        "image": "/images/branchesPictures/attraction-St_Gabriel_Church.jpg"
+      }
+    ],
+    "accommodations": [
+      {
+        "title": "FIVE-BEDROOM BEACHFRONT VILLA",
+        "description": "Experience ultimate luxury and ocean views...",
+        "image": "/images/branchesPictures/Accomodation1.jpg"
+      },
+      {
+        "title": "DELUXE OCEAN-VIEW ROOM",
+        "description": "Relax in our deluxe ocean-view room...",
+        "image": "/images/branchesPictures/Accomodation2.jpg"
+      },
+      {
+        "title": "TROPICAL GARDEN SUITE",
+        "description": "Surrounded by lush gardens, this suite offers tranquility...",
+        "image": "/images/branchesPictures/Accomodation3.jpg"
+      },
+      {
+        "title": "PENTHOUSE SUITE WITH TERRACE",
+        "description": "Enjoy panoramic city views from the private terrace...",
+        "image": "/images/branchesPictures/Accomodation4.jpg"
+      },
+      {
+        "title": "COZY MOUNTAIN COTTAGE",
+        "description": "Nestled in the mountains, this cozy cottage is ideal...",
+        "image": "/images/branchesPictures/Accomodation5.jpg"
+      }
+    ],
+    "experiences": {
+      "highlightImage": "/images/branches/hawassa-experience.jpg",
+      "packages": [
+        {
+          "id": "family",
+          "title": "Family Vacation",
+          "subtitle": "Unforgettable Moments Together",
+          "description": "Create lasting memories...",
+          "image": "/images/branchesPictures/Experience1.jpg",
+          "ctaLabel": "View Package"
+        },
+        {
+          "id": "romantic",
+          "title": "Romantic Getaway",
+          "subtitle": "A Retreat for Two",
+          "description": "Escape with your special someone...",
+          "image": "/images/branchesPictures/Experience2.jpg",
+          "ctaLabel": "View Package"
+        }
+      ]
+    },
+    "seo": {
+      "title": "Haile Resort Hawassa | Lakeside Escape",
+      "description": "A tranquil getaway by the lake with luxury and nature combined.",
+      "keywords": [
+        "Hawassa",
+        "Resort",
+        "Lake View",
+        "Ethiopia",
+        "Haile Resort"
+      ]
+    }
+  }
+}

@@ -7,7 +7,7 @@ export default function Review() {
   // State to store the list of approved reviews
   const [reviews, setReviews] = useState<ReviewType[]>([]);
   // State for review form input fields
-  const [form, setForm] = useState({ name: "", text: "" });
+  const [form, setForm] = useState({ name: "", text: "", email: "" });
   // State to indicate if the form is currently submitting
   const [submitting, setSubmitting] = useState(false);
   // State to indicate if the review has been successfully submitted
@@ -48,7 +48,7 @@ export default function Review() {
       }
 
       // Reset form and show success message
-      setForm({ name: "", text: "" });
+      setForm({ name: "", text: "", email: "" });
       setSubmitted(true);
     } catch (err: any) {
       console.error(err);
@@ -121,6 +121,15 @@ export default function Review() {
                   onChange={(e) => setForm({ ...form, text: e.target.value })}
                   className="w-full border border-black/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40"
                   required
+                />
+
+                {/* Email input */}
+                <input
+                  type="email"
+                  placeholder="Your Email (optional)"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full border border-black/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40"
                 />
                 {/* Submit button */}
                 <button

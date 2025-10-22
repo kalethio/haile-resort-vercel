@@ -1,17 +1,59 @@
-// src/app/(public)/branches/[branch]/page.tsx
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BRANCHES } from "../../../data/branches";
 import BranchTemplate from "../../../components/branches/branchTemplate";
+import { BranchType } from "@/types";
 
+// ---------------------------
+// Component
+// ---------------------------
 export default function BranchPage() {
   const params = useParams();
-  const branchKey = params?.branch as string;
+  const branchSlug = params?.branch as string;
 
-  const branchData = BRANCHES[branchKey];
+  const [branchData, setBranchData] = useState<BranchType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  console.log("branchData:", branchData);
+  useEffect(() => {
+    async function fetchBranch() {
+      try {
+        const res = await fetch(`/api/branches/${branchSlug}`);
+        if (!res.ok) throw new Error("Branch not found");
+
+        const data: BranchType = await res.json();
+
+        // map experiences to always include packages array
+        const mappedData: BranchType = {
+          ...data,
+          attractions: data.attractions ?? [],
+          accommodations: data.accommodations ?? [],
+          experiences:
+            data.experiences?.map((exp) => ({
+              ...exp,
+              packages: exp.packages ?? [],
+            })) ?? [],
+        };
+
+        setBranchData(mappedData);
+      } catch (err) {
+        console.error(err);
+        setBranchData(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBranch();
+  }, [branchSlug]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-center">
+        <p className="text-xl font-semibold text-gray-700">Loading branch...</p>
+      </div>
+    );
+  }
 
   if (!branchData) {
     return (
@@ -23,16 +65,5 @@ export default function BranchPage() {
     );
   }
 
-  // MAP the branch to the expected shape
-  const mappedBranch = {
-    branchName: branchData.branchName,
-    shortDescription: branchData.description,
-    heroImage: branchData.heroImage,
-    attractions: branchData.attractions, // if BranchHero needs it
-    location: { mapsUrl: branchData.directionsUrl },
-    accommodations: branchData.accommodations,
-    experiences: branchData.experiences,
-  };
-
-  return <BranchTemplate branch={mappedBranch} />;
+  return <BranchTemplate branch={branchData} />;
 }
