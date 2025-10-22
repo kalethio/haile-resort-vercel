@@ -1,6 +1,4 @@
-// app/admin/layout.tsx
 "use client";
-
 import React from "react";
 import Sidebar from "./components/sidebar";
 import NotificationBell from "./components/notification";
@@ -38,7 +36,6 @@ export default function AdminLayout({
           <div className="font-semibold text-lg">🏨 Admin Dashboard</div>
           <div className="flex items-center space-x-4">
             <NotificationBell />
-            {/* Future: Add user avatar / account dropdown */}
           </div>
         </header>
 
