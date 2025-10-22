@@ -173,7 +173,7 @@ export default function HeroHybridCarousel() {
           </motion.p> */}
 
           {/* Booking Form */}
-          <div className="mt-6 sm:mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-primary/50">
+          <div className="mt-8 sm:mt-12 w-fit h-fit bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-white/20">
             <CheckBooking />
           </div>
 
