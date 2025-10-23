@@ -7,7 +7,7 @@ import {
   useTransform,
 } from "framer-motion";
 import Image from "next/image";
-import CheckBooking from "./checkbooking";
+import CheckBooking from "@/app/(public)/booking/components/checkbooking";
 import Link from "next/link";
 
 // Types for API data
@@ -173,9 +173,8 @@ export default function HeroHybridCarousel() {
           </motion.p> */}
 
           {/* Booking Form */}
-          <div className="mt-8 sm:mt-12 w-fit h-fit bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-white/20">
-            <CheckBooking />
-          </div>
+
+          <CheckBooking />
 
           {/* Dynamic Service Heading */}
           <AnimatePresence mode="wait">

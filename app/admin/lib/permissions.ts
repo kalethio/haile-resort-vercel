@@ -1,4 +1,4 @@
-// /lib/permissions.ts
+// admin/lib/permissions.ts
 export const PERMISSIONS = {
   "reservations.view": "View Reservations",
   "guests.view": "View Guests",

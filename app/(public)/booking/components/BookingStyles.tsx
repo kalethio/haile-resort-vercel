@@ -1,0 +1,16 @@
+// app/booking/components/BookingStyles.tsx
+export const bookingStyles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fadeInUp {
+    animation: fadeInUp 0.6s ease-out both;
+  }
+`;

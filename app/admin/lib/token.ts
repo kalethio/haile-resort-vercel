@@ -1,4 +1,4 @@
-// app/lib/tokens.ts
+// admin/lib/tokens.ts
 import crypto from "crypto";
 
 const SECRET =

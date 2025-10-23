@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  seed = "tsx prisma/seed.ts"
+  seed     = "tsx prisma/seed.ts"
 }
 
 datasource db {
@@ -8,262 +8,224 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== CORE SYSTEM MODELS ====================
-
 model User {
   id        Int        @id @default(autoincrement())
   name      String?
   email     String     @unique
   role      Role       @default(EDITOR)
-  branchId  Int?      
+  branchId  Int?
   createdAt DateTime   @default(now())
-  
-  branch    Branch?    @relation(fields: [branchId], references: [id])
   auditLogs AuditLog[]
-  
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+
   @@index([branchId, role])
 }
 
 model Branch {
-  id             Int             @id @default(autoincrement())
-  slug           String          @unique
-  branchName     String
-  description    String?
-  heroImage      String?        
-  directionsUrl  String?
-  starRating     Int?
-  published      Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  email          String?
-  phone          String?
-  
-  // Relations
-  accommodations Accommodation[]
-  attractions    Attraction[]
-  auditLogs      AuditLog[]
-  seo            BranchSeo?
-  contact        Contact?
-  experiences    Experience[]
-  location       Location?
-  rooms          Room[]
-  roomTypes      RoomType[]
-  bookings       Booking[]
-  staff          User[]          
-  guests         Guest[]
-  websitePages   WebsitePage[]
-  newsArticles   NewsArticle[]
-  jobOpenings    JobOpening[]
-  reviews        Review[]
-  packages       Package[]  // ✅ FIXED: Changed from WebsitePackage to Package
-  teamMembers    TeamMember[]
-  faqs           FAQ[]
-  galleryItems   Gallery[]
-  mediaAssets    MediaAsset[]
+  id               Int               @id @default(autoincrement())
+  slug             String            @unique
+  branchName       String
+  description      String?
+  heroImage        String?
+  directionsUrl    String?
+  starRating       Int?
+  published        Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  email            String?
+  phone            String?
+  accommodations   Accommodation[]
+  attractions      Attraction[]
+  auditLogs        AuditLog[]
+  bookings         Booking[]
+  seo              BranchSeo?
   chatbotResponses ChatbotResponse[]
-  promoCodes     PromoCode[]
-  
+  contact          Contact?
+  experiences      Experience[]
+  faqs             FAQ[]
+  galleryItems     Gallery[]
+  guests           Guest[]
+  jobOpenings      JobOpening[]
+  location         Location?
+  mediaAssets      MediaAsset[]
+  newsArticles     NewsArticle[]
+  packages         Package[]
+  promoCodes       PromoCode[]
+  reviews          Review[]
+  rooms            Room[]
+  roomTypes        RoomType[]
+  teamMembers      TeamMember[]
+  staff            User[]
+  websitePages     WebsitePage[]
+
   @@index([published, slug])
 }
 
-// ==================== HOTEL OPERATIONS ====================
-
 model Guest {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  firstName     String
-  lastName      String
-  phone         String?
-  preferences   Json?    
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  branchId      Int
-  branch        Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  bookings      Booking[]
-  reviews       Review[]
+  id               Int                    @id @default(autoincrement())
+  email            String                 @unique
+  firstName        String
+  lastName         String
+  phone            String?
+  preferences      Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  branchId         Int
+  bookings         Booking[]
+  branch           Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   favoritePackages GuestFavoritePackage[]
-  loyaltyPoints LoyaltyPoints[]
-  
+  loyaltyPoints    LoyaltyPoints[]
+  reviews          Review[]
+
   @@index([branchId, email])
 }
 
 model RoomType {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  capacity    Int
-  childrenCapacity Int @default(0)
-  basePrice   Float
-  amenities   Json?
-  available   Boolean  @default(true)
-  totalRooms  Int
-  
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
-  rooms       Room[]
-  roomTypeMedia RoomTypeMedia[]
-  
+  id               Int             @id @default(autoincrement())
+  name             String
+  description      String?
+  capacity         Int
+  childrenCapacity Int             @default(0)
+  basePrice        Float
+  amenities        Json?
+  available        Boolean         @default(true)
+  totalRooms       Int
+  branchId         Int
+  rooms            Room[]
+  branch           Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  roomTypeMedia    RoomTypeMedia[]
+
   @@unique([branchId, name])
   @@index([branchId, available])
 }
 
 model Room {
-  id          Int      @id @default(autoincrement())
-  roomNumber  String
-  floor       String?
-  features    Json?
-  status      RoomStatus @default(AVAILABLE)
-  
-  roomTypeId  Int
-  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id           Int           @id @default(autoincrement())
+  roomNumber   String
+  floor        String?
+  features     Json?
+  status       RoomStatus    @default(AVAILABLE)
+  roomTypeId   Int
+  branchId     Int
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  roomType     RoomType      @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
   roomBookings RoomBooking[]
-  
+
   @@unique([branchId, roomNumber])
   @@index([roomTypeId, status])
 }
 
 model Booking {
-  id            String   @id @default(uuid())
-  type          BookingType @default(ROOM)
-  status        BookingStatus @default(PENDING)
-  
-  // Guest Information
-  guestName     String
-  guestEmail    String
-  guestPhone    String?
-  guestCountry  String?
+  id              String           @id @default(uuid())
+  type            BookingType      @default(ROOM)
+  status          BookingStatus    @default(PENDING)
+  guestName       String
+  guestEmail      String
+  guestPhone      String?
+  guestCountry    String?
   specialRequests String?
-  
-  // Dates & Party
-  checkIn       DateTime
-  checkOut      DateTime
-  adults        Int
-  children      Int
-  infants       Int?     @default(0)
-  
-  // Pricing
-  baseAmount    Float
-  taxAmount     Float    @default(0)
-  discountAmount Float   @default(0)
-  totalAmount   Float
-  currency      String   @default("USD")
-  
-  // Loyalty & Promotions
-  pointsUsed    Int?     @default(0)
-  pointsEarned  Int?
-  promoCodeId   Int?
-  
-  // Timestamps
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  confirmedAt   DateTime?
-  
-  // Relations
-  branchId      Int
-  branch        Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  guestId       Int?
-  guest         Guest?   @relation(fields: [guestId], references: [id])
-  promoCode     PromoCode? @relation(fields: [promoCodeId], references: [id])
-  
-  roomBookings  RoomBooking[]
+  checkIn         DateTime
+  checkOut        DateTime
+  adults          Int
+  children        Int
+  infants         Int?             @default(0)
+  baseAmount      Float
+  taxAmount       Float            @default(0)
+  discountAmount  Float            @default(0)
+  totalAmount     Float
+  currency        String           @default("USD")
+  pointsUsed      Int?             @default(0)
+  pointsEarned    Int?
+  promoCodeId     Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  confirmedAt     DateTime?
+  branchId        Int
+  guestId         Int?
+  promoCode       PromoCode?       @relation(fields: [promoCodeId], references: [id])
+  guest           Guest?           @relation(fields: [guestId], references: [id])
+  branch          Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  loyaltyPoints   LoyaltyPoints[]
   packageBookings PackageBooking[]
-  payments      Payment[]
-  loyaltyPoints LoyaltyPoints[]
-  
+  payments        Payment[]
+  roomBookings    RoomBooking[]
+
   @@index([branchId, status])
   @@index([branchId, checkIn, checkOut])
   @@index([guestEmail])
-  // Add to Booking model
-@@index([checkIn, checkOut, status])
-@@index([branchId, status, checkIn])
-
 }
 
 model RoomBooking {
-  id        Int      @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   pricePerNight Float
-  totalNights Int
-  
-  bookingId String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  roomId    Int
-  room      Room   @relation(fields: [roomId], references: [id])
-  
+  totalNights   Int
+  bookingId     String
+  roomId        Int
+  room          Room    @relation(fields: [roomId], references: [id])
+  booking       Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
   @@unique([roomId, bookingId])
   @@index([bookingId])
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  amount      Float
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
-  transactionId String?
-  isInternational Boolean @default(false)
-  currency    String   @default("USD")
-  createdAt   DateTime @default(now())
-  
-  bookingId   String
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
+  id              Int           @id @default(autoincrement())
+  amount          Float
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?
+  isInternational Boolean       @default(false)
+  currency        String        @default("USD")
+  createdAt       DateTime      @default(now())
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
   @@index([bookingId, status])
 }
 
-// ==================== PACKAGE SYSTEM ====================
-
 model Package {
-  id           Int        @id @default(autoincrement())
-  externalId   String?
-  title        String
-  subtitle     String?
-  description  String?
-  image        String?
-  price        Float?
-  duration     String?
-  inclusions   Json?
-  category     PackageCategory
-  available    Boolean    @default(true)
-  ctaLabel     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  
-  // Dual relationships
-  branchId     Int
-  branch       Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  experienceId Int?
-  experience   Experience? @relation(fields: [experienceId], references: [id], onDelete: Cascade)
-  
-  // Package-specific relations
-  favoriteOf   GuestFavoritePackage[]
+  id              Int                    @id @default(autoincrement())
+  externalId      String?
+  title           String
+  subtitle        String?
+  description     String?
+  image           String?
+  price           Float?
+  duration        String?
+  inclusions      Json?
+  category        PackageCategory
+  available       Boolean                @default(true)
+  ctaLabel        String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  branchId        Int
+  experienceId    Int?
+  favoriteOf      GuestFavoritePackage[]
+  experience      Experience?            @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  branch          Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   packageBookings PackageBooking[]
-  packageMedia PackageMedia[]
-  
+  packageMedia    PackageMedia[]
+
   @@index([branchId, available])
   @@index([experienceId])
   @@index([category])
 }
 
 model PackageBooking {
-  id           Int       @id @default(autoincrement())
-  packageTitle String
-  packageDescription String?
-  packagePrice Float
-  startDate    DateTime
-  endDate      DateTime?
-  additionalServices Json?
-  guestCount   Int
+  id                  Int       @id @default(autoincrement())
+  packageTitle        String
+  packageDescription  String?
+  packagePrice        Float
+  startDate           DateTime
+  endDate             DateTime?
+  additionalServices  Json?
+  guestCount          Int
   specialInstructions String?
-  
-  bookingId    String
-  booking      Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  packageId    Int
-  package      Package @relation(fields: [packageId], references: [id]) // ✅ FIXED: Changed from WebsitePackage to Package
-  
+  bookingId           String
+  packageId           Int
+  package             Package   @relation(fields: [packageId], references: [id])
+  booking             Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
   @@index([packageId, startDate])
 }
 
@@ -272,223 +234,196 @@ model GuestFavoritePackage {
   guestId   Int
   packageId Int
   createdAt DateTime @default(now())
-  
-  guest     Guest   @relation(fields: [guestId], references: [id], onDelete: Cascade)
-  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
   @@unique([guestId, packageId])
 }
 
-enum PackageCategory {
-  FAMILY
-  ROMANTIC  
-  WELLNESS
-  CULTURAL
-  NATURE
-}
-
-// ==================== MEDIA & GALLERY SYSTEM ====================
-
 model MediaAsset {
-  id          Int      @id @default(autoincrement())
-  filename    String
-  url         String
-  type        String   
-  size        Int?     
-  createdAt   DateTime @default(now())
-  
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
-  roomTypeMedia RoomTypeMedia[]
-  packageMedia  PackageMedia[]
+  id            Int             @id @default(autoincrement())
+  filename      String
+  url           String
+  type          String
+  size          Int?
+  createdAt     DateTime        @default(now())
+  branchId      Int
   galleryItems  Gallery[]
-  
+  branch        Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  packageMedia  PackageMedia[]
+  roomTypeMedia RoomTypeMedia[]
+
   @@index([branchId, type])
 }
 
 model RoomTypeMedia {
-  id          Int       @id @default(autoincrement())
-  isHighlight Boolean   @default(false)
-  order       Int       @default(0)
-  
+  id          Int        @id @default(autoincrement())
+  isHighlight Boolean    @default(false)
+  order       Int        @default(0)
   roomTypeId  Int
-  roomType    RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
   mediaId     Int
   media       MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  
+  roomType    RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
   @@unique([roomTypeId, mediaId])
   @@index([roomTypeId, isHighlight])
 }
 
 model PackageMedia {
-  id          Int       @id @default(autoincrement())
-  isHighlight Boolean   @default(false)
-  order       Int       @default(0)
-  
+  id          Int        @id @default(autoincrement())
+  isHighlight Boolean    @default(false)
+  order       Int        @default(0)
   packageId   Int
-  package     Package   @relation(fields: [packageId], references: [id], onDelete: Cascade) // ✅ FIXED: Changed from WebsitePackage to Package
   mediaId     Int
   media       MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  
+  package     Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
   @@unique([packageId, mediaId])
   @@index([packageId, isHighlight])
 }
 
 model Gallery {
-  id          Int      @id @default(autoincrement())
-  title       String?
-  categories  Json?
-  type        String   
-  order       Int      @default(0)
-  published   Boolean  @default(true)
-  
-  mediaId     Int
-  media       MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id         Int        @id @default(autoincrement())
+  title      String?
+  categories Json?
+  type       String
+  order      Int        @default(0)
+  published  Boolean    @default(true)
+  mediaId    Int
+  branchId   Int
+  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  media      MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
   @@index([branchId, published])
 }
 
-// ==================== CMS & WEBSITE FEATURES ====================
-
 model WebsitePage {
-  id          Int      @id @default(autoincrement())
-  title       String
-  slug        String   @unique
-  content     Json    
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id        Int      @id @default(autoincrement())
+  title     String
+  slug      String   @unique
+  content   Json
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   @@index([branchId, published])
 }
 
 model NewsArticle {
-  id          Int      @id @default(autoincrement())
-  title       String
-  content     String
-  excerpt     String?
+  id            Int      @id @default(autoincrement())
+  title         String
+  content       String
+  excerpt       String?
   featuredImage String?
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  published     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  branchId      Int
+  branch        Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   @@index([branchId, published, createdAt])
 }
 
 model Review {
-  id          Int       @id @default(autoincrement())
-  name        String
-  email       String?
-  rating      Int       
-  text        String
-  approved    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  
-  guestId     Int?
-  guest       Guest?    @relation(fields: [guestId], references: [id])
-  branchId    Int
-  branch      Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  rating    Int
+  text      String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  guestId   Int?
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  guest     Guest?   @relation(fields: [guestId], references: [id])
+
   @@index([branchId, approved, rating])
   @@index([guestId])
 }
 
 model JobOpening {
-  id           Int      @id @default(autoincrement())
+  id           Int              @id @default(autoincrement())
   title        String
   department   String?
   description  String
   requirements Json?
   location     String?
-  type         String?  
-  published    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  type         String?
+  published    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   branchId     Int
-  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   applications JobApplication[]
-  
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   @@index([branchId, published, type])
 }
 
 model JobApplication {
-  id               Int      @id @default(autoincrement())
-  jobId            Int
-  job              JobOpening @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  fullName         String
-  email            String
-  phone            String?
-  currentLocation  String?
-  educationLevel   String?
-  yearsExperience  Int?
-  skills           Json?
-  languages        Json?
-  certifications   Json?
-  availabilityDate DateTime?
+  id                Int               @id @default(autoincrement())
+  jobId             Int
+  fullName          String
+  email             String
+  phone             String?
+  currentLocation   String?
+  educationLevel    String?
+  yearsExperience   Int?
+  skills            Json?
+  languages         Json?
+  certifications    Json?
+  availabilityDate  DateTime?
   willingToRelocate Boolean
-  expectedSalary   String?
-  coverLetter      String?
-  resumeUrl        String?
-  status           ApplicationStatus @default(PENDING)
-  submittedAt      DateTime @default(now())
-  
+  expectedSalary    String?
+  coverLetter       String?
+  resumeUrl         String?
+  status            ApplicationStatus @default(PENDING)
+  submittedAt       DateTime          @default(now())
+  job               JobOpening        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
   @@index([jobId, status, submittedAt])
 }
 
 model TeamMember {
-  id          Int      @id @default(autoincrement())
-  name        String
-  position    String
-  bio         String?
-  image       String?
-  order       Int      @default(0)
-  published   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  
-  branchId    Int
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id        Int      @id @default(autoincrement())
+  name      String
+  position  String
+  bio       String?
+  image     String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   @@index([branchId, published, order])
 }
 
 model FAQ {
-  id          Int      @id @default(autoincrement())
-  question    String
-  answer      String
-  category    String?
-  order       Int      @default(0)
-  published   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  
-  branchId    Int?
-  branch      Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  branchId  Int?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   @@index([branchId, category, published])
 }
 
-// ==================== CHATBOT & MARKETING ====================
-
 model ChatbotResponse {
-  id        Int      @id @default(autoincrement())
-  triggers  Json?
-  response  String
-  role      String?  
-  order     Int      @default(0)
-  active    Boolean  @default(true)
-  
-  branchId  Int?
-  branch    Branch?  @relation(fields: [branchId], references: [id])
-  
+  id       Int     @id @default(autoincrement())
+  triggers Json?
+  response String
+  role     String?
+  order    Int     @default(0)
+  active   Boolean @default(true)
+  branchId Int?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
   @@index([branchId, active, role])
 }
 
@@ -498,69 +433,61 @@ model Subscriber {
   name      String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
-  
+
   @@index([email, active])
 }
 
 model EmailTemplate {
-  id          Int      @id @default(autoincrement())
-  name        String
-  subject     String
-  content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  subject   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Campaign {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   subject     String
   content     String
   targetCount Int
   status      String
   sentAt      DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
-// ==================== PROMOTIONS & LOYALTY ====================
-
 model PromoCode {
-  id           Int      @id @default(autoincrement())
-  code         String   @unique
-  description  String?
-  discountType DiscountType
+  id            Int          @id @default(autoincrement())
+  code          String       @unique
+  description   String?
+  discountType  DiscountType
   discountValue Float
   minimumAmount Float?
-  validFrom    DateTime
-  validUntil   DateTime
-  usageLimit   Int?
-  usedCount    Int      @default(0)
-  active       Boolean  @default(true)
-  
-  branchId     Int?
-  branch       Branch?  @relation(fields: [branchId], references: [id])
-  
-  bookings     Booking[]
-  
+  validFrom     DateTime
+  validUntil    DateTime
+  usageLimit    Int?
+  usedCount     Int          @default(0)
+  active        Boolean      @default(true)
+  branchId      Int?
+  bookings      Booking[]
+  branch        Branch?      @relation(fields: [branchId], references: [id])
+
   @@index([code, active, branchId])
 }
 
 model LoyaltyPoints {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   points    Int
   reason    String
   expiresAt DateTime?
-  
   guestId   Int
-  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
   bookingId String?
-  booking   Booking? @relation(fields: [bookingId], references: [id])
-  
-  createdAt DateTime @default(now())
-  
+  createdAt DateTime  @default(now())
+  booking   Booking?  @relation(fields: [bookingId], references: [id])
+  guest     Guest     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
   @@index([guestId, expiresAt])
 }
-
-// ==================== EXISTING MODELS ====================
 
 model Contact {
   id        Int      @id @default(autoincrement())
@@ -634,11 +561,17 @@ model AuditLog {
   diff       Json?
   createdAt  DateTime @default(now())
   branchId   Int?
-  Branch     Branch?  @relation(fields: [branchId], references: [id])
   user       User?    @relation(fields: [userId], references: [id])
+  Branch     Branch?  @relation(fields: [branchId], references: [id])
 }
 
-// ==================== ENUMS ====================
+enum PackageCategory {
+  FAMILY
+  ROMANTIC
+  WELLNESS
+  CULTURAL
+  NATURE
+}
 
 enum Role {
   SUPER_ADMIN

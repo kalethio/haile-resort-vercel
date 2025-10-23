@@ -1,4 +1,3 @@
-///app/api/bookings/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
       specialRequests = "",
     } = body;
 
-    // Validate required fields
+    // ✅ Validate required fields
     if (
       !branchSlug ||
       !roomTypeId ||
@@ -48,12 +47,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Check if branch exists
+    // ✅ Validate dates
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    const localCheckIn = new Date(checkIn);
+    localCheckIn.setHours(0, 0, 0, 0);
+
+    if (localCheckIn < today) {
+      return NextResponse.json(
+        { error: "Check-in date must be today or in the future" },
+        { status: 400 }
+      );
+    }
+
+    if (checkOutDate <= checkInDate) {
+      return NextResponse.json(
+        { error: "Check-out date must be after check-in" },
+        { status: 400 }
+      );
+    }
+
+    // 1️⃣ Check branch existence
     const branch = await prisma.branch.findUnique({
       where: { slug: branchSlug },
     });
-
-    console.log("🔍 Branch lookup:", { branchSlug, branchFound: !!branch });
 
     if (!branch) {
       return NextResponse.json(
@@ -62,18 +83,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Check if room type exists
+    // 2️⃣ Check room type availability
     const roomType = await prisma.roomType.findFirst({
       where: {
         id: parseInt(roomTypeId),
         branchId: branch.id,
         available: true,
       },
-    });
-
-    console.log("🔍 RoomType lookup:", {
-      roomTypeId,
-      roomTypeFound: !!roomType,
     });
 
     if (!roomType) {
@@ -85,8 +101,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Check available rooms count
-    const availableRoomsCount = await prisma.room.count({
+    // ✅ Validate guest capacity
+    if (adults > roomType.capacity) {
+      return NextResponse.json(
+        {
+          error: `Room capacity exceeded. Maximum ${roomType.capacity} guests allowed.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 3️⃣ Check available rooms
+    let availableRoom = await prisma.room.findFirst({
       where: {
         roomTypeId: parseInt(roomTypeId),
         branchId: branch.id,
@@ -94,14 +120,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log("🔍 Available rooms:", availableRoomsCount);
-
-    // For testing, create a mock booking if no rooms exist
-    if (availableRoomsCount === 0) {
-      console.log("⚠️ No rooms available, creating test room...");
-
-      // Create a test room for development
-      const testRoom = await prisma.room.create({
+    if (!availableRoom) {
+      console.log(
+        "⚠️ No available rooms — creating test room for development..."
+      );
+      availableRoom = await prisma.room.create({
         data: {
           roomNumber: `TEST-${Date.now()}`,
           roomTypeId: parseInt(roomTypeId),
@@ -109,14 +132,9 @@ export async function POST(request: NextRequest) {
           status: "AVAILABLE",
         },
       });
-
-      console.log("✅ Created test room:", testRoom.id);
     }
 
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
-
-    // Calculate pricing
+    // 🧮 Pricing calculation
     const nights = Math.ceil(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -124,7 +142,7 @@ export async function POST(request: NextRequest) {
     const taxAmount = baseAmount * 0.1;
     const totalAmount = baseAmount + taxAmount;
 
-    // Create or find guest
+    // 👤 Create or find guest
     let guest = await prisma.guest.findUnique({
       where: { email: guestEmail },
     });
@@ -141,16 +159,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Find available room
-    const availableRoom = await prisma.room.findFirst({
-      where: {
-        roomTypeId: parseInt(roomTypeId),
-        branchId: branch.id,
-        status: "AVAILABLE",
-      },
-    });
-
-    // Create booking
+    // 🏨 Create booking
     const booking = await prisma.booking.create({
       data: {
         type: "ROOM",

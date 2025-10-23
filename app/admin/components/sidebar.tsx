@@ -99,12 +99,12 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    title: "Analytics & Reports",
+    title: "Inventory Management",
     items: [
       {
-        label: "Reports",
+        label: "Inventory",
         icon: BarChart,
-        href: "/admin/9analyticsAndReports",
+        href: "/admin/8inventory",
         permission: "reports.view",
       },
     ],
