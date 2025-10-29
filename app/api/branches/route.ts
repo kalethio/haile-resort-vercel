@@ -6,6 +6,7 @@ export async function GET() {
     const branches = await prisma.branch.findMany({
       where: { published: true },
       select: {
+        id: true,
         slug: true,
         branchName: true,
         heroImage: true,

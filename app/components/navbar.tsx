@@ -11,9 +11,15 @@ import BookingForm from "./bookingform";
 // ---------------------------
 const navLinks = [
   { label: "Home", path: "/" },
-  { label: "About Us", path: "/about-us" },
   { label: "Gallery", path: "/gallery" },
   { label: "Career", path: "/career" },
+];
+
+// About Us dropdown options
+const aboutOptions = [
+  { label: "Profile", path: "/about-us" },
+  { label: "Testimonial", path: "/components/5testimonial" },
+  { label: "News", path: "/news" },
 ];
 
 export default function Navbar() {
@@ -21,6 +27,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [destOpen, setDestOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [destinations, setDestinations] = useState<
     { label: string; path: string }[]
   >([]);
@@ -52,6 +59,7 @@ export default function Navbar() {
         setMenuOpen(false);
         setBookingOpen(false);
         setDestOpen(false);
+        setAboutOpen(false);
       }
     };
     document.addEventListener("keydown", handleKey);
@@ -107,6 +115,35 @@ export default function Navbar() {
         </Link>
       ))}
 
+      {/* About Us Dropdown */}
+      <div className="relative">
+        <button
+          onClick={() => setAboutOpen((p) => !p)}
+          className={linkCls(false) + " flex items-center gap-1 cursor-pointer"}
+        >
+          About Us <span className="text-sm">&#9662;</span>
+        </button>
+
+        {aboutOpen && (
+          <div className="absolute left-0 mt-2 w-52 bg-white/70 backdrop-blur-lg border border-white/30 rounded-xl shadow-lg flex flex-col z-50">
+            {aboutOptions.map((option) => (
+              <Link
+                key={option.path}
+                href={option.path}
+                onClick={() => {
+                  setAboutOpen(false);
+                  isMobile && setMenuOpen(false);
+                }}
+                className="px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-primary/20 hover:text-primary-dark"
+              >
+                {option.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Destinations Dropdown */}
       <div className="relative">
         <button
           onClick={() => setDestOpen((p) => !p)}
@@ -219,12 +256,13 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {(menuOpen || destOpen) && (
+      {(menuOpen || destOpen || aboutOpen) && (
         <div
           className="fixed inset-0 z-30 cursor-pointer"
           onClick={() => {
             setMenuOpen(false);
             setDestOpen(false);
+            setAboutOpen(false);
           }}
           aria-hidden="true"
         >
