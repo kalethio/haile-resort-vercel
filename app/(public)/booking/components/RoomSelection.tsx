@@ -29,8 +29,49 @@ export default function RoomSelection({
   onRoomSelect,
   onProceed,
 }: RoomSelectionProps) {
-  // Calculate total guests from adults + children
-  const totalGuests = bookingParams.adults + bookingParams.children;
+  // ✅ FIX: Add proper number validation
+  const adults = Number(bookingParams.adults) || 2;
+  const children = Number(bookingParams.children) || 0;
+
+  // 🔍 ENHANCED DEBUG LOGGING
+  console.log("🔍 ROOM SELECTION DEBUG:", {
+    // Raw parameters
+    rawAdults: bookingParams.adults,
+    rawChildren: bookingParams.children,
+    // Processed numbers
+    adults,
+    children,
+    // Room data validation
+    roomTypesExists: !!roomTypes,
+    isArray: Array.isArray(roomTypes),
+    roomTypesLength: roomTypes?.length || 0,
+    // First room deep inspection
+    firstRoom: roomTypes?.[0]
+      ? {
+          id: roomTypes[0].id,
+          name: roomTypes[0].name,
+          available: roomTypes[0].available,
+          availableRoomsCount: roomTypes[0].availableRoomsCount,
+          capacity: roomTypes[0].capacity,
+          basePrice: roomTypes[0].basePrice,
+          // Property existence checks
+          hasAllProps:
+            roomTypes[0].id !== undefined &&
+            roomTypes[0].available !== undefined &&
+            roomTypes[0].availableRoomsCount !== undefined &&
+            roomTypes[0].capacity !== undefined,
+        }
+      : "No rooms in array",
+    // All rooms summary
+    allRooms:
+      roomTypes?.map((room) => ({
+        id: room.id,
+        name: room.name,
+        available: room.available,
+        availableRoomsCount: room.availableRoomsCount,
+        capacity: room.capacity,
+      })) || "No rooms",
+  });
 
   // Loading state
   if (loading) {
@@ -39,7 +80,8 @@ export default function RoomSelection({
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">
-            Finding available rooms for {totalGuests} guests...
+            Finding available rooms for {adults}{" "}
+            {adults === 1 ? "adult" : "adults"}...
           </p>
         </div>
       </div>
@@ -65,18 +107,22 @@ export default function RoomSelection({
     );
   }
 
+  // ✅ SAFETY CHECK: Ensure roomTypes is always an array
+  const safeRoomTypes = Array.isArray(roomTypes) ? roomTypes : [];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Room List */}
       <div className="lg:col-span-2 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-light text-gray-900 tracking-tight">
-            Available Rooms for {totalGuests}{" "}
-            {totalGuests === 1 ? "Guest" : "Guests"}
+            Available Rooms for {adults} {adults === 1 ? "Adult" : "Adults"}
+            {children > 0 &&
+              ` + ${children} ${children === 1 ? "Child" : "Children"}`}
           </h2>
           <span className="text-gray-600 text-sm font-light">
-            {roomTypes.length} room type{roomTypes.length !== 1 ? "s" : ""}{" "}
-            available
+            {safeRoomTypes.length} room type
+            {safeRoomTypes.length !== 1 ? "s" : ""} available
           </span>
         </div>
 
@@ -86,27 +132,28 @@ export default function RoomSelection({
             <span className="text-blue-600 text-lg">👥</span>
             <div>
               <p className="text-blue-800 font-medium">
-                Your Party: {bookingParams.adults}{" "}
-                {bookingParams.adults === 1 ? "Adult" : "Adults"}
-                {bookingParams.children > 0 &&
-                  `, ${bookingParams.children} ${bookingParams.children === 1 ? "Child" : "Children"}`}
+                Your Party: {adults} {adults === 1 ? "Adult" : "Adults"}
+                {children > 0 &&
+                  `, ${children} ${children === 1 ? "Child" : "Children"}`}
               </p>
               <p className="text-blue-700 text-sm font-light">
-                Showing rooms that can accommodate all {totalGuests} guests
+                Showing rooms that can accommodate {adults}{" "}
+                {adults === 1 ? "adult" : "adults"}
+                {children > 0 ? " (children can share beds)" : ""}
               </p>
             </div>
           </div>
         </div>
 
-        {roomTypes.length === 0 ? (
+        {safeRoomTypes.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🏨</div>
             <h3 className="text-xl font-light text-gray-900 mb-2">
               No Suitable Rooms Available
             </h3>
             <p className="text-gray-600 font-light mb-4">
-              We couldn't find rooms that accommodate {totalGuests} guests for
-              your selected dates.
+              We could not find rooms that accommodate {adults}{" "}
+              {adults === 1 ? "adult" : "adults"} for your selected dates.
             </p>
             <div className="space-y-2 text-sm text-gray-500">
               <p>• Try adjusting your guest count or dates</p>
@@ -115,14 +162,13 @@ export default function RoomSelection({
             </div>
           </div>
         ) : (
-          roomTypes.map((room, index) => (
+          safeRoomTypes.map((room, index) => (
             <RoomCard
               key={room.id}
               room={room}
               index={index}
-              adults={bookingParams.adults}
-              children={bookingParams.children}
-              totalGuests={totalGuests}
+              adults={adults}
+              children={children}
               isSelected={selectedRoom === room.id}
               bookingSummary={bookingSummary}
               onSelect={onRoomSelect}
@@ -136,20 +182,19 @@ export default function RoomSelection({
         bookingParams={bookingParams}
         bookingSummary={bookingSummary}
         selectedRoom={selectedRoom}
-        roomTypes={roomTypes}
+        roomTypes={safeRoomTypes}
         onProceed={onProceed}
       />
     </div>
   );
 }
 
-// Enhanced Room Card with detailed guest capacity info
+// Enhanced Room Card with accurate adults-only capacity checking
 function RoomCard({
   room,
   index,
   adults,
   children,
-  totalGuests,
   isSelected,
   bookingSummary,
   onSelect,
@@ -158,36 +203,70 @@ function RoomCard({
   index: number;
   adults: number;
   children: number;
-  totalGuests: number;
   isSelected: boolean;
   bookingSummary: BookingSummaryType | null;
   onSelect: (roomId: number) => void;
 }) {
-  const canAccommodate = room.capacity >= totalGuests;
+  // ✅ FIX: Ensure numbers and use adults-only logic
+  const safeAdults = Number(adults) || 2;
+  const safeChildren = Number(children) || 0;
+
+  // ✅ FIX: Check room capacity against ADULTS only (children can share)
+  const canAccommodate = room.capacity >= safeAdults;
   const isAvailable = room.available && (room.availableRoomsCount || 0) > 0;
   const isLowInventory =
     room.availableRoomsCount && room.availableRoomsCount < 3;
   const isSelectable = isAvailable && canAccommodate;
+
+  // 🔍 ENHANCED DEBUG LOGGING FOR EACH ROOM
+  console.log("🔍 ROOM CARD DEBUG:", {
+    roomId: room.id,
+    roomName: room.name,
+    // Room properties
+    roomAvailable: room.available,
+    roomAvailableRoomsCount: room.availableRoomsCount,
+    roomCapacity: room.capacity,
+    // Guest info
+    adults: safeAdults,
+    children: safeChildren,
+    // Logic results
+    canAccommodate,
+    isAvailable,
+    isSelectable,
+    // Detailed calculation
+    capacityCheck: `${room.capacity} >= ${safeAdults} = ${canAccommodate}`,
+    availabilityCheck: `${room.available} && ${room.availableRoomsCount} > 0 = ${isAvailable}`,
+  });
 
   // Calculate how well the room fits the guest composition
   const getCapacityStatus = () => {
     if (!canAccommodate) {
       return {
         status: "too-small",
-        message: `Requires room for ${totalGuests}+ guests`,
+        message: `Room capacity (${room.capacity}) too small for ${safeAdults} adults`,
+        icon: "❌",
       };
     }
 
-    const remainingCapacity = room.capacity - totalGuests;
+    const remainingCapacity = room.capacity - safeAdults;
     if (remainingCapacity === 0) {
-      return { status: "perfect-fit", message: "Perfect fit for your party" };
+      return {
+        status: "perfect-fit",
+        message: "Perfect fit for your adults",
+        icon: "✅",
+      };
     } else if (remainingCapacity <= 2) {
       return {
         status: "good-fit",
-        message: `Space for ${remainingCapacity} more`,
+        message: `Space for ${remainingCapacity} more adult${remainingCapacity !== 1 ? "s" : ""}`,
+        icon: "👍",
       };
     } else {
-      return { status: "spacious", message: `Very spacious for your party` };
+      return {
+        status: "spacious",
+        message: `Very spacious for your party`,
+        icon: "💫",
+      };
     }
   };
 
@@ -257,29 +336,29 @@ function RoomCard({
                             ? "bg-green-50 border-green-200"
                             : capacityStatus.status === "good-fit"
                               ? "bg-blue-50 border-blue-200"
-                              : "bg-gray-50 border-gray-200"
+                              : "bg-purple-50 border-purple-200"
                       }`}
                     >
                       <p
-                        className={`text-sm font-medium ${
+                        className={`text-sm font-medium flex items-center gap-2 ${
                           capacityStatus.status === "too-small"
                             ? "text-red-700"
                             : capacityStatus.status === "perfect-fit"
                               ? "text-green-700"
                               : capacityStatus.status === "good-fit"
                                 ? "text-blue-700"
-                                : "text-gray-700"
+                                : "text-purple-700"
                         }`}
                       >
-                        {capacityStatus.status === "too-small" ? "⚠️ " : "✅ "}
+                        <span>{capacityStatus.icon}</span>
                         {capacityStatus.message}
                       </p>
                       {capacityStatus.status !== "too-small" && (
                         <p className="text-xs text-gray-600 mt-1 font-light">
-                          Your party: {adults}{" "}
-                          {adults === 1 ? "adult" : "adults"}
-                          {children > 0 &&
-                            `, ${children} ${children === 1 ? "child" : "children"}`}
+                          Your party: {safeAdults}{" "}
+                          {safeAdults === 1 ? "adult" : "adults"}
+                          {safeChildren > 0 &&
+                            `, ${safeChildren} ${safeChildren === 1 ? "child" : "children"} (can share beds)`}
                         </p>
                       )}
                     </div>
@@ -290,7 +369,7 @@ function RoomCard({
 
                     {/* Amenities */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {room.amenities.slice(0, 4).map((amenity, idx) => (
+                      {room.amenities?.slice(0, 4).map((amenity, idx) => (
                         <span
                           key={idx}
                           className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-600 border border-gray-200 font-light transition-all hover:scale-105"
@@ -298,7 +377,7 @@ function RoomCard({
                           {amenity}
                         </span>
                       ))}
-                      {room.amenities.length > 4 && (
+                      {room.amenities && room.amenities.length > 4 && (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-500 border border-gray-200 font-light">
                           +{room.amenities.length - 4} more
                         </span>
@@ -355,14 +434,14 @@ function RoomCard({
                   )}
                   {!canAccommodate && isAvailable && (
                     <div className="text-xs text-red-600 font-light bg-red-50 px-2 py-1 rounded">
-                      ❌ Max {room.capacity} guests (you have {totalGuests})
+                      ❌ Needs capacity for {safeAdults}+ adults
                     </div>
                   )}
                   {canAccommodate &&
                     isAvailable &&
                     capacityStatus.status === "perfect-fit" && (
                       <div className="text-xs text-green-600 font-light bg-green-50 px-2 py-1 rounded">
-                        ✅ Perfect for your party
+                        ✅ Perfect for your adults
                       </div>
                     )}
                 </div>
@@ -381,7 +460,7 @@ function RoomCard({
                   {!isAvailable
                     ? "Sold Out"
                     : !canAccommodate
-                      ? `Needs ${room.capacity}+ Capacity`
+                      ? `Needs ${safeAdults}+ Adults`
                       : isSelected
                         ? "Selected"
                         : "Select Room"}

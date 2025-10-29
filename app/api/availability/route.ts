@@ -1,4 +1,4 @@
-// /app/api/availability/route.ts - FIXED WITH GUEST COUNT
+// /app/api/availability/route.ts - ACCURATE VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -8,7 +8,11 @@ export async function GET(request: NextRequest) {
     const branchSlug = searchParams.get("branch");
     const checkIn = searchParams.get("checkIn");
     const checkOut = searchParams.get("checkOut");
-    const guests = parseInt(searchParams.get("guests") || "2");
+
+    // ✅ FIX: Use adults parameter instead of guests for capacity checking
+    const adults = parseInt(searchParams.get("adults") || "2");
+    const children = parseInt(searchParams.get("children") || "0");
+    const guests = adults + children; // Keep for backward compatibility
 
     if (!branchSlug || !checkIn || !checkOut) {
       return NextResponse.json(
@@ -43,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Calculate ACTUAL available rooms with guest capacity validation
+    // Calculate ACTUAL available rooms with ADULTS-ONLY capacity validation
     const availableRoomTypes = branch.roomTypes.map((roomType) => {
       const totalRooms = roomType.rooms.length;
 
@@ -73,13 +77,14 @@ export async function GET(request: NextRequest) {
 
       const availableRooms = totalRooms - unavailableRooms;
 
-      // ✅ CRITICAL FIX: Check if room can accommodate guest count
-      const canAccommodateGuests = roomType.capacity >= guests;
+      // ✅ CRITICAL FIX: Check if room can accommodate ADULT count only
+      // Children can share beds, so only adults count against capacity
+      const canAccommodateAdults = roomType.capacity >= adults;
 
       // Room is available ONLY if:
       // 1. Has available rooms AND
-      // 2. Can accommodate the requested number of guests
-      const available = availableRooms > 0 && canAccommodateGuests;
+      // 2. Can accommodate the requested number of ADULTS
+      const available = availableRooms > 0 && canAccommodateAdults;
 
       return {
         id: roomType.id,
@@ -93,26 +98,28 @@ export async function GET(request: NextRequest) {
         availableRoomsCount: availableRooms,
         totalRooms: totalRooms,
         unavailableRooms: unavailableRooms,
-        canAccommodateGuests: canAccommodateGuests, // For debugging
+        canAccommodateAdults: canAccommodateAdults, // For debugging
       };
     });
 
-    // Only return rooms that are actually available AND can accommodate guests
+    // Only return rooms that are actually available AND can accommodate adults
     const filteredRoomTypes = availableRoomTypes.filter(
-      (roomType) => roomType.available && roomType.canAccommodateGuests
+      (roomType) => roomType.available && roomType.canAccommodateAdults
     );
 
-    console.log("🔍 AVAILABILITY DEBUG WITH GUEST COUNT:", {
+    console.log("🔍 ACCURATE AVAILABILITY DEBUG:", {
       branch: branch.branchName,
       dates: `${checkIn} to ${checkOut}`,
-      requestedGuests: guests,
+      requestedAdults: adults,
+      requestedChildren: children,
+      totalGuests: guests,
       roomTypes: availableRoomTypes.map((rt) => ({
         name: rt.name,
         capacity: rt.capacity,
         totalRooms: rt.totalRooms,
         availableRooms: rt.availableRoomsCount,
         unavailableRooms: rt.unavailableRooms,
-        canAccommodateGuests: rt.canAccommodateGuests,
+        canAccommodateAdults: rt.canAccommodateAdults, // ✅ Now checking adults
         available: rt.available,
       })),
     });
@@ -122,6 +129,8 @@ export async function GET(request: NextRequest) {
       summary: {
         checkIn,
         checkOut,
+        adults,
+        children,
         guests,
         totalAvailable: filteredRoomTypes.length,
         branchName: branch.branchName,

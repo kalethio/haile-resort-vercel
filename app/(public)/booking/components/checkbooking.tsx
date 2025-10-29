@@ -73,8 +73,16 @@ export default function CheckBooking() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!branchSlug || !selectionRange.startDate || !selectionRange.endDate) {
       setPopupMessage("Please fill in all required fields");
+      setShowPopup(true);
+      return;
+    }
+
+    const totalGuests = adults + children;
+    if (isNaN(totalGuests) || totalGuests > 3) {
+      setPopupMessage(`❌ Max 3 guests (you have ${totalGuests || 0})`);
       setShowPopup(true);
       return;
     }
@@ -86,6 +94,7 @@ export default function CheckBooking() {
       adults: adults.toString(),
       children: children.toString(),
     });
+
     router.push(`/booking?${params.toString()}`);
   };
 

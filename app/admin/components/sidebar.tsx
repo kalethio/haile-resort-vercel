@@ -51,7 +51,7 @@ const menuGroups: MenuGroup[] = [
         permission: "guests.view",
       },
       {
-        label: "Staff",
+        label: "Job Post & Applications",
         icon: Briefcase,
         href: "/admin/4staff",
         permission: "staff.view",
