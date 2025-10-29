@@ -344,19 +344,23 @@ model Review {
 }
 
 model JobOpening {
-  id           Int              @id @default(autoincrement())
-  title        String
-  department   String?
-  description  String
-  requirements Json?
-  location     String?
-  type         String?
-  published    Boolean          @default(false)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  branchId     Int
-  applications JobApplication[]
-  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  id               Int              @id @default(autoincrement())
+  title            String
+  department       String?
+  description      String
+  requirements     Json?
+  location         String?
+  type             String?
+  published        Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  branchId         Int
+  deadline         DateTime?
+  experienceLevel  String?
+  responsibilities Json?
+  salaryRange      String?
+  applications     JobApplication[]
+  branch           Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@index([branchId, published, type])
 }

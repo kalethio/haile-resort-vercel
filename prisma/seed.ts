@@ -4,37 +4,69 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting seed...");
+  console.log("🔴 DEBUG: Seed started");
 
   try {
-    // Clear existing data in correct order
-    await clearDatabase();
+    // Test 1: Check database connection
+    console.log("🔴 Step 1: Testing database connection...");
+    const connectionTest = await prisma.$queryRaw`SELECT 1 as test`;
+    console.log("✅ Database connection OK");
 
-    // Create all branches
+    // Test 2: Check if JobOpening table exists
+    console.log("🔴 Step 2: Checking JobOpening table...");
+    const tableCheck = await prisma.$queryRaw`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='JobOpening'
+    `;
+    console.log("✅ JobOpening table exists:", tableCheck);
+
+    // Test 3: Check current JobOpening count
+    console.log("🔴 Step 3: Checking current JobOpening count...");
+    const currentCount = await prisma.jobOpening.count();
+    console.log("📊 Current JobOpening count:", currentCount);
+
+    // Test 4: Check if we can create branches
+    console.log("🔴 Step 4: Creating branches...");
     const branches = await createBranches();
+    console.log(
+      "✅ Created branches:",
+      branches.map((b) => b.id)
+    );
 
-    // Create users for each branch
-    await createUsers(branches);
+    // Test 5: Try to create ONE simple job
+    console.log("🔴 Step 5: Testing job creation...");
+    const testJob = await prisma.jobOpening.create({
+      data: {
+        title: "DEBUG TEST JOB",
+        department: "Debug",
+        description: "This is a test job for debugging",
+        location: "Test Location",
+        type: "Full-time",
+        published: true,
+        branchId: branches[0].id,
+      },
+    });
+    console.log("✅ Test job created successfully! ID:", testJob.id);
 
-    // Create room types and rooms for each branch
-    await createRoomData(branches);
+    // Test 6: Check if job appears in database
+    console.log("🔴 Step 6: Verifying job in database...");
+    const verifyJob = await prisma.jobOpening.findFirst({
+      where: { id: testJob.id },
+    });
+    console.log("✅ Job verified in DB:", !!verifyJob);
 
-    // Create attractions for each branch
-    await createAttractions(branches);
+    // Test 7: Now try the actual job creation function
+    console.log("🔴 Step 7: Calling createJobOpenings function...");
+    await createJobOpenings(branches);
 
-    // Create accommodations for each branch
-    await createAccommodations(branches);
+    // Test 8: Final count check
+    console.log("🔴 Step 8: Final count check...");
+    const finalCount = await prisma.jobOpening.count();
+    console.log("📊 Final JobOpening count:", finalCount);
 
-    // Create experiences with packages for each branch
-    await createExperiencesWithPackages(branches);
-
-    // Create additional data
-    await createBranchDetails(branches);
-
-    console.log("✅ Seed completed! Created 5 branches with complete data");
+    console.log("✅ DEBUG COMPLETED - All tests passed");
   } catch (error) {
-    console.error("❌ Seed failed:", error);
-    throw error;
+    console.error("❌ DEBUG FAILED at step:", error);
+    console.error("Full error details:", error);
   }
 }
 
@@ -81,6 +113,13 @@ async function clearDatabase() {
 
 async function createBranches() {
   console.log("🏨 Creating branches...");
+
+  // Check if branches already exist
+  const existingBranches = await prisma.branch.findMany();
+  if (existingBranches.length > 0) {
+    console.log("✅ Branches already exist, skipping creation");
+    return existingBranches;
+  }
 
   const branches = [];
 
@@ -147,6 +186,7 @@ async function createBranches() {
     branches.push(branch);
   }
 
+  console.log(`✅ Created ${branches.length} branches`);
   return branches;
 }
 
@@ -432,6 +472,7 @@ async function createRoomData(branches: any[]) {
 
   return roomTypesByBranch;
 }
+
 async function createAttractions(branches: any[]) {
   console.log("🏞️ Creating attractions...");
 
@@ -497,32 +538,31 @@ async function createAttractions(branches: any[]) {
 async function createAccommodations(branches: any[]) {
   console.log("🏠 Creating accommodations...");
 
-  // In createAccommodations function - update to match your actual file names:
   const accommodationsData = [
     {
       title: "Luxury Villa",
       description: "Private villa with panoramic views",
-      image: "/uploads/accommodations/accommodation01.jpg", // Capital A, no zero
+      image: "/uploads/accommodations/accommodation01.jpg",
     },
     {
       title: "Family Suite",
       description: "Spacious suite for families",
-      image: "/uploads/accommodations/accommodation02.jpg", // Capital A, no zero
+      image: "/uploads/accommodations/accommodation02.jpg",
     },
     {
       title: "Business Room",
       description: "Room with work desk and facilities",
-      image: "/uploads/accommodations/accommodation03.JPG", // Capital A, .JPG extension
+      image: "/uploads/accommodations/accommodation03.JPG",
     },
     {
       title: "Honeymoon Suite",
       description: "Romantic suite for couples",
-      image: "/uploads/accommodations/accommodation04.jpg", // Capital A, no zero
+      image: "/uploads/accommodations/accommodation04.jpg",
     },
     {
       title: "Accessible Room",
       description: "Room for guests with mobility needs",
-      image: "/uploads/accommodations/accommodation05.jpg", // Capital A, no zero
+      image: "/uploads/accommodations/accommodation05.jpg",
     },
   ];
   for (const branch of branches) {
@@ -541,7 +581,6 @@ async function createExperiencesWithPackages(branches: any[]) {
   console.log("🎯 Creating experiences with packages...");
 
   const experiencesData = [
-    // Hawassa
     {
       branchSlug: "hawassa",
       title: "Lake Hawassa Bird Watching",
@@ -572,8 +611,6 @@ async function createExperiencesWithPackages(branches: any[]) {
         },
       ],
     },
-
-    // Arba Minch
     {
       branchSlug: "arba-minch",
       title: "Nechisar National Park Safari",
@@ -619,8 +656,6 @@ async function createExperiencesWithPackages(branches: any[]) {
         },
       ],
     },
-
-    // Addis Ababa
     {
       branchSlug: "addis-ababa",
       title: "City Heritage Tour",
@@ -651,8 +686,6 @@ async function createExperiencesWithPackages(branches: any[]) {
         },
       ],
     },
-
-    // Gonder
     {
       branchSlug: "gonder",
       title: "Castles of Gondar Tour",
@@ -683,8 +716,6 @@ async function createExperiencesWithPackages(branches: any[]) {
         },
       ],
     },
-
-    // Shashemene
     {
       branchSlug: "shashemene",
       title: "Rastafarian Heritage Tour",
@@ -818,6 +849,74 @@ async function createBranchDetails(branches: any[]) {
       },
     });
   }
+}
+
+async function createJobOpenings(branches: any[]) {
+  console.log("💼 Creating job openings...");
+
+  const jobOpeningsData = [
+    {
+      title: "Front Desk Supervisor",
+      department: "Reception",
+      description: "Manage front desk operations",
+      location: "Haile Hawassa Resort",
+      type: "Full-time",
+      experienceLevel: "Mid",
+      salaryRange: "Negotiable",
+      deadline: new Date("2025-11-15"),
+      responsibilities: ["Oversee operations"],
+      requirements: ["2+ years experience"],
+      published: true,
+      branchSlug: "hawassa",
+    },
+  ];
+
+  let createdCount = 0;
+  let errorCount = 0;
+
+  for (const jobData of jobOpeningsData) {
+    try {
+      const branch = branches.find((b) => b.slug === jobData.branchSlug);
+
+      if (!branch) {
+        console.error(`❌ Branch not found: ${jobData.branchSlug}`);
+        errorCount++;
+        continue;
+      }
+
+      console.log(
+        `🔴 Creating job for branch: ${branch.branchName} (ID: ${branch.id})`
+      );
+
+      const job = await prisma.jobOpening.create({
+        data: {
+          title: jobData.title,
+          department: jobData.department,
+          description: jobData.description,
+          location: jobData.location,
+          type: jobData.type,
+          experienceLevel: jobData.experienceLevel,
+          salaryRange: jobData.salaryRange,
+          deadline: jobData.deadline,
+          responsibilities: jobData.responsibilities,
+          requirements: jobData.requirements,
+          published: jobData.published,
+          branchId: branch.id,
+        },
+      });
+
+      console.log(`✅ Created job: ${job.id} - ${job.title}`);
+      createdCount++;
+    } catch (error) {
+      console.error(
+        `❌ Failed to create job "${jobData.title}":`,
+        error.message
+      );
+      errorCount++;
+    }
+  }
+
+  console.log(`📊 Result: ${createdCount} created, ${errorCount} failed`);
 }
 
 main()
