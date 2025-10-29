@@ -190,10 +190,12 @@ export default function Navbar() {
       <nav
         aria-label="Main Navigation"
         className={`w-full max-w-screen z-40 transition-all duration-500 fixed top-0 ${
-          scrolled ? "bg-white/60 backdrop-blur-lg shadow-md" : "bg-transparent"
+          scrolled
+            ? "bg-white/60 backdrop-blur-lg shadow-md py-3"
+            : "bg-white/20 backdrop-blur-lg shadow-md py-0"
         }`}
       >
-        <div className="max-w-screen-xl mx-auto flex justify-between items-center px-6 py-3">
+        <div className="max-w-screen-xl mx-auto flex justify-between items-center px-6 ">
           <Link href="/" className="flex items-center">
             <Image
               src="/logo.svg"
