@@ -2,31 +2,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// PATCH - Update application status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
-
   try {
-    const body = await request.json();
-    const { status } = body;
+    const { status } = await request.json();
 
     const application = await prisma.jobApplication.update({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(params.id) },
       data: { status },
     });
 
-    return NextResponse.json({
-      success: true,
-      application: {
-        id: application.id.toString(),
-        status: application.status,
-      },
-    });
+    return NextResponse.json(application);
   } catch (error) {
-    console.error("Failed to update application:", error);
+    console.error("Error updating application:", error);
     return NextResponse.json(
       { error: "Failed to update application" },
       { status: 500 }

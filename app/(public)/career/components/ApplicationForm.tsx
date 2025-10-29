@@ -43,13 +43,12 @@ export default function ApplicationForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [job, onClose, branchFilter]);
 
-  const csvToArray = (s?: string | string[]): string[] => {
-    if (!s) return [];
-    if (Array.isArray(s)) return s;
-    return s
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+  // Helper function to safely get array or string value for display
+  const getDisplayValue = (value: any): string => {
+    if (Array.isArray(value)) {
+      return value.join(", ");
+    }
+    return value || "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,11 +89,16 @@ export default function ApplicationForm({
         setFormState({});
         setResumeFile(null);
       } else {
-        throw new Error("Failed to submit application");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit application");
       }
     } catch (error) {
       console.error("Error submitting application:", error);
-      alert("Failed to submit application. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit application. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -255,7 +259,7 @@ export default function ApplicationForm({
                   Skills (comma separated)
                 </label>
                 <input
-                  value={(formState.skills || []).join(", ")}
+                  value={getDisplayValue(formState.skills)}
                   onChange={(e) =>
                     setFormState({ ...formState, skills: e.target.value })
                   }
@@ -268,7 +272,7 @@ export default function ApplicationForm({
                   Languages (comma separated)
                 </label>
                 <input
-                  value={(formState.languages || []).join(", ")}
+                  value={getDisplayValue(formState.languages)}
                   onChange={(e) =>
                     setFormState({ ...formState, languages: e.target.value })
                   }
@@ -281,7 +285,7 @@ export default function ApplicationForm({
                   Certifications (comma separated)
                 </label>
                 <input
-                  value={(formState.certifications || []).join(", ")}
+                  value={getDisplayValue(formState.certifications)}
                   onChange={(e) =>
                     setFormState({
                       ...formState,
@@ -376,7 +380,7 @@ export default function ApplicationForm({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="py-2 px-6 bg-primary text-white rounded-lg hover:opacity-95"
+                    className="py-2 px-6 bg-primary text-white rounded-lg hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? "Submitting..." : "Submit Application"}
                   </button>

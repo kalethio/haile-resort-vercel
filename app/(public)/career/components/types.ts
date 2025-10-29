@@ -1,46 +1,52 @@
-export type Job = {
-  id: string; // Keep string for compatibility
-  title: string;
-  department: string;
-  branches: string[]; // Array of branch names (for display)
-  branchIds: number[]; // Array of branch IDs (for database)
-  type: string;
-  location: string;
-  experienceLevel?: string;
-  salaryRange?: string;
-  deadline?: string;
-  description?: string;
-  responsibilities?: string[];
-  requirements?: string[];
-  applicants?: number;
-  published?: boolean; // New field for admin control
-};
-
-export type Application = {
-  id: string;
-  jobId: string;
-  jobTitle: string;
-  appliedBranch: string;
+export interface Application {
+  id: number;
+  jobId: number;
   fullName: string;
   email: string;
-  phone?: string;
-  currentLocation?: string;
-  educationLevel?: string;
-  yearsExperience?: number;
-  skills?: string[];
-  languages?: string[];
-  certifications?: string[];
-  availabilityDate?: string;
-  willingToRelocate?: boolean;
-  expectedSalary?: string;
-  coverLetter?: string;
-  resumeName?: string;
-  resumeBase64?: string | null;
+  phone: string | null;
+  currentLocation: string | null;
+  educationLevel: string | null;
+  yearsExperience: number | null;
+  skills: string[];
+  languages: string[];
+  certifications: string[];
+  availabilityDate: string | null;
+  willingToRelocate: boolean;
+  expectedSalary: string | null;
+  coverLetter: string | null;
+  resumeUrl: string | null;
+  status: "PENDING" | "REVIEWED" | "ACCEPTED" | "REJECTED";
   submittedAt: string;
-};
+  job?: {
+    title: string;
+    department: string | null;
+    branch: {
+      branchName: string;
+      id: number;
+    };
+  };
+}
 
-export type Branch = {
+export interface Job {
+  id: number;
+  title: string;
+  department: string | null;
+  description: string;
+  requirements: string[];
+  location: string | null;
+  type: string | null;
+  published: boolean;
+  deadline: string | null;
+  experienceLevel: string | null;
+  responsibilities: string[];
+  salaryRange: string | null;
+  branches: string[]; // This will be derived from branch relationship
+  branchId: number;
+}
+
+export interface Branch {
   id: number;
   branchName: string;
   slug: string;
-};
+  // ... other branch fields you need
+}
