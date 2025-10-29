@@ -18,7 +18,7 @@ const navLinks = [
 // About Us dropdown options
 const aboutOptions = [
   { label: "Profile", path: "/about-us" },
-  { label: "Testimonial", path: "/components/5testimonial" },
+  { label: "Testimonial", path: "/testimonials" },
   { label: "News", path: "/news" },
 ];
 

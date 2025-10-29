@@ -38,20 +38,28 @@ export default function NewsModal({ onClose }: Props) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   if (editIndex !== null) {
+  //     setConfirmAction({ type: "update" });
+  //   } else {
+  //     if (news.length >= 3) {
+  //       setLimitAlert(true);
+  //       return;
+  //     }
+  //     setConfirmAction({ type: "add" });
+  //   }
+  // };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editIndex !== null) {
       setConfirmAction({ type: "update" });
     } else {
-      if (news.length >= 3) {
-        setLimitAlert(true);
-        return;
-      }
       setConfirmAction({ type: "add" });
     }
   };
-
   const confirmSubmit = async () => {
     const updatedNews = [...news];
 
@@ -164,7 +172,7 @@ export default function NewsModal({ onClose }: Props) {
           </div>
 
           {/* Add Button */}
-          {!isFormOpen && (
+          {/* {!isFormOpen && (
             <button
               onClick={() => {
                 if (news.length >= 3) setLimitAlert(true);
@@ -175,8 +183,16 @@ export default function NewsModal({ onClose }: Props) {
               <Plus className="w-4 h-4" />
               Add News
             </button>
+          )} */}
+          {!isFormOpen && (
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Add News
+            </button>
           )}
-
           {/* Add/Edit Form */}
           {isFormOpen && (
             <form

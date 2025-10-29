@@ -59,30 +59,30 @@ export default function Review() {
   };
 
   return (
-    <section id="reviews" className="relative py-4 mb-24">
+    <section id="reviews" className="relative py-4 mt-36 p-2 w-[100vw]">
       {/* Background gradient for premium look */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/5" />
+      <div className="absolute inset-0 flex bg-gradient-to-br from-primary/5 via-background to-primary/5" />
       {/* Noise overlay for texture */}
       <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10 mix-blend-overlay" />
 
-      <div className="relative max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center gap-16">
+      <div className="relative max-w-7xl mx-auto px-6 flex flex-col items-center gap-16">
         {/* LEFT: Scrolling testimonials section */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="overflow-hidden relative w-full max-w-2xl">
+        <div className="flex-1 flex items-center justify-center w-[100vw]">
+          <div className="overflow-hidden relative w-full max-w-6xl py-6">
             <div className="flex w-max animate-marquee">
               {/* Duplicate reviews for smooth looping marquee effect */}
               {[...reviews, ...reviews].map((r, i) => (
                 <div
                   key={i}
-                  className="bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm min-w-[240px] max-w-xs mx-3 border border-black/5"
+                  className="bg-white/95 backdrop-blur-xl p-6 rounded-2xl shadow-lg min-w-[300px] max-w-sm mx-6 border border-primary/10 hover:shadow-2xl hover:scale-105 transition-transform duration-300"
                 >
                   {/* Review text */}
-                  <p className="italic mb-2 text-sm text-accent/90">
+                  <p className="italic mb-3 text-base text-gray-800 leading-relaxed">
                     “{r.text}”
                   </p>
                   {/* Reviewer name */}
-                  <p className="font-semibold text-xs text-primary">
-                    - {r.name}
+                  <p className="font-semibold text-sm text-primary tracking-wide">
+                    — {r.name}
                   </p>
                 </div>
               ))}
