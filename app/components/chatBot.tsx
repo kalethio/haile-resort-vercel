@@ -31,6 +31,7 @@ const ChatBot = () => {
   const [currentLink, setCurrentLink] = useState(STAFF_CONTACTS["reception"]);
   const [showExpandedFAQ, setShowExpandedFAQ] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [chatHeight, setChatHeight] = useState(350); // Start with smaller height
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -68,6 +69,14 @@ const ChatBot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 400);
   }, [messages, isTyping, isOpen]);
+
+  // Expand chat height when messages increase
+  useEffect(() => {
+    if (messages.length > 2) {
+      // More than just the initial welcome message
+      setChatHeight(500); // Expand to full height
+    }
+  }, [messages.length]);
 
   // Enhanced fuzzy matching for better understanding
   const normalizeText = (text: string): string => {
@@ -188,14 +197,15 @@ const ChatBot = () => {
         </button>
       </motion.div>
 
-      {/* Chat Window */}
+      {/* Chat Window - Dynamic height */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="w-80 h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-primary/10 mt-4 backdrop-blur-sm bg-white/95"
+            className="w-80 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-primary/10 mt-4 backdrop-blur-sm bg-white/95"
+            style={{ height: `${chatHeight}px` }} // Dynamic height
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary/70 to-primary/50 text-white py-2 px-4">
@@ -326,7 +336,7 @@ const ChatBot = () => {
               )}
             </AnimatePresence>
 
-            {/* Input Area with WhatsApp Icon - CHANGED TEXT COLOR TO BLACK */}
+            {/* Input Area with WhatsApp Icon */}
             <div className="p-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
               <div className="flex gap-2">
                 {/* WhatsApp Icon Button */}
@@ -348,7 +358,7 @@ const ChatBot = () => {
                   </svg>
                 </motion.a>
 
-                {/* Input Field - CHANGED TEXT COLOR TO BLACK */}
+                {/* Input Field */}
                 <input
                   ref={inputRef}
                   type="text"
