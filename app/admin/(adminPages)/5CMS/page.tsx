@@ -189,37 +189,53 @@ export default function CMSList() {
             tabIndex={-1}
             ref={modalRef}
             className="fixed inset-0 z-50 flex items-start justify-center"
-            onClick={onBackdropClick} // backdrop click (closes only when clicking background)
+            onClick={onBackdropClick}
           >
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
-            {/* Modal container — full screen content area, page handles positioning/styling */}
-            <div className="relative z-10 w-full h-full max-h-screen overflow-auto">
-              {/* Header (close/ title) — page controls this consistently */}
-              <div className="flex items-center justify-between p-4 border-b bg-white/90 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-gray-800">
+            {/* Modal container */}
+            <div className="relative z-10 w-full h-full max-h-screen overflow-auto bg-white">
+              {/* Sticky Header */}
+              <div className="sticky top-0 z-20 flex items-center justify-between p-6 border-b bg-white/95 backdrop-blur-md shadow-sm">
+                {/* Back Button - Left Side */}
+                <button
+                  onClick={close}
+                  className="flex items-center gap-3 cursor-pointer px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 font-semibold"
+                  aria-label="Go back"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Back
+                </button>
+
+                {/* Centered Title */}
+                <div className="absolute left-1/2 transform -translate-x-1/2">
+                  <h1 className="text-2xl font-bold text-gray-900 text-center">
                     {active.title}
-                  </h3>
+                  </h1>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* Optionally, you can wire additional page-level controls here (save, fullscreen toggle, etc.) */}
-                  <button
-                    aria-label="Close"
-                    onClick={close}
-                    className="rounded-md p-2 text-black font-bold hover:bg-gray-100 transition cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
+                {/* Right side spacer for balance */}
+                <div className="w-24"></div>
               </div>
 
-              {/* Content area — page injects the section content and passes onClose */}
-              <main className="p-6 h-[calc(100vh-64px)] overflow-auto bg-white">
-                {/* Guarantee: this page always passes onClose so children never get undefined */}
-                <active.Component onClose={close} />
+              {/* Content area */}
+              <main className="flex-1 overflow-auto bg-gray-50">
+                <div className="p-6 max-w-7xl mx-auto w-full">
+                  <active.Component onClose={close} />
+                </div>
               </main>
             </div>
           </div>

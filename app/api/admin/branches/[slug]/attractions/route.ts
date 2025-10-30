@@ -44,3 +44,35 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 }
+export async function GET(req: Request, { params }: Params) {
+  try {
+    const { slug } = await params;
+
+    const branch = await prisma.branch.findFirst({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    const attractions = await prisma.attraction.findMany({
+      where: { branchId: branch.id },
+      select: {
+        id: true,
+        label: true,
+        image: true,
+        externalId: true,
+      },
+    });
+
+    return NextResponse.json(attractions);
+  } catch (error) {
+    console.error("Attractions fetch error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

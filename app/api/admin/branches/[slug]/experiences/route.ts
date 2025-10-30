@@ -68,3 +68,44 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 }
+export async function GET(req: Request, { params }: Params) {
+  try {
+    const { slug } = await params;
+
+    const branch = await prisma.branch.findFirst({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!branch) {
+      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+    }
+
+    const experiences = await prisma.experience.findMany({
+      where: { branchId: branch.id },
+      include: {
+        packages: {
+          select: {
+            id: true,
+            title: true,
+            subtitle: true,
+            description: true,
+            price: true,
+            duration: true,
+            category: true,
+            available: true,
+            ctaLabel: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(experiences);
+  } catch (error) {
+    console.error("Experiences fetch error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

@@ -25,6 +25,8 @@ import {
 } from "@/types";
 
 // ===== MAIN COMPONENT =====
+
+// ===== MAIN COMPONENT =====
 export default function EditBranchForm({
   branch,
   onCancel,
@@ -37,50 +39,105 @@ export default function EditBranchForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<BranchFormData | null>(null);
 
-  // Initialize form data from branch prop
+  // Initialize form data from branch prop AND fetch additional content
   useEffect(() => {
-    if (branch) {
-      console.log("🔍 USEEFFECT - Raw branch data:", {
-        attractions: branch.attractions,
-        accommodations: branch.accommodations,
-        experiences: branch.experiences,
-      });
+    const fetchBranchContent = async () => {
+      if (!branch) return;
 
-      setFormData({
-        // Basic Info
-        slug: branch.slug || "",
-        branchName: branch.branchName || "",
-        description: branch.description || "",
-        starRating: branch.starRating || 4,
-        published: branch.published || false,
+      try {
+        console.log("🔄 FETCHING - Starting to fetch branch content...");
 
-        // Location
-        location: {
-          city: branch.location?.city || "",
-          region: branch.location?.region || "",
-          country: branch.location?.country || "Ethiopia",
-        },
+        // Fetch all content data in parallel
+        const [attractionsRes, accommodationsRes, experiencesRes, contactRes] =
+          await Promise.all([
+            fetch(`/api/admin/branches/${branch.slug}/attractions`),
+            fetch(`/api/admin/branches/${branch.slug}/accommodations`),
+            fetch(`/api/admin/branches/${branch.slug}/experiences`),
+            fetch(`/api/admin/branches/${branch.slug}/contact`),
+          ]);
 
-        // Media
-        heroImage: branch.heroImage || "",
-        directionsUrl: branch.directionsUrl || "",
+        // Parse responses
+        const attractions = attractionsRes.ok
+          ? await attractionsRes.json()
+          : [];
+        const accommodations = accommodationsRes.ok
+          ? await accommodationsRes.json()
+          : [];
+        const experiences = experiencesRes.ok
+          ? await experiencesRes.json()
+          : [];
+        const contact = contactRes.ok ? await contactRes.json() : {};
 
-        // Contact
-        contact: {
-          phone: branch.contact?.phone || "",
-          email: branch.contact?.email || "",
-          address: branch.contact?.address || "",
-        },
+        console.log("📥 FETCHED DATA:", {
+          attractions,
+          accommodations,
+          experiences,
+          contact,
+        });
 
-        // ✅ FIX: Use raw arrays directly
-        attractions: branch.attractions || [],
-        accommodations: branch.accommodations || [],
-        experiences: branch.experiences || [],
-      });
-      setLoading(false);
-    }
+        setFormData({
+          // Basic Info
+          slug: branch.slug || "",
+          branchName: branch.branchName || "",
+          description: branch.description || "",
+          starRating: branch.starRating || 4,
+          published: branch.published || false,
+
+          // Location
+          location: {
+            city: branch.location?.city || "",
+            region: branch.location?.region || "",
+            country: branch.location?.country || "Ethiopia",
+          },
+
+          // Media
+          heroImage: branch.heroImage || "",
+          directionsUrl: branch.directionsUrl || "",
+
+          // Contact - use fetched data or fallback
+          contact: {
+            phone: contact.phone || branch.contact?.phone || "",
+            email: contact.email || branch.contact?.email || "",
+            address: contact.address || branch.contact?.address || "",
+          },
+
+          // Use fetched arrays, not empty arrays
+          attractions: Array.isArray(attractions) ? attractions : [],
+          accommodations: Array.isArray(accommodations) ? accommodations : [],
+          experiences: Array.isArray(experiences) ? experiences : [],
+        });
+      } catch (error) {
+        console.error("❌ FETCH ERROR - Failed to load branch content:", error);
+        // Fallback to basic data if fetch fails
+        setFormData({
+          slug: branch.slug || "",
+          branchName: branch.branchName || "",
+          description: branch.description || "",
+          starRating: branch.starRating || 4,
+          published: branch.published || false,
+          location: {
+            city: branch.location?.city || "",
+            region: branch.location?.region || "",
+            country: branch.location?.country || "Ethiopia",
+          },
+          heroImage: branch.heroImage || "",
+          directionsUrl: branch.directionsUrl || "",
+          contact: {
+            phone: branch.contact?.phone || "",
+            email: branch.contact?.email || "",
+            address: branch.contact?.address || "",
+          },
+          attractions: branch.attractions || [],
+          accommodations: branch.accommodations || [],
+          experiences: branch.experiences || [],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBranchContent();
   }, [branch]);
-
   // Handle form field changes
   const handleChange = (field: string, value: string | number | boolean) => {
     setFormData((prev) => {
@@ -271,7 +328,7 @@ export default function EditBranchForm({
   }
 
   return (
-    <div className="max-h-[70vh] overflow-hidden flex flex-col">
+    <div className="overflow-hidden flex flex-col">
       {/* Navigation Tabs */}
       <div className="flex border-b mb-6 bg-gray-50 rounded-t-lg">
         {(["basic", "contact", "content"] as TabType[]).map((tab) => (

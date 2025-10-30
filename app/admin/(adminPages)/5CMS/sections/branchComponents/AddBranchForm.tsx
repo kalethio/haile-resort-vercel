@@ -141,7 +141,7 @@ export default function AddBranchForm({
   };
 
   return (
-    <div className="max-h-[60vh] overflow-y-auto p-1">
+    <div className="max-w-4xl  mx-auto p-1">
       {errors.submit && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm font-medium">
           {errors.submit}

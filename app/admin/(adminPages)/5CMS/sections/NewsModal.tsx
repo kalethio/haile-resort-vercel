@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash } from "lucide-react";
 
 type Props = { onClose: () => void };
 type NewsForm = { title: string; desc: string; detail: string };
@@ -21,7 +21,6 @@ export default function NewsModal({ onClose }: Props) {
     type: "add" | "update" | "delete";
     index?: number;
   }>(null);
-  const [limitAlert, setLimitAlert] = useState(false);
 
   // Load news from API
   useEffect(() => {
@@ -38,19 +37,6 @@ export default function NewsModal({ onClose }: Props) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (editIndex !== null) {
-  //     setConfirmAction({ type: "update" });
-  //   } else {
-  //     if (news.length >= 3) {
-  //       setLimitAlert(true);
-  //       return;
-  //     }
-  //     setConfirmAction({ type: "add" });
-  //   }
-  // };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -60,6 +46,7 @@ export default function NewsModal({ onClose }: Props) {
       setConfirmAction({ type: "add" });
     }
   };
+
   const confirmSubmit = async () => {
     const updatedNews = [...news];
 
@@ -121,87 +108,33 @@ export default function NewsModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-xl max-h-[90vh] overflow-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Manage Latest News
-          </h2>
-          <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-600" />
+    <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Add Button */}
+        {!isFormOpen && (
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="flex items-center m-2 gap-3 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            Add News Item
           </button>
-        </div>
+        )}
 
-        {/* Content */}
-        <div className="p-4">
-          {/* News List */}
-          <div className="space-y-3 mb-6">
-            {news.length === 0 && (
-              <p className="text-gray-500 text-center">No news items yet.</p>
-            )}
+        {/* Add/Edit Form */}
+        {isFormOpen && (
+          <div className="mt-6 p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editIndex !== null ? "Edit News Item" : "Add News Item"}
+              </h2>
+            </div>
 
-            {news.map((item, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-start p-3 bg-gray-50 rounded-lg border"
-              >
-                <div>
-                  <h3 className="font-semibold text-gray-800">{item.title}</h3>
-                  <p className="text-sm text-gray-800">{item.desc}</p>
-                  <p className="text-xs text-gray-700 mt-1">{item.detail}</p>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => handleEdit(index)}
-                    className="p-1 rounded hover:bg-blue-100"
-                    title="Edit"
-                  >
-                    <Edit className="w-4 h-4 text-blue-600" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="p-1 rounded hover:bg-red-100"
-                    title="Delete"
-                  >
-                    <Trash className="w-4 h-4 text-red-600" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add Button */}
-          {/* {!isFormOpen && (
-            <button
-              onClick={() => {
-                if (news.length >= 3) setLimitAlert(true);
-                else setIsFormOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add News
-            </button>
-          )} */}
-          {!isFormOpen && (
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add News
-            </button>
-          )}
-          {/* Add/Edit Form */}
-          {isFormOpen && (
-            <form
-              onSubmit={handleSubmit}
-              className="mt-4 p-4 bg-gray-50 rounded-lg border space-y-3"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Title
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Title *
                 </label>
                 <input
                   type="text"
@@ -209,12 +142,14 @@ export default function NewsModal({ onClose }: Props) {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full mt-1 p-2 border rounded-md text-gray-800 placeholder-gray-400 focus:ring focus:ring-primary/30"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium"
+                  placeholder="Enter news title"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Short Description
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Short Description *
                 </label>
                 <input
                   type="text"
@@ -222,65 +157,111 @@ export default function NewsModal({ onClose }: Props) {
                   value={formData.desc}
                   onChange={handleChange}
                   required
-                  className="w-full mt-1 p-2 border rounded-md text-gray-800 placeholder-gray-400 focus:ring focus:ring-primary/30"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium"
+                  placeholder="Brief description of the news"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Detail
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Full Details *
                 </label>
                 <textarea
                   name="detail"
                   value={formData.detail}
                   onChange={handleChange}
                   required
-                  rows={3}
-                  className="w-full mt-1 p-2 border rounded-md text-gray-800 placeholder-gray-400 focus:ring focus:ring-primary/30"
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium resize-none"
+                  placeholder="Provide the complete news details..."
                 ></textarea>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                  className="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                  className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
                 >
-                  {editIndex !== null ? "Update" : "Add"}
+                  {editIndex !== null ? "Update News" : "Add News"}
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* News List */}
+        <div className="space-y-4 mb-6">
+          {news.length === 0 && (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <p className="text-gray-500 text-lg font-medium">
+                No news items yet.
+              </p>
+              <p className="text-gray-400 text-sm mt-1">
+                Get started by adding your first news item
+              </p>
+            </div>
           )}
+
+          {news.map((item, index) => (
+            <div
+              key={index}
+              className="flex justify-between items-start p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 text-lg mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-gray-700 mb-2 line-clamp-2">{item.desc}</p>
+                <p className="text-gray-600 text-sm line-clamp-3">
+                  {item.detail}
+                </p>
+              </div>
+              <div className="flex gap-2 ml-4 flex-shrink-0">
+                <button
+                  onClick={() => handleEdit(index)}
+                  className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                  title="Edit"
+                >
+                  <Edit className="w-4 h-4 text-blue-600" />
+                </button>
+                <button
+                  onClick={() => handleDelete(index)}
+                  className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                  title="Delete"
+                >
+                  <Trash className="w-4 h-4 text-red-600" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Confirmation Modal */}
       {confirmAction && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 text-center">
               {confirmAction.type === "delete"
-                ? "Delete this news?"
+                ? "Delete News Item?"
                 : confirmAction.type === "update"
-                  ? "Update this news?"
-                  : "Add this news?"}
+                  ? "Update News Item?"
+                  : "Add News Item?"}
             </h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to{" "}
-              <span className="font-semibold text-primary">
-                {confirmAction.type}
-              </span>{" "}
-              this item?
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to {confirmAction.type} this news item?
             </p>
-            <div className="flex justify-center gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => setConfirmAction(null)}
-                className="px-4 py-2 rounded-md border text-gray-600 hover:bg-gray-100"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
@@ -290,33 +271,11 @@ export default function NewsModal({ onClose }: Props) {
                     ? confirmDelete
                     : confirmSubmit
                 }
-                className="px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90"
+                className="flex-1 px-4 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
               >
                 Yes, {confirmAction.type}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Limit Alert Modal */}
-      {limitAlert && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Limit Reached
-            </h3>
-            <p className="text-gray-600 mb-4">
-              You can only have up to{" "}
-              <span className="font-semibold text-primary">3 news items</span>.
-              Please delete one to add a new one.
-            </p>
-            <button
-              onClick={() => setLimitAlert(false)}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-            >
-              OK
-            </button>
           </div>
         </div>
       )}
