@@ -61,7 +61,14 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
             <Experience
               key={exp.id || index}
               image={exp.highlightImage}
-              packages={exp.packages}
+              packages={exp.packages.map((pkg) => ({
+                ...pkg,
+                experience: {
+                  // ✅ Add experience relation to each package
+                  title: exp.title,
+                  highlightImage: exp.highlightImage,
+                },
+              }))}
               serviceDescription={[exp.title, exp.description || ""]}
             />
           ))}

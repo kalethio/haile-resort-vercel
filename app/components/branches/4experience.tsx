@@ -10,23 +10,22 @@ import {
 } from "framer-motion";
 import { FiX, FiShare2, FiHeart } from "react-icons/fi";
 
-// UPDATED: Match the API package structure
+// UPDATED: Exact match with API structure
 export interface Package {
   id: string;
-  name: string; // CHANGED: from 'title' to 'name'
-  description: string;
-  price: number; // CHANGED: from string to number
-  duration: string;
-  // ADDED: Fields to maintain compatibility with existing component
-  title?: string; // Optional for backward compatibility
+  title: string;
   subtitle?: string;
-  image?: string;
+  description: string;
+  price: number;
+  duration: string;
+  image?: string | null; // Can be null from API
+  category?: string;
+  available?: boolean;
   ctaLabel?: string;
-  details?: {
-    price?: string; // Keep string version for display
-    duration?: string;
-    inclusions?: string[];
-    highlights?: string[];
+  // Experience relation data
+  experience?: {
+    title?: string;
+    highlightImage?: string;
   };
 }
 
@@ -60,24 +59,41 @@ const itemVariants = {
   },
 };
 
-// Helper function to format package data for display
-const formatPackageForDisplay = (pkg: Package): Package => {
-  return {
-    ...pkg,
-    // Use name as title if title doesn't exist
-    title: pkg.title || pkg.name,
-    // Create a subtitle from duration
-    subtitle: pkg.subtitle || `Duration: ${pkg.duration}`,
-    // Format price for display
-    details: {
-      price: pkg.details?.price || `$${pkg.price}`,
-      duration: pkg.details?.duration || pkg.duration,
-      inclusions: pkg.details?.inclusions || [],
-      highlights: pkg.details?.highlights || [],
-    },
-    // Default CTA label
-    ctaLabel: pkg.ctaLabel || "View Package",
-  };
+// FIXED: Properly access experience highlight images
+// FIXED: Properly convert relative paths to absolute URLs
+const getPackageImage = (pkg: Package): string | null => {
+  console.log("🔍 PACKAGE IMAGE DEBUG:", {
+    id: pkg.id,
+    title: pkg.title,
+    packageImage: pkg.image,
+    experienceImage: pkg.experience?.highlightImage,
+  });
+
+  // Priority 1: Package's own image (if it exists)
+  if (pkg.image) {
+    console.log("✅ Using package image:", pkg.image);
+    return pkg.image;
+  }
+
+  // Priority 2: Experience's highlight image - CONVERT TO ABSOLUTE URL
+  if (pkg.experience?.highlightImage) {
+    let imageUrl = pkg.experience.highlightImage;
+
+    // Convert relative path to absolute URL
+    if (imageUrl.startsWith("/")) {
+      imageUrl = `http://localhost:3000${imageUrl}`;
+    }
+
+    console.log("✅ Using experience image (converted):", imageUrl);
+    return imageUrl;
+  }
+
+  console.log("❌ No image available for package:", pkg.id);
+  return null;
+};
+// Format price for display
+const formatPrice = (price: number): string => {
+  return `$${price.toFixed(2)}`;
 };
 
 export default function Experience({
@@ -88,6 +104,16 @@ export default function Experience({
     "Curated Experiences Awaiting You",
   ],
 }: ExperienceProps) {
+  // Temporary debug
+  console.log(
+    "📦 PACKAGES DATA:",
+    packages.map((pkg) => ({
+      id: pkg.id,
+      title: pkg.title,
+      image: pkg.image,
+      hasExpImage: !!pkg.experience?.highlightImage,
+    }))
+  );
   const containerRef = useRef<HTMLElement | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -120,7 +146,7 @@ export default function Experience({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: pkg.name,
+          title: pkg.title,
           text: pkg.description,
           url: window.location.href,
         });
@@ -128,16 +154,25 @@ export default function Experience({
         console.log("Sharing cancelled");
       }
     } else {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(
-        `${pkg.name} - ${pkg.description}\n${window.location.href}`
+        `${pkg.title} - ${pkg.description}\n${window.location.href}`
       );
       alert("Package details copied to clipboard!");
     }
   };
 
-  // Format packages for display
-  const displayPackages = packages.map(formatPackageForDisplay);
+  // Debug: Check what packages data we're receiving
+  console.log("📦 Packages data:", {
+    totalPackages: packages.length,
+    packages: packages.map((pkg) => ({
+      id: pkg.id,
+      title: pkg.title,
+      image: pkg.image,
+      experienceImage: pkg.experience?.highlightImage,
+      hasExperience: !!pkg.experience,
+      finalImage: getPackageImage(pkg),
+    })),
+  });
 
   return (
     <>
@@ -179,7 +214,7 @@ export default function Experience({
           >
             <div className="max-w-6xl mx-auto w-full px-6 md:px-12 lg:px-20">
               <div className="space-y-20 md:space-y-24">
-                {displayPackages.map((pkg, index) => (
+                {packages.map((pkg, index) => (
                   <PackageCard
                     key={pkg.id}
                     pkg={pkg}
@@ -198,7 +233,7 @@ export default function Experience({
 
         {/* Mobile */}
         <div className="md:hidden max-w-3xl mx-auto px-4 sm:px-6 space-y-8 sm:space-y-10">
-          {displayPackages.map((pkg) => (
+          {packages.map((pkg) => (
             <MobilePackageCard
               key={pkg.id}
               pkg={pkg}
@@ -243,6 +278,7 @@ function PackageCard({
 }: PackageCardProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -257,6 +293,8 @@ function PackageCard({
   const cardY = useTransform(scrollYProgress, [0, 0.4, 1], [24, 0, -16]);
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.45], [0, 1, 1]);
   const isReversed = index % 2 === 1;
+
+  const packageImage = getPackageImage(pkg);
 
   return (
     <motion.div
@@ -275,27 +313,27 @@ function PackageCard({
           className={`${isReversed ? "order-2 md:order-1" : "order-1"} md:pr-8 lg:pr-10`}
         >
           <div className="relative h-64 sm:h-72 md:h-[420px] lg:h-[480px] w-full overflow-hidden rounded-xl md:rounded-2xl shadow-lg md:shadow-xl group">
-            {!imageLoaded && (
+            {!imageLoaded && !imageError && packageImage && (
               <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl md:rounded-2xl" />
             )}
             <motion.div
               style={{ scale: imgScale }}
               className="absolute inset-0"
             >
-              {/* UPDATED: Use experience image or fallback */}
-              {pkg.image ? (
+              {packageImage && !imageError ? (
                 <Image
-                  src={pkg.image}
-                  alt={pkg.title || pkg.name}
+                  src={packageImage}
+                  alt={pkg.title}
                   fill
                   style={{ objectFit: "cover" }}
                   onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
                   className="transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <span className="text-white text-lg font-semibold">
-                    {pkg.title || pkg.name}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center rounded-xl md:rounded-2xl">
+                  <span className="text-white text-lg font-semibold text-center px-4">
+                    {pkg.title}
                   </span>
                 </div>
               )}
@@ -345,7 +383,7 @@ function PackageCard({
         >
           <div>
             <h3 className="text-xl md:text-2xl lg:text-3xl font-serif font-semibold text-gray-800 leading-snug">
-              {pkg.title || pkg.name}
+              {pkg.title}
             </h3>
             <h4 className="text-sm md:text-base lg:text-lg font-light text-gray-600 mt-1 md:mt-2">
               {pkg.subtitle || `Duration: ${pkg.duration}`}
@@ -356,11 +394,9 @@ function PackageCard({
             {pkg.description}
           </p>
 
-          {pkg.details?.price && (
-            <div className="text-lg md:text-xl font-bold text-primary">
-              {pkg.details.price}
-            </div>
-          )}
+          <div className="text-lg md:text-xl font-bold text-primary">
+            {formatPrice(pkg.price)}
+          </div>
 
           <div className="flex gap-3 pt-2">
             <motion.button
@@ -395,6 +431,9 @@ function MobilePackageCard({
 }: MobilePackageCardProps) {
   const [open, setOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const packageImage = getPackageImage(pkg);
 
   return (
     <motion.div
@@ -406,22 +445,29 @@ function MobilePackageCard({
       onClick={() => setOpen(!open)}
     >
       <div className="relative w-full h-48 sm:h-56 rounded-xl overflow-hidden shadow-md mb-4">
-        {!imageLoaded && pkg.image && (
+        {!imageLoaded && !imageError && packageImage && (
           <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl" />
         )}
-        {pkg.image ? (
+        {packageImage && !imageError ? (
           <Image
-            src={pkg.image}
-            alt={pkg.title || pkg.name}
+            src={packageImage}
+            alt={pkg.title}
             fill
             style={{ objectFit: "cover" }}
             onLoad={() => setImageLoaded(true)}
-            className="rounded-xl"
+            onError={() => {
+              console.error("❌ Image failed to load:", packageImage);
+              setImageError(true);
+            }}
+            className="transition-transform duration-700 group-hover:scale-105"
+            // Add unoptimized if using external URLs
+            unoptimized={packageImage.startsWith("http")}
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center rounded-xl">
-            <span className="text-white text-lg font-semibold">
-              {pkg.title || pkg.name}
+          // Fallback when no image
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center rounded-xl md:rounded-2xl">
+            <span className="text-white text-lg font-semibold text-center px-4">
+              {pkg.title}
             </span>
           </div>
         )}
@@ -458,17 +504,15 @@ function MobilePackageCard({
 
       <div className="w-full px-2">
         <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-800">
-          {pkg.title || pkg.name}
+          {pkg.title}
         </h3>
         <h4 className="text-xs sm:text-sm font-light text-gray-600 mt-1">
           {pkg.subtitle || `Duration: ${pkg.duration}`}
         </h4>
 
-        {(pkg.details?.price || pkg.price) && (
-          <div className="text-base font-bold text-primary mt-2">
-            {pkg.details?.price || `$${pkg.price}`}
-          </div>
-        )}
+        <div className="text-base font-bold text-primary mt-2">
+          {formatPrice(pkg.price)}
+        </div>
 
         <motion.div
           initial={{ height: 0, opacity: 0 }}
@@ -520,7 +564,7 @@ function PackageModal({
 }: PackageModalProps) {
   if (!pkg) return null;
 
-  const displayPackage = formatPackageForDisplay(pkg);
+  const packageImage = getPackageImage(pkg);
 
   return (
     <AnimatePresence>
@@ -542,17 +586,17 @@ function PackageModal({
           >
             {/* Modal Header */}
             <div className="relative h-64 sm:h-80">
-              {displayPackage.image ? (
+              {packageImage ? (
                 <Image
-                  src={displayPackage.image}
-                  alt={displayPackage.title || displayPackage.name}
+                  src={packageImage}
+                  alt={pkg.title}
                   fill
                   className="object-cover rounded-t-2xl"
                 />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center rounded-t-2xl">
                   <span className="text-white text-2xl font-semibold">
-                    {displayPackage.title || displayPackage.name}
+                    {pkg.title}
                   </span>
                 </div>
               )}
@@ -562,7 +606,7 @@ function PackageModal({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => onToggleFavorite(displayPackage.id)}
+                  onClick={() => onToggleFavorite(pkg.id)}
                   className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors"
                   aria-label={
                     isFavorite ? "Remove from favorites" : "Add to favorites"
@@ -575,7 +619,7 @@ function PackageModal({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => onShare(displayPackage)}
+                  onClick={() => onShare(pkg)}
                   className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors"
                   aria-label="Share package"
                 >
@@ -596,44 +640,19 @@ function PackageModal({
             {/* Modal Content */}
             <div className="p-6 sm:p-8">
               <h2 className="text-2xl sm:text-3xl font-serif font-semibold text-gray-800">
-                {displayPackage.title || displayPackage.name}
+                {pkg.title}
               </h2>
               <h3 className="text-lg sm:text-xl font-light text-gray-600 mt-1">
-                {displayPackage.subtitle ||
-                  `Duration: ${displayPackage.duration}`}
+                {pkg.subtitle || `Duration: ${pkg.duration}`}
               </h3>
 
-              {displayPackage.details?.price && (
-                <div className="text-xl sm:text-2xl font-bold text-primary mt-3">
-                  {displayPackage.details.price}
-                </div>
-              )}
+              <div className="text-xl sm:text-2xl font-bold text-primary mt-3">
+                {formatPrice(pkg.price)}
+              </div>
 
               <p className="text-gray-700 leading-relaxed mt-4 whitespace-pre-line">
-                {displayPackage.description}
+                {pkg.description}
               </p>
-
-              {displayPackage.details?.inclusions &&
-                displayPackage.details.inclusions.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="font-semibold text-gray-800 mb-3">
-                      Package Includes:
-                    </h4>
-                    <ul className="space-y-2">
-                      {displayPackage.details.inclusions.map(
-                        (inclusion, index) => (
-                          <li
-                            key={index}
-                            className="flex items-center text-sm text-gray-700"
-                          >
-                            <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                            {inclusion}
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
 
               <div className="flex gap-3 mt-8">
                 <motion.button

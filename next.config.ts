@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    domains: ["localhost"],
+    unoptimized: true, // Optional: for local development
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
