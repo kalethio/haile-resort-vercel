@@ -26,6 +26,7 @@ export default function GuestInfoForm({
   onSubmit,
 }: GuestInfoFormProps) {
   const [formErrors, setFormErrors] = useState<Partial<GuestInfo>>({});
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   const validateForm = (formData: FormData): GuestInfo | null => {
     const errors: Partial<GuestInfo> = {};
@@ -60,13 +61,52 @@ export default function GuestInfoForm({
     return Object.keys(errors).length === 0 ? guestInfo : null;
   };
 
+  // Handle newsletter subscription separately
+  const handleNewsletterSubscription = async (
+    email: string,
+    firstName: string
+  ) => {
+    if (!marketingOptIn) return;
+
+    try {
+      const res = await fetch("/api/subscribers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          name: firstName,
+        }),
+      });
+
+      if (!res.ok) {
+        console.warn(
+          "Newsletter subscription failed, but booking will continue"
+        );
+      } else {
+        console.log("Successfully subscribed to newsletter");
+      }
+    } catch (error) {
+      console.warn("Newsletter subscription error:", error);
+      // Don't fail the booking if subscription fails
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const validatedData = validateForm(formData);
 
     if (validatedData) {
-      onSubmit(validatedData);
+      // Submit booking first
+      await onSubmit(validatedData);
+
+      // Then handle newsletter subscription separately
+      if (marketingOptIn) {
+        await handleNewsletterSubscription(
+          validatedData.email,
+          validatedData.firstName
+        );
+      }
     }
   };
 
@@ -98,7 +138,7 @@ export default function GuestInfoForm({
                     name="firstName"
                     required
                     disabled={submitting}
-                    className={`w-full px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.firstName
                         ? "border-red-300"
                         : "border-gray-300"
@@ -123,7 +163,7 @@ export default function GuestInfoForm({
                     name="lastName"
                     required
                     disabled={submitting}
-                    className={`w-full px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.lastName ? "border-red-300" : "border-gray-300"
                     }`}
                     placeholder="Enter last name"
@@ -149,7 +189,7 @@ export default function GuestInfoForm({
                     name="email"
                     required
                     disabled={submitting}
-                    className={`w-full px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.email ? "border-red-300" : "border-gray-300"
                     }`}
                     placeholder="your@email.com"
@@ -165,14 +205,14 @@ export default function GuestInfoForm({
                   style={{ animationDelay: "0.4s" }}
                 >
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Phone Number *
+                    WhatsApp Number *
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     required
                     disabled={submitting}
-                    className={`w-full px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.phone ? "border-red-300" : "border-gray-300"
                     }`}
                     placeholder="+1 (555) 000-0000"
@@ -196,9 +236,30 @@ export default function GuestInfoForm({
                   name="specialRequests"
                   rows={4}
                   disabled={submitting}
-                  className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light resize-none transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-gray-900 px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light resize-none transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Any special requirements, dietary restrictions, or room preferences..."
                 />
+              </div>
+
+              {/* Marketing Opt-in Checkbox */}
+              <div
+                className="animate-fadeInUp"
+                style={{ animationDelay: "0.55s" }}
+              >
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={marketingOptIn}
+                    onChange={(e) => setMarketingOptIn(e.target.checked)}
+                    disabled={submitting}
+                    className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary/20 focus:ring-2 transition-all duration-300 group-hover:scale-110 disabled:opacity-50"
+                  />
+                  <span className="text-sm text-gray-600 font-light leading-relaxed">
+                    Yes, I would like to receive exclusive offers, promotions,
+                    and updates about Haile Hotels & Resorts via email. I can
+                    unsubscribe at any time.
+                  </span>
+                </label>
               </div>
 
               <div

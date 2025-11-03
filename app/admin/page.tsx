@@ -1,13 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  TrendingUp,
+  Users,
+  Calendar,
+  DollarSign,
+  Home,
+  Star,
+  Plus,
+  MapPin,
+  Eye,
+} from "lucide-react";
 
 interface DashboardStats {
   totalBookings: number;
-  pendingBookings: number;
   revenue: number;
   occupancyRate: number;
-  todayCheckIns: number;
-  todayCheckOuts: number;
+  guestSatisfaction: number;
 }
 
 interface Booking {
@@ -15,10 +25,9 @@ interface Booking {
   guestName: string;
   checkIn: string;
   checkOut: string;
-  status: string;
+  status: "confirmed" | "pending";
   amount: number;
   branch: string;
-  roomType: string;
 }
 
 export default function AdminDashboard() {
@@ -26,234 +35,220 @@ export default function AdminDashboard() {
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      // Mock data - will connect to your actual APIs
+    // Simulate API call
+    setTimeout(() => {
       setStats({
-        totalBookings: 156,
-        pendingBookings: 12,
-        revenue: 45200,
-        occupancyRate: 78,
-        todayCheckIns: 8,
-        todayCheckOuts: 5,
+        totalBookings: 847,
+        revenue: 125400,
+        occupancyRate: 82,
+        guestSatisfaction: 4.7,
       });
 
       setRecentBookings([
         {
           id: "1",
           guestName: "Kalkidan Belachew",
-          checkIn: "2025-10-20",
-          checkOut: "2025-10-22",
-          status: "PENDING",
+          checkIn: "2024-01-20",
+          checkOut: "2024-01-22",
+          status: "confirmed",
           amount: 450,
-          branch: "Hawassa Resort",
-          roomType: "Deluxe King Room",
+          branch: "Hawassa",
         },
         {
           id: "2",
           guestName: "John Smith",
-          checkIn: "2025-10-21",
-          checkOut: "2025-10-23",
-          status: "CONFIRMED",
+          checkIn: "2024-01-21",
+          checkOut: "2024-01-23",
+          status: "confirmed",
           amount: 320,
-          branch: "Addis Ababa Resort",
-          roomType: "Executive Suite",
+          branch: "Addis Ababa",
+        },
+        {
+          id: "3",
+          guestName: "Meron Tekle",
+          checkIn: "2024-01-19",
+          checkOut: "2024-01-25",
+          status: "pending",
+          amount: 890,
+          branch: "Bahir Dar",
         },
       ]);
-    } catch (error) {
-      console.error("Dashboard error:", error);
-    }
-  };
+    }, 500);
+  }, []);
 
-  if (!stats)
+  if (!stats) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading dashboard...</div>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    );
-
-  return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Welcome back! 👋</h1>
-        <p className="text-blue-100">
-          Here's what's happening with your resorts today.
-        </p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Bookings"
-          value={stats.totalBookings}
-          icon="📊"
-          color="blue"
-        />
-        <StatCard
-          title="Pending Payments"
-          value={stats.pendingBookings}
-          icon="⏳"
-          color="yellow"
-        />
-        <StatCard
-          title="Revenue"
-          value={`$${stats.revenue.toLocaleString()}`}
-          icon="💰"
-          color="green"
-        />
-        <StatCard
-          title="Occupancy Rate"
-          value={`${stats.occupancyRate}%`}
-          icon="🏨"
-          color="purple"
-        />
-      </div>
-
-      {/* Today's Activity */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Today's Activity
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Check-ins</span>
-              <span className="font-semibold text-green-600">
-                {stats.todayCheckIns}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Check-outs</span>
-              <span className="font-semibold text-blue-600">
-                {stats.todayCheckOuts}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h3>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-              📝 Create New Booking
-            </button>
-            <button className="w-full text-left p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-              👥 Manage Guests
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Bookings */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Recent Bookings
-          </h2>
-        </div>
-        <div className="p-6">
-          <RecentBookingsTable bookings={recentBookings} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon, color }: any) {
-  const colorClasses = {
-    blue: "bg-blue-50 border-blue-200",
-    green: "bg-green-50 border-green-200",
-    yellow: "bg-yellow-50 border-yellow-200",
-    purple: "bg-purple-50 border-purple-200",
-  };
-
-  return (
-    <div className={`p-6 rounded-lg border-2 ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className="text-3xl opacity-80">{icon}</div>
-      </div>
-    </div>
-  );
-}
-
-// ✅ FIXED: RecentBookingsTable component is now properly defined
-function RecentBookingsTable({ bookings }: { bookings: Booking[] }) {
-  if (bookings.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">No recent bookings</div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 font-semibold text-gray-900">
-              Guest
-            </th>
-            <th className="text-left py-3 font-semibold text-gray-900">
-              Dates
-            </th>
-            <th className="text-left py-3 font-semibold text-gray-900">Room</th>
-            <th className="text-left py-3 font-semibold text-gray-900">
-              Amount
-            </th>
-            <th className="text-left py-3 font-semibold text-gray-900">
-              Status
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {bookings.map((booking) => (
-            <tr
-              key={booking.id}
-              className="border-b border-gray-100 hover:bg-gray-50"
-            >
-              <td className="py-4">
-                <div className="font-medium text-gray-900">
-                  {booking.guestName}
-                </div>
-              </td>
-              <td className="py-4">
-                <div className="text-sm text-gray-600">
-                  {booking.checkIn} to {booking.checkOut}
-                </div>
-              </td>
-              <td className="py-4">
-                <div className="text-sm text-gray-900">{booking.roomType}</div>
-                <div className="text-xs text-gray-600">{booking.branch}</div>
-              </td>
-              <td className="py-4">
-                <div className="font-semibold text-gray-900">
-                  ${booking.amount}
-                </div>
-              </td>
-              <td className="py-4">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    booking.status === "PENDING"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-green-100 text-green-800"
-                  }`}
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Hotel performance overview</p>
+        </div>
+        <Link
+          href="/admin/reservations/new"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={16} />
+          New Booking
+        </Link>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Total Revenue"
+          value={`$${stats.revenue.toLocaleString()}`}
+          change="+12.5%"
+          icon={DollarSign}
+          color="green"
+        />
+        <MetricCard
+          title="Occupancy Rate"
+          value={`${stats.occupancyRate}%`}
+          change="+5.2%"
+          icon={Home}
+          color="blue"
+        />
+        <MetricCard
+          title="Bookings"
+          value={stats.totalBookings}
+          change="+8%"
+          icon={Users}
+          color="purple"
+        />
+        <MetricCard
+          title="Guest Rating"
+          value={stats.guestSatisfaction}
+          change="+0.3"
+          icon={Star}
+          color="orange"
+        />
+      </div>
+
+      {/* Quick Actions & Recent Bookings */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <Link
+                href="/admin/reservations"
+                className="flex items-center gap-3 p-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Calendar size={18} className="text-blue-600" />
+                <span>Manage Bookings</span>
+              </Link>
+              <Link
+                href="/admin/guests"
+                className="flex items-center gap-3 p-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Users size={18} className="text-green-600" />
+                <span>Guest Management</span>
+              </Link>
+              <Link
+                href="/admin/housekeeping"
+                className="flex items-center gap-3 p-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Home size={18} className="text-orange-600" />
+                <span>Housekeeping</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Bookings */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-gray-900">Recent Bookings</h3>
+                <Link
+                  href="/admin/reservations"
+                  className="text-blue-600 hover:text-blue-700 text-sm"
                 >
-                  {booking.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  View all
+                </Link>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {recentBookings.map((booking) => (
+                  <div
+                    key={booking.id}
+                    className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          booking.status === "confirmed"
+                            ? "bg-green-500"
+                            : "bg-orange-500"
+                        }`}
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {booking.guestName}
+                        </div>
+                        <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <MapPin size={12} />
+                          {booking.branch}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">
+                        ${booking.amount}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {booking.checkIn} - {booking.checkOut}
+                      </div>
+                    </div>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                      <Eye size={16} className="text-gray-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ title, value, change, icon: Icon, color }: any) {
+  const colorClasses = {
+    green: "text-green-600",
+    blue: "text-blue-600",
+    purple: "text-purple-600",
+    orange: "text-orange-600",
+  };
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`p-2 rounded-lg ${colorClasses[color]} bg-gray-50`}>
+          <Icon size={20} />
+        </div>
+        <div className="text-sm text-gray-600">{title}</div>
+      </div>
+      <div className="flex items-end justify-between">
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="flex items-center gap-1 text-sm text-green-600">
+          <TrendingUp size={14} />
+          {change}
+        </div>
+      </div>
     </div>
   );
 }

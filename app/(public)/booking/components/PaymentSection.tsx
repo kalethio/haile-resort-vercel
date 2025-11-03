@@ -29,7 +29,7 @@ export default function PaymentSection({
 }: PaymentSectionProps) {
   // Calculate ETB equivalent
   const calculateETB = (usdAmount: number) => {
-    return Math.round(usdAmount * 55); // Fixed exchange rate - TODO: Make dynamic
+    return Math.round(usdAmount * 55); // Fixed exchange rate
   };
 
   return (
@@ -39,7 +39,7 @@ export default function PaymentSection({
           Secure Your Booking
         </h2>
         <p className="text-gray-600 font-light text-lg">
-          Choose your preferred payment method
+          Complete your reservation
         </p>
       </div>
 
@@ -83,144 +83,129 @@ export default function PaymentSection({
           </div>
         </div>
 
-        {/* Payment Method Selection */}
+        {/* BOA Payment Section */}
         <div className="mb-8">
           <h4 className="font-normal text-gray-900 mb-6 text-lg">
-            Available Payment Options
+            Bank Transfer Payment
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Chapa Option */}
-            <button
-              onClick={() => onPaymentMethodChange("chapa")}
-              className={`p-6 border-2 rounded-xl text-left transition-all duration-300 group transform hover:scale-105 ${
-                paymentMethod === "chapa"
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-gray-200 hover:border-primary/30 hover:shadow-md bg-white"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${
-                    paymentMethod === "chapa"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-gray-100 text-gray-600 group-hover:bg-primary/5"
-                  }`}
-                >
-                  <span className="text-xl">🇪🇹</span>
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">Chapa Payment</div>
-                  <div className="text-sm text-gray-600 font-light mt-1">
-                    Pay in Ethiopian Birr (ETB)
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-light">
-                      Local Favorite
-                    </span>
-                  </div>
-                </div>
-                {paymentMethod === "chapa" && (
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">✓</span>
-                  </div>
-                )}
-              </div>
-            </button>
 
-            {/* Stripe Option */}
-            <button
-              onClick={() => onPaymentMethodChange("stripe")}
-              className={`p-6 border-2 rounded-xl text-left transition-all duration-300 group transform hover:scale-105 ${
-                paymentMethod === "stripe"
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-gray-200 hover:border-primary/30 hover:shadow-md bg-white"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${
-                    paymentMethod === "stripe"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-gray-100 text-gray-600 group-hover:bg-primary/5"
-                  }`}
-                >
-                  <span className="text-xl">🌍</span>
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">
-                    International Payment
-                  </div>
-                  <div className="text-sm text-gray-600 font-light mt-1">
-                    Pay in USD with credit card
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-light">
-                      Global Access
-                    </span>
-                  </div>
-                </div>
-                {paymentMethod === "stripe" && (
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">✓</span>
-                  </div>
-                )}
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                <span className="text-white text-xl font-bold">BOA</span>
               </div>
-            </button>
+              <div>
+                <div className="font-medium text-gray-900 text-lg">
+                  Bank of Abyssinia
+                </div>
+                <div className="text-sm text-gray-600 font-light">
+                  Secure Bank Transfer
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 border border-blue-300">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-light">Bank Name:</span>
+                  <span className="font-medium text-gray-900">
+                    Bank of Abyssinia
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-light">
+                    Account Name:
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    Haile Hotels & Resorts
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-light">
+                    Account Number:
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    1234 5678 9012
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-light">Swift Code:</span>
+                  <span className="font-medium text-gray-900">BOFAETAA</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-light">Branch:</span>
+                  <span className="font-medium text-gray-900">Bole Branch</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-yellow-600 text-lg">📝</span>
+              <div>
+                <p className="text-yellow-800 font-medium mb-2">
+                  Important Instructions
+                </p>
+                <ul className="text-yellow-700 text-sm space-y-1 font-light">
+                  <li>• Use your booking reference as payment description</li>
+                  <li>
+                    • Send payment confirmation to finance@haileresorts.com
+                  </li>
+                  <li>
+                    • Booking will be confirmed within 24 hours of payment
+                    receipt
+                  </li>
+                  <li>• Contact us for any assistance: +251 11 123 4567</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Payment Action */}
         <div className="border-t border-gray-200 pt-8">
-          {paymentMethod ? (
-            <div className="text-center">
-              <div className="mb-8 p-6 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-2xl">
-                <div className="w-16 h-16 bg-white border border-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-primary">🚀</span>
-                </div>
-                <h4 className="font-normal text-gray-900 mb-3 text-lg">
-                  Almost There!
-                </h4>
-                <p className="text-sm text-gray-700 mb-4 font-light leading-relaxed">
-                  We are enhancing our payment system for a seamless experience.
-                  Your booking is ready - our team will assist you with the
-                  payment process.
+          <div className="text-center">
+            <div className="mb-8 p-6 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-2xl">
+              <div className="w-16 h-16 bg-white border border-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl text-primary">⏳</span>
+              </div>
+              <h4 className="font-normal text-gray-900 mb-3 text-lg">
+                Payment Processing
+              </h4>
+              <p className="text-sm text-gray-700 mb-4 font-light leading-relaxed">
+                Our online payment system is currently being upgraded for better
+                service. Please use the Bank of Abyssinia transfer details above
+                to complete your payment.
+              </p>
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <p className="text-xs text-gray-600 mb-2 font-light">
+                  Need assistance with payment?
                 </p>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <p className="text-xs text-gray-600 mb-2 font-light">
-                    Contact our booking specialists:
-                  </p>
-                  <p className="text-lg font-medium text-primary">
-                    +251 11 123 4567
-                  </p>
-                  <p className="text-sm text-gray-600 font-light">
-                    bookings@haileresorts.com
-                  </p>
-                </div>
+                <p className="text-lg font-medium text-primary">
+                  +251 11 123 4567
+                </p>
+                <p className="text-sm text-gray-600 font-light">
+                  payments@haileresorts.com
+                </p>
               </div>
+            </div>
 
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={onBack}
-                  className="px-8 py-3.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all duration-300 hover:shadow-sm transform hover:scale-105"
-                >
-                  ← Back to Details
-                </button>
-                <button
-                  onClick={onPaymentComplete}
-                  className="px-8 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105"
-                >
-                  Confirm Booking & Contact Support →
-                </button>
-              </div>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={onBack}
+                className="px-8 py-3.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all duration-300 hover:shadow-sm transform hover:scale-105"
+              >
+                ← Back to Details
+              </button>
+              <button
+                onClick={onPaymentComplete}
+                className="px-8 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105"
+              >
+                Confirm Booking & Proceed to Bank Transfer →
+              </button>
             </div>
-          ) : (
-            <div className="text-center py-6">
-              <div className="text-gray-500 flex items-center justify-center gap-3 font-light">
-                <span className="text-lg">👆</span>
-                <span>Select a payment method to continue</span>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

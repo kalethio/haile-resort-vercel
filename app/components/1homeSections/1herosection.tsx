@@ -135,7 +135,7 @@ export default function HeroHybridCarousel() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 1.2, ease: "easeInOut" }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
               style={{ y: bgY }}
             >
               <Image

@@ -125,9 +125,9 @@ export default function BookingPage() {
           branch: bookingParams.branch,
           checkIn: bookingParams.checkIn,
           checkOut: bookingParams.checkOut,
-          guests: bookingParams.guests.toString(),
+          adults: bookingParams.guests.toString(), // ← Change to "adults"
+          children: "0", // ← Add children parameter
         });
-
         const response = await fetch(`/api/availability?${params}`, {
           signal: abortController.signal,
           headers: {
