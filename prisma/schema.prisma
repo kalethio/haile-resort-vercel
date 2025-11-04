@@ -77,9 +77,17 @@ model Guest {
   loyaltyPoints    LoyaltyPoints[]
   reviews          Review[]
 
+  // ADD THESE NEW FIELDS:
+  guestType        GuestType              @default(REGULAR) // ← ADD
+  company          String?                // ← ADD  
+  notes            String?                // ← ADD
+  totalStays       Int                    @default(0) // ← ADD
+  totalNights      Int                    @default(0) // ← ADD
+  lifetimeValue    Float                  @default(0) // ← ADD
+  lastStayAt       DateTime?              // ← ADD
+
   @@index([branchId, email])
 }
-
 model RoomType {
   id               Int             @id @default(autoincrement())
   name             String
@@ -632,4 +640,11 @@ enum ApplicationStatus {
   REVIEWED
   ACCEPTED
   REJECTED
+}
+enum GuestType {
+  REGULAR
+  FREQUENT 
+  CORPORATE
+  VIP
+  CELEBRITY
 }
