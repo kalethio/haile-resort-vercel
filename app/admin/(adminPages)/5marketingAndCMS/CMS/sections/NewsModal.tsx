@@ -15,6 +15,7 @@ export default function NewsModal({ onClose }: Props) {
     desc: "",
     detail: "",
   });
+  const [loading, setLoading] = useState(false);
 
   // Confirmation modal states
   const [confirmAction, setConfirmAction] = useState<null | {
@@ -24,10 +25,12 @@ export default function NewsModal({ onClose }: Props) {
 
   // Load news from API
   useEffect(() => {
+    setLoading(true);
     fetch("/api/news")
       .then((res) => res.json())
       .then((data) => setNews(data))
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const handleChange = (
@@ -58,6 +61,7 @@ export default function NewsModal({ onClose }: Props) {
 
     setNews(updatedNews);
     handleCloseForm();
+    setLoading(true);
 
     try {
       await fetch("/api/news", {
@@ -67,6 +71,8 @@ export default function NewsModal({ onClose }: Props) {
       });
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
 
     setConfirmAction(null);
@@ -81,6 +87,7 @@ export default function NewsModal({ onClose }: Props) {
 
     const updatedNews = news.filter((_, i) => i !== confirmAction.index);
     setNews(updatedNews);
+    setLoading(true);
 
     try {
       await fetch("/api/news", {
@@ -90,6 +97,8 @@ export default function NewsModal({ onClose }: Props) {
       });
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
 
     setConfirmAction(null);
@@ -198,7 +207,11 @@ export default function NewsModal({ onClose }: Props) {
 
         {/* News List */}
         <div className="space-y-4 mb-6">
-          {news.length === 0 && (
+          {loading ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <p className="text-gray-500 text-lg font-medium">Loading...</p>
+            </div>
+          ) : news.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
               <p className="text-gray-500 text-lg font-medium">
                 No news items yet.
@@ -207,40 +220,40 @@ export default function NewsModal({ onClose }: Props) {
                 Get started by adding your first news item
               </p>
             </div>
+          ) : (
+            news.map((item, index) => (
+              <div
+                key={index}
+                className="flex justify-between items-start p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900 text-lg mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-700 mb-2 line-clamp-2">{item.desc}</p>
+                  <p className="text-gray-600 text-sm line-clamp-3">
+                    {item.detail}
+                  </p>
+                </div>
+                <div className="flex gap-2 ml-4 flex-shrink-0">
+                  <button
+                    onClick={() => handleEdit(index)}
+                    className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                    title="Edit"
+                  >
+                    <Edit className="w-4 h-4 text-blue-600" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(index)}
+                    className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+              </div>
+            ))
           )}
-
-          {news.map((item, index) => (
-            <div
-              key={index}
-              className="flex justify-between items-start p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 text-lg mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-gray-700 mb-2 line-clamp-2">{item.desc}</p>
-                <p className="text-gray-600 text-sm line-clamp-3">
-                  {item.detail}
-                </p>
-              </div>
-              <div className="flex gap-2 ml-4 flex-shrink-0">
-                <button
-                  onClick={() => handleEdit(index)}
-                  className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
-                  title="Edit"
-                >
-                  <Edit className="w-4 h-4 text-blue-600" />
-                </button>
-                <button
-                  onClick={() => handleDelete(index)}
-                  className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                  title="Delete"
-                >
-                  <Trash className="w-4 h-4 text-red-600" />
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
