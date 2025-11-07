@@ -8,11 +8,8 @@ interface RouteProps {
   }>;
 }
 
-export async function GET(
-  request: Request,
-  { params }: RouteProps // ← Add type
-) {
-  const { slug } = await params; // ← AWAIT params
+export async function GET(request: Request, { params }: RouteProps) {
+  const { slug } = await params;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -20,7 +17,7 @@ export async function GET(
     const endDate = new Date(searchParams.get("endDate") || new Date());
 
     const branch = await prisma.branch.findUnique({
-      where: { slug: slug }, // ← Use awaited slug
+      where: { slug },
       include: {
         roomTypes: {
           include: {
@@ -41,12 +38,12 @@ export async function GET(
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Calculate room type reports
+    // --- Calculate room type stats ---
     const roomTypesWithStats = await Promise.all(
       branch.roomTypes.map(async (roomType) => {
-        const totalRooms = roomType.rooms.length;
+        // ✅ FIX: Use roomType.totalRooms instead of counting rooms
+        const totalRooms = roomType.totalRooms;
 
-        // Calculate occupied rooms for the date range
         const occupiedRooms = roomType.rooms.filter((room) =>
           room.roomBookings.some((rb) => {
             const booking = rb.booking;
@@ -60,7 +57,6 @@ export async function GET(
         const occupancyRate =
           totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
-        // Calculate revenue for the date range
         const revenue = roomType.rooms.reduce(
           (sum, room) =>
             sum +
@@ -68,7 +64,6 @@ export async function GET(
               const booking = rb.booking;
               const bookingStart = new Date(booking.checkIn);
               const bookingEnd = new Date(booking.checkOut);
-
               if (bookingStart <= endDate && bookingEnd >= startDate) {
                 return bookingSum + rb.pricePerNight * rb.totalNights;
               }
@@ -80,9 +75,11 @@ export async function GET(
         return {
           id: roomType.id,
           name: roomType.name,
-          roomCount: totalRooms,
+          roomCount: totalRooms, // ✅ Now reflects edited values
+          totalRooms: totalRooms, // ✅ Add totalRooms for frontend
           basePrice: roomType.basePrice,
-          features: roomType.roomFeatures.map((f) => f.name),
+          features: roomType.roomFeatures?.map((f) => f.name) || [],
+          amenities: (roomType as any).amenities || [],
           occupancyRate,
           revenue,
           availableRooms,
@@ -90,9 +87,9 @@ export async function GET(
       })
     );
 
-    // Calculate overall metrics
+    // --- Aggregate metrics ---
     const totalRooms = roomTypesWithStats.reduce(
-      (sum, rt) => sum + rt.roomCount,
+      (sum, rt) => sum + rt.totalRooms,
       0
     );
     const availableRooms = roomTypesWithStats.reduce(

@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       ...roomType,
       availableRooms: roomType.rooms.length,
       amenities: roomType.amenities || [],
-      images: roomType.roomTypeMedia.map((rtm) => rtm.media.url), // Extract image URLs
+      images: roomType.roomTypeMedia.map((rtm) => rtm.media.url),
     }));
 
     return NextResponse.json(roomTypesWithAvailability);
@@ -74,11 +74,13 @@ export async function POST(request: Request) {
       childCapacity,
       basePrice,
       totalRooms,
-      branchSlug,
       amenities,
-      features,
       images,
     } = body;
+
+    // Get branchSlug from URL instead of request body
+    const url = new URL(request.url);
+    const branchSlug = url.searchParams.get("branchSlug");
 
     console.log("Parsed values:", {
       name,
@@ -89,7 +91,6 @@ export async function POST(request: Request) {
       totalRooms,
       branchSlug,
       amenities,
-      features,
       images,
     });
 
@@ -124,9 +125,6 @@ export async function POST(request: Request) {
       parsedTotalRooms,
     });
 
-    // Combine amenities and features
-    const allAmenities = [...(amenities || []), ...(features || [])];
-
     // Create room type
     const roomType = await prisma.roomType.create({
       data: {
@@ -137,16 +135,16 @@ export async function POST(request: Request) {
         basePrice: parsedBasePrice,
         totalRooms: parsedTotalRooms,
         branchId: branch.id,
-        amenities: allAmenities,
+        amenities: amenities || [],
         available: true,
       },
     });
 
     console.log(`Created room type: ${roomType.name} with ID: ${roomType.id}`);
 
-    // Create individual rooms
+    // Create individual rooms with UNIQUE room numbers
     const rooms = Array.from({ length: parsedTotalRooms }, (_, i) => ({
-      roomNumber: `${name.substring(0, 3).toUpperCase()}${(i + 1).toString().padStart(3, "0")}`,
+      roomNumber: `RT${roomType.id.toString().padStart(3, "0")}${(i + 1).toString().padStart(2, "0")}`,
       roomTypeId: roomType.id,
       branchId: branch.id,
       status: "AVAILABLE",
@@ -195,7 +193,7 @@ export async function POST(request: Request) {
               data: {
                 roomTypeId: roomType.id,
                 mediaId: mediaAsset.id,
-                isHighlight: index === 0, // First image as highlight
+                isHighlight: index === 0,
                 order: index,
               },
             })
@@ -208,17 +206,14 @@ export async function POST(request: Request) {
       } catch (imageError) {
         console.error("Error creating media records:", imageError);
         // Don't fail the entire request if image linking fails
-        // The room type is already created successfully
       }
-    } else {
-      console.log("No images to process for room type");
     }
 
     return NextResponse.json({
       success: true,
       roomType: {
         ...roomType,
-        images: images || [], // Include images in response
+        images: images || [],
       },
       message: `Created ${parsedTotalRooms} rooms of type ${name}`,
     });

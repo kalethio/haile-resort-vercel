@@ -88,6 +88,20 @@ model Guest {
 
   @@index([branchId, email])
 }
+// ADD this new model
+model RoomFeature {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  available   Boolean    @default(true)
+  branchId    Int
+  roomTypes   RoomType[]
+  
+  @@index([branchId, available])
+}
+
+// UPDATE RoomType model - ADD roomFeatures relation
 model RoomType {
   id               Int             @id @default(autoincrement())
   name             String
@@ -102,11 +116,11 @@ model RoomType {
   rooms            Room[]
   branch           Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
   roomTypeMedia    RoomTypeMedia[]
-
+  roomFeatures     RoomFeature[]    // ← ADD THIS LINE
+  
   @@unique([branchId, name])
   @@index([branchId, available])
 }
-
 model Room {
   id           Int           @id @default(autoincrement())
   roomNumber   String
