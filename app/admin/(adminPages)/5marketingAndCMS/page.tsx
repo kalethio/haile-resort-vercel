@@ -43,25 +43,12 @@ const SECTIONS: SectionDef[] = [
     Component: ChatbotContent,
     type: "cms",
   },
-  {
-    id: "packages",
-    title: "Favourite Packages",
-    icon: FaGift,
-    Component: PackagesContent,
-    type: "cms",
-  },
+
   {
     id: "news",
     title: "Latest News",
     icon: FaNewspaper,
     Component: NewsContent,
-    type: "cms",
-  },
-  {
-    id: "gallery",
-    title: "Gallery",
-    icon: FaImages,
-    Component: GalleryContent,
     type: "cms",
   },
   {
@@ -173,7 +160,7 @@ export default function MarketingAndCMS() {
             Marketing & CMS
           </h1>
           <p className="text-gray-600 mt-2">
-            Manage your content and marketing campaigns
+            Manage Website content and marketing campaigns
           </p>
         </div>
 
@@ -189,7 +176,7 @@ export default function MarketingAndCMS() {
                 <button
                   key={section.id}
                   onClick={() => setOpenId(section.id)}
-                  className="flex items-center w-full p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                  className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
                 >
                   <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
                   <span className="text-gray-900">{section.title}</span>
@@ -214,7 +201,7 @@ export default function MarketingAndCMS() {
                 <button
                   key={section.id}
                   onClick={() => setOpenId(section.id)}
-                  className="flex items-center w-full p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                  className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
                 >
                   <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
                   <span className="text-gray-900">{section.title}</span>

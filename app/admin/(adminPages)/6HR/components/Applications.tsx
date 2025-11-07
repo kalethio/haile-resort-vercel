@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Application, Job, Branch } from "../types";
+import { Application, Job, Branch } from "./types";
 
 export default function Applications() {
   const [applications, setApplications] = useState<Application[]>([]);

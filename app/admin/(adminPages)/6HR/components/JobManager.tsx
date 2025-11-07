@@ -1,8 +1,8 @@
-// admin/(adminPages)/4staff/career/components/JobManager.tsx
+// admin/(adminPages)/6HR/components/JobManager.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { Job } from "@/components/career/types";
+import { Job } from "./types";
 import JobList from "./JobList";
 import JobForm from "./JobForm";
 

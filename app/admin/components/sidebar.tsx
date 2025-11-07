@@ -31,7 +31,7 @@ const menuItems: MenuItem[] = [
     href: "/admin/5marketingAndCMS",
   },
   { label: "HR Management", icon: Briefcase, href: "/admin/6HR" },
-  { label: "Inventory", icon: Package, href: "/admin/7inventory" },
+  { label: "Inventory Management", icon: Package, href: "/admin/7Inventory" },
   { label: "System Admin", icon: Settings, href: "/admin/8system" },
 ];
 
@@ -41,10 +41,10 @@ export default function Sidebar() {
   return (
     <aside className="w-fit p-2 bg-white border-r border-gray-100 flex flex-col h-full">
       {/* Minimal Header */}
-      <div className="h-20 flex items-center px-6">
+      <div className="h-20 flex bg-gray-100 items-center px-6">
         <Link
           href="/"
-          className="font-light text-2xl text-gray-900 tracking-tight"
+          className="font-light text-xl text-gray-900 tracking-tight"
         >
           Haile Hotel and Resorts
         </Link>
@@ -53,7 +53,11 @@ export default function Sidebar() {
       {/* Elegant Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {menuItems.map(({ label, icon: Icon, href }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
+          // Fixed: Dashboard only active on exact match, others use startsWith
+          const active =
+            href === "/admin"
+              ? pathname === "/admin"
+              : pathname === href || pathname.startsWith(href + "/");
 
           return (
             <Link

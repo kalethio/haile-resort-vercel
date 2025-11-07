@@ -1,4 +1,4 @@
-// admin/(adminPages)/4staff/career/components/JobList.tsx
+// admin/(adminPages)/6HR/components/JobList.tsx
 "use client";
 
 import { Job } from "./types";
