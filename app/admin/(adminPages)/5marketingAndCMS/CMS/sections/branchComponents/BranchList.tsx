@@ -98,7 +98,7 @@ export default function BranchList({
               <div className="flex justify-between items-center">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-lg">
+                    <h3 className="font-semibold text-gray-950 text-lg">
                       {branch.branchName}
                     </h3>
                     <span

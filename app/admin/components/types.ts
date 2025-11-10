@@ -27,7 +27,7 @@ export interface Booking {
   guestName: string;
   checkIn: string;
   checkOut: string;
-  status: "confirmed" | "pending";
+  status: "confirmed" | "pending" | "checked_in"; // Add all possible statuses
   amount: number;
   branch: string;
 }

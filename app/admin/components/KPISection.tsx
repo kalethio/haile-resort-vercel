@@ -1,9 +1,28 @@
-import { Building, TrendingUp, TrendingDown, MapPin } from "lucide-react";
-import { DashboardStats, BranchPerformance } from "./types";
+"use client";
 
-interface Props {
-  stats: DashboardStats;
-  branchPerformance: BranchPerformance[];
+import { useState, useEffect } from "react";
+import {
+  Building,
+  TrendingUp,
+  TrendingDown,
+  MapPin,
+  Users,
+  Calendar,
+  LogOut,
+} from "lucide-react";
+
+interface DashboardStats {
+  weeklyRevenue: number;
+  todayBookings: number;
+  todayCheckIns: number;
+  todayCheckOuts: number;
+  branchPerformance: Array<{
+    name: string;
+    occupancy: number;
+    revenue: number;
+    bookings: number;
+    trend: "up" | "down";
+  }>;
 }
 
 function MetricCard({
@@ -22,9 +41,7 @@ function MetricCard({
         </div>
         {trend && (
           <div
-            className={`flex items-center gap-1 text-sm ${
-              trend === "up" ? "text-green-600" : "text-red-600"
-            }`}
+            className={`flex items-center gap-1 text-sm ${trend === "up" ? "text-green-600" : "text-red-600"}`}
           >
             {trend === "up" ? (
               <TrendingUp size={14} />
@@ -46,7 +63,7 @@ function MetricCard({
   );
 }
 
-function BranchCard({ branch }: { branch: BranchPerformance }) {
+function BranchCard({ branch }: { branch: any }) {
   return (
     <div className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
       <div className="flex items-center gap-3">
@@ -65,9 +82,7 @@ function BranchCard({ branch }: { branch: BranchPerformance }) {
           {branch.occupancy}%
         </div>
         <div
-          className={`text-xs flex items-center gap-1 ${
-            branch.trend === "up" ? "text-green-600" : "text-red-600"
-          }`}
+          className={`text-xs flex items-center gap-1 ${branch.trend === "up" ? "text-green-600" : "text-red-600"}`}
         >
           {branch.trend === "up" ? (
             <TrendingUp size={12} />
@@ -81,73 +96,89 @@ function BranchCard({ branch }: { branch: BranchPerformance }) {
   );
 }
 
-export default function KPISection({ stats, branchPerformance }: Props) {
+export default function KPISection() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch("/api/admin/dashboard-stats");
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-center py-12 text-gray-600">
+        Failed to load dashboard data
+      </div>
+    );
+  }
+
   return (
     <section className="space-y-6">
-      {/* Multi-Branch Overview */}
+      {/* Daily Operations Overview */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Multi-Branch Overview
+            Today&apos;s Operations
           </h2>
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Building size={16} />
-            <span>
-              {stats.activeBranches} of {stats.totalBranches} branches active
-            </span>
+            <Calendar size={16} />
+            <span>Real-time updates</span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
-            title="Total Revenue"
-            value={`$${(stats.revenue / 1000).toFixed(0)}K`}
-            subtitle="Across all branches"
+            title="This Week Revenue"
+            value={`$${(stats.weeklyRevenue / 1000).toFixed(0)}K`}
+            subtitle="Revenue this week"
             trend="up"
             trendValue="+12.5%"
             icon={Building}
           />
           <MetricCard
-            title="Avg Occupancy"
-            value={`${stats.occupancyRate}%`}
-            subtitle="Network average"
-            trend="up"
-            trendValue="+5.2%"
-            icon={TrendingUp}
-          />
-          <MetricCard
-            title="Total Bookings"
-            value={stats.totalBookings.toLocaleString()}
-            subtitle="All properties"
+            title="Today New Booking"
+            value={stats.todayBookings.toString()}
+            subtitle="New reservations today"
             trend="up"
             trendValue="+8%"
-            icon={Building}
+            icon={Calendar}
           />
           <MetricCard
-            title="Guest Rating"
-            value={stats.guestSatisfaction.toString()}
-            subtitle="Average score"
+            title="Today Check In"
+            value={stats.todayCheckIns.toString()}
+            subtitle="Arrivals today"
             trend="up"
-            trendValue="+0.3"
-            icon={TrendingUp}
+            trendValue="+15%"
+            icon={Users}
           />
-        </div>
-      </div>
-
-      {/* Branch Performance */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">Branch Performance</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Today's occupancy & revenue
-          </p>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {branchPerformance.map((branch, index) => (
-              <BranchCard key={branch.name} branch={branch} />
-            ))}
-          </div>
+          <MetricCard
+            title="Today Check Out"
+            value={stats.todayCheckOuts.toString()}
+            subtitle="Departures today"
+            trend="down"
+            trendValue="-3%"
+            icon={LogOut}
+          />
         </div>
       </div>
     </section>

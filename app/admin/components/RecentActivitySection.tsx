@@ -14,7 +14,7 @@ export default function RecentActivitySection({ bookings }: Props) {
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-gray-900">Recent Bookings</h3>
             <Link
-              href="/admin/reservations"
+              href="/admin/2reservations"
               className="text-gray-600 hover:text-gray-900 text-sm"
             >
               View all bookings

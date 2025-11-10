@@ -38,7 +38,7 @@ export const DATA = {
 type Service = (typeof DATA)["services"][number];
 
 export default function HeroHybridCarousel() {
-  const { headline, subheadline, services, autoAdvanceMs } = DATA;
+  const { headline, services, autoAdvanceMs } = DATA;
   const [index, setIndex] = useState(0);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,18 +164,6 @@ export default function HeroHybridCarousel() {
             {headline}
           </motion.h1>
 
-          {/* Subheadline
-          <motion.p
-            className="mt-4 sm:mt-6 max-w-full sm:max-w-lg text-base sm:text-lg text-white/90 leading-relaxed"
-            style={{ y: subheadlineY }}
-          >
-            {subheadline}
-          </motion.p> */}
-
-          {/* Booking Form */}
-
-          <CheckBooking />
-
           {/* Dynamic Service Heading */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -222,6 +210,9 @@ export default function HeroHybridCarousel() {
             )}
           </div>
         </div>
+        {/* Booking Form */}
+
+        <CheckBooking />
       </div>
     </section>
   );
