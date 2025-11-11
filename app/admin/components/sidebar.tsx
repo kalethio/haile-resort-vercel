@@ -32,7 +32,7 @@ const menuItems: MenuItem[] = [
   },
   { label: "HR Management", icon: Briefcase, href: "/admin/6HR" },
   { label: "Inventory Management", icon: Package, href: "/admin/7Inventory" },
-  { label: "System Admin", icon: Settings, href: "/admin/8system" },
+  { label: "System Admin", icon: Settings, href: "/admin/8systemAdmin" },
 ];
 
 export default function Sidebar() {
