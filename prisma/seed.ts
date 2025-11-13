@@ -4,117 +4,130 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🔴 DEBUG: Seed started");
+  console.log("🚀 Starting seed...");
 
   try {
-    // Test 1: Check database connection
-    console.log("🔴 Step 1: Testing database connection...");
-    const connectionTest = await prisma.$queryRaw`SELECT 1 as test`;
-    console.log("✅ Database connection OK");
+    // 1. Create SUPER_ADMIN Role & Permissions FIRST
+    console.log("👑 Creating SUPER_ADMIN role...");
+    await createSuperAdminRole();
 
-    // Test 2: Check if JobOpening table exists
-    console.log("🔴 Step 2: Checking JobOpening table...");
-    const tableCheck = await prisma.$queryRaw`
-      SELECT name FROM sqlite_master WHERE type='table' AND name='JobOpening'
-    `;
-    console.log("✅ JobOpening table exists:", tableCheck);
-
-    // Test 3: Check current JobOpening count
-    console.log("🔴 Step 3: Checking current JobOpening count...");
-    const currentCount = await prisma.jobOpening.count();
-    console.log("📊 Current JobOpening count:", currentCount);
-
-    // Test 4: Check if we can create branches
-    console.log("🔴 Step 4: Creating branches...");
+    // 2. Create Branches
+    console.log("🏨 Creating branches...");
     const branches = await createBranches();
-    console.log(
-      "✅ Created branches:",
-      branches.map((b) => b.id)
-    );
 
-    // Test 5: Try to create ONE simple job
-    console.log("🔴 Step 5: Testing job creation...");
-    const testJob = await prisma.jobOpening.create({
-      data: {
-        title: "DEBUG TEST JOB",
-        department: "Debug",
-        description: "This is a test job for debugging",
-        location: "Test Location",
-        type: "Full-time",
-        published: true,
-        branchId: branches[0].id,
-      },
-    });
-    console.log("✅ Test job created successfully! ID:", testJob.id);
+    // 3. Create SUPER_ADMIN User (only one user)
+    console.log("👥 Creating SUPER_ADMIN user...");
+    await createSuperAdminUser();
 
-    // Test 6: Check if job appears in database
-    console.log("🔴 Step 6: Verifying job in database...");
-    const verifyJob = await prisma.jobOpening.findFirst({
-      where: { id: testJob.id },
-    });
-    console.log("✅ Job verified in DB:", !!verifyJob);
+    // 4. Create Room Data
+    console.log("🛏️ Creating rooms...");
+    await createRoomData(branches);
 
-    // Test 7: Now try the actual job creation function
-    console.log("🔴 Step 7: Calling createJobOpenings function...");
+    // 5. Create Experiences & Packages
+    console.log("🎯 Creating experiences...");
+    await createExperiencesWithPackages(branches);
+
+    // 6. Create Job Openings
+    console.log("💼 Creating jobs...");
     await createJobOpenings(branches);
 
-    // Test 8: Final count check
-    console.log("🔴 Step 8: Final count check...");
-    const finalCount = await prisma.jobOpening.count();
-    console.log("📊 Final JobOpening count:", finalCount);
+    // 7. Create Other Data
+    console.log("🏞️ Creating attractions...");
+    await createAttractions(branches);
 
-    console.log("✅ DEBUG COMPLETED - All tests passed");
+    console.log("🏠 Creating accommodations...");
+    await createAccommodations(branches);
+
+    console.log("📝 Creating branch details...");
+    await createBranchDetails(branches);
+
+    console.log("✅ Seed completed successfully!");
   } catch (error) {
-    console.error("❌ DEBUG FAILED at step:", error);
-    console.error("Full error details:", error);
+    console.error("❌ Seed failed:", error);
+    throw error;
   }
 }
 
-async function clearDatabase() {
-  console.log("🧹 Clearing existing data...");
+// ============================
+// SUPER_ADMIN FUNCTIONS
+// ============================
+async function createSuperAdminRole() {
+  // Clear existing roles and permissions
+  await prisma.permission.deleteMany();
+  await prisma.role.deleteMany();
 
-  // Clear in correct order to respect foreign key constraints
-  await prisma.auditLog.deleteMany();
-  await prisma.loyaltyPoints.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.roomBooking.deleteMany();
-  await prisma.packageBooking.deleteMany();
-  await prisma.guestFavoritePackage.deleteMany();
-  await prisma.booking.deleteMany();
-  await prisma.guest.deleteMany();
-  await prisma.room.deleteMany();
-  await prisma.roomType.deleteMany();
-  await prisma.packageMedia.deleteMany();
-  await prisma.roomTypeMedia.deleteMany();
-  await prisma.gallery.deleteMany();
-  await prisma.mediaAsset.deleteMany();
-  await prisma.package.deleteMany();
-  await prisma.experience.deleteMany();
-  await prisma.jobApplication.deleteMany();
-  await prisma.jobOpening.deleteMany();
-  await prisma.teamMember.deleteMany();
-  await prisma.fAQ.deleteMany();
-  await prisma.review.deleteMany();
-  await prisma.newsArticle.deleteMany();
-  await prisma.websitePage.deleteMany();
-  await prisma.chatbotResponse.deleteMany();
-  await prisma.promoCode.deleteMany();
-  await prisma.subscriber.deleteMany();
-  await prisma.campaign.deleteMany();
-  await prisma.emailTemplate.deleteMany();
-  await prisma.contact.deleteMany();
-  await prisma.location.deleteMany();
-  await prisma.branchSeo.deleteMany();
-  await prisma.attraction.deleteMany();
-  await prisma.accommodation.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.branch.deleteMany();
+  // Create only SUPER_ADMIN role
+  const superAdminRole = await prisma.role.create({
+    data: {
+      name: "SUPER_ADMIN",
+      description: "Full system access - cannot be deleted",
+      isSystem: true,
+    },
+  });
+
+  // Use the OLD permission keys that sidebar expects
+  const permissionModules = [
+    "reservations",
+    "room_management",
+    "content_management",
+    "hr_management",
+    "inventory",
+    "cms_branch_manager",
+    "cms_review",
+    "cms_chatbot",
+    "cms_news",
+    "email_marketing",
+    "system_users",
+    "system_roles",
+    "system_api",
+    "system_audit",
+  ];
+
+  // Create 'view' permissions for each module (sidebar checks for .view/.read)
+  for (const moduleName of permissionModules) {
+    await prisma.permission.create({
+      data: {
+        module: moduleName,
+        action: "view",
+        roleId: superAdminRole.id,
+      },
+    });
+  }
+
+  console.log(
+    `✅ Created SUPER_ADMIN role with ${permissionModules.length} module permissions`
+  );
+  return superAdminRole;
 }
 
+async function createSuperAdminUser() {
+  const email = "superadmin@haileresorts.com";
+
+  // Check if SUPER_ADMIN user already exists
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    console.log("✅ SUPER_ADMIN user already exists");
+    return;
+  }
+
+  // Create only one SUPER_ADMIN user (system-wide)
+  await prisma.user.create({
+    data: {
+      name: "Super Administrator",
+      email,
+      password: "$2b$10$HASHED_admin123", // Replace later with bcrypt hash if dynamic
+      roleId: (await prisma.role.findFirst({ where: { name: "SUPER_ADMIN" } }))!
+        .id,
+      status: "ACTIVE",
+    },
+  });
+
+  console.log("✅ Created SUPER_ADMIN user: superadmin@haileresorts.com");
+}
+// YOUR EXISTING FUNCTIONS - KEEP THEM EXACTLY AS THEY WERE
 async function createBranches() {
   console.log("🏨 Creating branches...");
 
-  // Check if branches already exist
   const existingBranches = await prisma.branch.findMany();
   if (existingBranches.length > 0) {
     console.log("✅ Branches already exist, skipping creation");
@@ -122,7 +135,6 @@ async function createBranches() {
   }
 
   const branches = [];
-
   const branchData = [
     {
       slug: "hawassa",
@@ -190,55 +202,17 @@ async function createBranches() {
   return branches;
 }
 
-async function createUsers(branches: any[]) {
-  console.log("👥 Creating users...");
-
-  // Create super admin first
-  await prisma.user.create({
-    data: {
-      name: "Super Admin",
-      email: "superadmin@haileresorts.com",
-      role: "SUPER_ADMIN",
-    },
-  });
-
-  // Create branch users
-  for (const branch of branches) {
-    await prisma.user.create({
-      data: {
-        name: `Manager ${branch.branchName}`,
-        email: `manager@${branch.slug}.com`,
-        role: "MANAGER",
-        branchId: branch.id,
-      },
-    });
-
-    await prisma.user.create({
-      data: {
-        name: `Staff ${branch.branchName}`,
-        email: `staff@${branch.slug}.com`,
-        role: "STAFF",
-        branchId: branch.id,
-      },
-    });
-  }
-}
-
 async function createRoomData(branches: any[]) {
   console.log("🛏️ Creating room types and rooms for each branch...");
 
-  // Find Hawassa branch specifically
   const hawassaBranch = branches.find((b) => b.slug === "hawassa");
   const otherBranches = branches.filter((b) => b.slug !== "hawassa");
 
-  // Store room types by branch slug for frontend reference
   const roomTypesByBranch = {};
 
-  // Create Hawassa first with specific room types (this should get IDs 1 and 2)
   if (hawassaBranch) {
     console.log(`📝 Creating rooms for Hawassa branch first...`);
 
-    // Create Room Types for Hawassa
     const deluxeRoomType = await prisma.roomType.create({
       data: {
         name: "Deluxe King Room",
@@ -273,15 +247,12 @@ async function createRoomData(branches: any[]) {
       },
     });
 
-    // Store room type IDs for Hawassa
     roomTypesByBranch["hawassa"] = {
       deluxe: deluxeRoomType.id,
       suite: suiteRoomType.id,
     };
 
-    // Create Actual Rooms for Hawassa
     const hawassaRooms = [
-      // Deluxe Rooms
       {
         roomNumber: "HAW101",
         roomTypeId: deluxeRoomType.id,
@@ -296,7 +267,6 @@ async function createRoomData(branches: any[]) {
         status: "AVAILABLE",
         floor: "1",
       },
-      // Suite Rooms
       {
         roomNumber: "HAW201",
         roomTypeId: suiteRoomType.id,
@@ -318,16 +288,11 @@ async function createRoomData(branches: any[]) {
     });
 
     console.log(`   ✅ Created ${hawassaRooms.length} rooms for Hawassa`);
-    console.log(
-      `   🔍 Hawassa Room Type IDs: Deluxe=${deluxeRoomType.id}, Suite=${suiteRoomType.id}`
-    );
   }
 
-  // Create rooms for other branches
   for (const branch of otherBranches) {
     console.log(`📝 Creating rooms for branch: ${branch.branchName}`);
 
-    // Create Room Types for this branch
     const standardRoomType = await prisma.roomType.create({
       data: {
         name: "Standard Room",
@@ -384,16 +349,13 @@ async function createRoomData(branches: any[]) {
       },
     });
 
-    // Store room type IDs for this branch
     roomTypesByBranch[branch.slug] = {
       standard: standardRoomType.id,
       deluxe: deluxeRoomType.id,
       suite: suiteRoomType.id,
     };
 
-    // Create Actual Rooms for this branch
     const roomsData = [
-      // Standard Rooms
       {
         roomNumber: `${branch.slug.toUpperCase().substring(0, 3)}101`,
         roomTypeId: standardRoomType.id,
@@ -422,7 +384,6 @@ async function createRoomData(branches: any[]) {
         status: "AVAILABLE",
         floor: "1",
       },
-      // Deluxe Rooms
       {
         roomNumber: `${branch.slug.toUpperCase().substring(0, 3)}201`,
         roomTypeId: deluxeRoomType.id,
@@ -444,7 +405,6 @@ async function createRoomData(branches: any[]) {
         status: "AVAILABLE",
         floor: "2",
       },
-      // Suite Rooms
       {
         roomNumber: `${branch.slug.toUpperCase().substring(0, 3)}301`,
         roomTypeId: suiteRoomType.id,
@@ -592,7 +552,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Early morning tour with expert guide",
           price: 45.0,
           duration: "3 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -607,7 +567,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Traditional coffee ceremony and village life",
           price: 35.0,
           duration: "2 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -622,7 +582,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Morning wildlife viewing",
           price: 75.0,
           duration: "4 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -637,7 +597,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "See giant crocodiles up close",
           price: 40.0,
           duration: "2 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -652,7 +612,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Moderate hike with beautiful views",
           price: 55.0,
           duration: "5 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -667,7 +627,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Visit key historical sites",
           price: 60.0,
           duration: "6 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -682,7 +642,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Authentic Ethiopian coffee experience",
           price: 25.0,
           duration: "1.5 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -697,7 +657,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Guided tour of Fasil Ghebbi",
           price: 30.0,
           duration: "3 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -712,7 +672,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Day trip with picnic and views",
           price: 90.0,
           duration: "9 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -727,7 +687,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Guided tour of community",
           price: 25.0,
           duration: "2 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -742,7 +702,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Bird watching and nature walk",
           price: 40.0,
           duration: "4 hours",
-          category: "NATURE" as const,
+          category: "NATURE",
         },
       ],
     },
@@ -757,7 +717,7 @@ async function createExperiencesWithPackages(branches: any[]) {
           description: "Hands-on culinary experience",
           price: 50.0,
           duration: "3 hours",
-          category: "CULTURAL" as const,
+          category: "CULTURAL",
         },
       ],
     },
@@ -796,61 +756,6 @@ async function createExperiencesWithPackages(branches: any[]) {
   }
 }
 
-async function createBranchDetails(branches: any[]) {
-  console.log("📝 Creating branch details...");
-
-  const locationData: { [key: string]: any } = {
-    hawassa: { city: "Hawassa", region: "Sidama", country: "Ethiopia" },
-    "arba-minch": {
-      city: "Arba Minch",
-      region: "Southern Nations",
-      country: "Ethiopia",
-    },
-    "addis-ababa": {
-      city: "Addis Ababa",
-      region: "Addis Ababa",
-      country: "Ethiopia",
-    },
-    gonder: { city: "Gondar", region: "Amhara", country: "Ethiopia" },
-    shashemene: { city: "Shashemene", region: "Oromia", country: "Ethiopia" },
-  };
-
-  for (const branch of branches) {
-    // Create location
-    await prisma.location.create({
-      data: {
-        ...locationData[branch.slug],
-        branchId: branch.id,
-      },
-    });
-
-    // Create SEO data
-    await prisma.branchSeo.create({
-      data: {
-        title: `${branch.branchName} - Haile Hotels & Resorts`,
-        description: branch.description,
-        keywords: ["hotel", "resort", "Ethiopia", "luxury", "accommodation"],
-        branchId: branch.id,
-      },
-    });
-
-    // Create contact information
-    await prisma.contact.create({
-      data: {
-        phone: branch.phone,
-        email: branch.email,
-        address: `${locationData[branch.slug].city}, ${locationData[branch.slug].region}, Ethiopia`,
-        socials: {
-          facebook: `https://facebook.com/haile${branch.slug}`,
-          instagram: `https://instagram.com/haile${branch.slug}`,
-          twitter: `https://twitter.com/haile${branch.slug}`,
-        },
-        branchId: branch.id,
-      },
-    });
-  }
-}
-
 async function createJobOpenings(branches: any[]) {
   console.log("💼 Creating job openings...");
 
@@ -884,10 +789,6 @@ async function createJobOpenings(branches: any[]) {
         continue;
       }
 
-      console.log(
-        `🔴 Creating job for branch: ${branch.branchName} (ID: ${branch.id})`
-      );
-
       const job = await prisma.jobOpening.create({
         data: {
           title: jobData.title,
@@ -908,15 +809,64 @@ async function createJobOpenings(branches: any[]) {
       console.log(`✅ Created job: ${job.id} - ${job.title}`);
       createdCount++;
     } catch (error) {
-      console.error(
-        `❌ Failed to create job "${jobData.title}":`,
-        error.message
-      );
+      console.error(`❌ Failed to create job "${jobData.title}":`, error);
       errorCount++;
     }
   }
 
   console.log(`📊 Result: ${createdCount} created, ${errorCount} failed`);
+}
+
+async function createBranchDetails(branches: any[]) {
+  console.log("📝 Creating branch details...");
+
+  const locationData: { [key: string]: any } = {
+    hawassa: { city: "Hawassa", region: "Sidama", country: "Ethiopia" },
+    "arba-minch": {
+      city: "Arba Minch",
+      region: "Southern Nations",
+      country: "Ethiopia",
+    },
+    "addis-ababa": {
+      city: "Addis Ababa",
+      region: "Addis Ababa",
+      country: "Ethiopia",
+    },
+    gonder: { city: "Gondar", region: "Amhara", country: "Ethiopia" },
+    shashemene: { city: "Shashemene", region: "Oromia", country: "Ethiopia" },
+  };
+
+  for (const branch of branches) {
+    await prisma.location.create({
+      data: {
+        ...locationData[branch.slug],
+        branchId: branch.id,
+      },
+    });
+
+    await prisma.branchSeo.create({
+      data: {
+        title: `${branch.branchName} - Haile Hotels & Resorts`,
+        description: branch.description,
+        keywords: ["hotel", "resort", "Ethiopia", "luxury", "accommodation"],
+        branchId: branch.id,
+      },
+    });
+
+    await prisma.contact.create({
+      data: {
+        phone: branch.phone,
+        email: branch.email,
+        address: `${locationData[branch.slug].city}, ${locationData[branch.slug].region}, Ethiopia`,
+        socials: {
+          facebook: `https://facebook.com/haile${branch.slug}`,
+          instagram: `https://instagram.com/haile${branch.slug}`,
+          twitter: `https://twitter.com/haile${branch.slug}`,
+        },
+        branchId: branch.id,
+      },
+    });
+  }
 }
 
 main()

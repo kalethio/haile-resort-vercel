@@ -8,15 +8,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ADD these new models FIRST:
+// ADD Admin Panel Models FIRST:
 model Role {
   id          Int          @id @default(autoincrement())
   name        String       @unique
   description String?
+  isSystem    Boolean      @default(false) // for SUPER_ADMIN, ADMIN etc.
+  createdAt   DateTime     @default(now())
+  
   permissions Permission[]
   users       User[]
-  createdAt   DateTime     @default(now())
-  isSystem    Boolean      @default(false) // for SUPER_ADMIN, ADMIN etc.
 }
 
 model Permission {
@@ -30,25 +31,59 @@ model Permission {
   @@index([module, action])
 }
 
-// THEN update User model - REPLACE the current User model:
+// UPDATE User model to match admin requirements:
 model User {
   id        Int        @id @default(autoincrement())
   name      String?
   email     String     @unique
-  password  String?    // hashed password
-  roleId    Int?       // change from Role enum to relation
+  password  String?    // hashed
+  roleId    Int?
   branchId  Int?
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  status    UserStatus @default(ACTIVE)
-  auditLogs AuditLog[]
-  branch    Branch?    @relation(fields: [branchId], references: [id])
+  
   role      Role?      @relation(fields: [roleId], references: [id])
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  auditLogs AuditLog[]
 
   @@index([branchId, roleId])
   @@index([email, status])
 }
 
+// ADD ApiConnection model for admin panel:
+model ApiConnection {
+  id          Int       @id @default(autoincrement())
+  name        String    // "Stripe", "SendGrid", "Cloudbeds"
+  type        String    // "payment", "email", "pms"
+  status      String    // "active", "inactive", "error"
+  apiKey      String?   // encrypted
+  config      Json?     // additional configuration
+  lastTest    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// REPLACE existing AuditLog model with enhanced version:
+model AuditLog {
+  id         Int       @id @default(autoincrement())
+  action     String    // "user_created", "role_updated"
+  userId     Int?      // who performed the action
+  userEmail  String?   // cached user email
+  targetType String?   // "User", "Role", "Booking"
+  targetId   Int?      // which record was affected
+  oldValues  Json?     // previous state
+  newValues  Json?     // new state
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  
+  user       User?     @relation(fields: [userId], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
+  branchId   Int?
+}
+
+// KEEP all your existing models below (unchanged):
 model Branch {
   id               Int               @id @default(autoincrement())
   slug             String            @unique
@@ -116,6 +151,7 @@ model Guest {
 
   @@index([branchId, email])
 }
+
 // ADD this new model
 model RoomFeature {
   id          Int        @id @default(autoincrement())
@@ -149,6 +185,8 @@ model RoomType {
   @@unique([branchId, name])
   @@index([branchId, available])
 }
+
+// ... (rest of your existing models remain exactly the same)
 model Room {
   id           Int           @id @default(autoincrement())
   roomNumber   String
@@ -606,19 +644,7 @@ model Location {
   branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
 }
 
-model AuditLog {
-  id         Int      @id @default(autoincrement())
-  action     String
-  userId     Int?
-  targetType String?
-  targetId   Int?
-  diff       Json?
-  createdAt  DateTime @default(now())
-  branchId   Int?
-  user       User?    @relation(fields: [userId], references: [id])
-  Branch     Branch?  @relation(fields: [branchId], references: [id])
-}
-
+// Enums (keeping all your existing enums)
 enum PackageCategory {
   FAMILY
   ROMANTIC
@@ -681,6 +707,7 @@ enum ApplicationStatus {
   ACCEPTED
   REJECTED
 }
+
 enum GuestType {
   REGULAR
   FREQUENT 

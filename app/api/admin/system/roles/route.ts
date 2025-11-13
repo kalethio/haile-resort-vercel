@@ -53,6 +53,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle both old and new permission formats
+    const permissionData = permissions.map((perm: any) => {
+      if (typeof perm === "string") {
+        // New format: just module name - use "full_access" as action
+        return {
+          module: perm,
+          action: "full_access",
+        };
+      } else {
+        // Old format: { module, action }
+        return {
+          module: perm.module,
+          action: perm.action,
+        };
+      }
+    });
+
     // Create role with permissions
     const role = await prisma.role.create({
       data: {
@@ -60,11 +77,7 @@ export async function POST(request: NextRequest) {
         description,
         isSystem: isSystem || false,
         permissions: {
-          create:
-            permissions?.map((perm: { module: string; action: string }) => ({
-              module: perm.module,
-              action: perm.action,
-            })) || [],
+          create: permissionData,
         },
       },
       include: {

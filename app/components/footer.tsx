@@ -142,7 +142,7 @@ export default function Footer() {
           </div>
 
           <div className="mt-8 bg-accent/20 text-white py-3 px-6 rounded-lg max-w-fit mx-auto md:mx-0 transition-all duration-200 hover:bg-accent/30">
-            <Link href="/admin" className="hover:underline font-medium">
+            <Link href="/login" className="hover:underline font-medium">
               Admin Panel
             </Link>
           </div>

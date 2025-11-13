@@ -40,10 +40,10 @@ export async function GET(
 // UPDATE role
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // Add Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
     const body = await request.json();
     const { name, description, permissions } = body;
 
@@ -51,6 +51,23 @@ export async function PUT(
     const oldRole = await prisma.role.findUnique({
       where: { id: parseInt(id) },
       include: { permissions: true },
+    });
+
+    // Handle both old and new permission formats (same as CREATE)
+    const permissionData = permissions.map((perm: any) => {
+      if (typeof perm === "string") {
+        // New format: just module name - use "full_access" as action
+        return {
+          module: perm,
+          action: "full_access",
+        };
+      } else {
+        // Old format: { module, action }
+        return {
+          module: perm.module,
+          action: perm.action,
+        };
+      }
     });
 
     // Update role and permissions
@@ -61,11 +78,7 @@ export async function PUT(
         description,
         permissions: {
           deleteMany: {}, // Remove existing permissions
-          create:
-            permissions?.map((perm: { module: string; action: string }) => ({
-              module: perm.module,
-              action: perm.action,
-            })) || [],
+          create: permissionData,
         },
       },
       include: {
@@ -100,7 +113,6 @@ export async function PUT(
     );
   }
 }
-
 // DELETE role
 export async function DELETE(
   request: NextRequest,

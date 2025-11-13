@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 interface BranchListProps {
   onAddNew: () => void;
@@ -10,13 +11,38 @@ export default function BranchList({
   onAddNew,
   onEditBranch,
 }: BranchListProps) {
+  const { data: session } = useSession();
   const [branches, setBranches] = useState<any[]>([]);
+  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
     fetchBranches();
   }, []);
+
+  // Filter branches based on user permissions
+  useEffect(() => {
+    if (!session?.user || branches.length === 0) return;
+
+    let filtered = branches;
+
+    // If user has a branch (branch manager), show only their branch
+    if (session.user.branch) {
+      filtered = branches.filter(
+        (branch) => branch.id === session.user.branch.id
+      );
+    }
+    // If user is not admin/super_admin and has no branch, show empty
+    else if (
+      session.user.role !== "ADMIN" &&
+      session.user.role !== "SUPER_ADMIN"
+    ) {
+      filtered = [];
+    }
+
+    setFilteredBranches(filtered);
+  }, [branches, session]);
 
   const fetchBranches = async () => {
     try {
@@ -55,6 +81,14 @@ export default function BranchList({
     }
   };
 
+  // Check if user can add/edit branches
+  const canManageBranches =
+    session?.user.role === "SUPER_ADMIN" ||
+    session?.user.role === "ADMIN" ||
+    session?.user.permissions?.some(
+      (p) => p.module === "cms_branch_manager" && p.action === "write"
+    );
+
   if (loading)
     return <div className="text-center py-8">Loading branches...</div>;
 
@@ -62,35 +96,45 @@ export default function BranchList({
     <div>
       <div className="flex justify-between items-center mb-6">
         <p className="text-gray-600">
-          Manage all your hotel branches in one place
+          {session?.user.branch
+            ? `Managing ${session.user.branch.name}`
+            : "Manage all your hotel branches in one place"}
         </p>
-        <button
-          onClick={onAddNew}
-          className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
-        >
-          + Add New Branch
-        </button>
-      </div>
-
-      {branches.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-          <div className="text-gray-400 text-6xl mb-4">🏨</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No branches yet
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Create your first branch to get started
-          </p>
+        {canManageBranches && (
           <button
             onClick={onAddNew}
             className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
           >
-            Create First Branch
+            + Add New Branch
           </button>
+        )}
+      </div>
+
+      {filteredBranches.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+          <div className="text-gray-400 text-6xl mb-4">🏨</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            {session?.user.branch
+              ? "No branch access"
+              : "No branches available"}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {session?.user.branch
+              ? "You don't have permission to manage any branches."
+              : "Create your first branch to get started"}
+          </p>
+          {canManageBranches && !session?.user.branch && (
+            <button
+              onClick={onAddNew}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
+            >
+              Create First Branch
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4">
-          {branches.map((branch) => (
+          {filteredBranches.map((branch) => (
             <div
               key={branch.id}
               className="bg-gray-50 p-4 rounded-lg border hover:shadow-md transition-shadow"
@@ -123,21 +167,27 @@ export default function BranchList({
                     {branch._count.experiences} experiences
                   </p>
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => onEditBranch(branch)}
-                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(branch.id, branch.branchName)}
-                    disabled={deleting === branch.id}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:bg-red-400 text-sm"
-                  >
-                    {deleting === branch.id ? "..." : "Delete"}
-                  </button>
-                </div>
+                {canManageBranches && (
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => onEditBranch(branch)}
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+                    >
+                      Edit
+                    </button>
+                    {session?.user.role === "SUPER_ADMIN" && (
+                      <button
+                        onClick={() =>
+                          handleDelete(branch.id, branch.branchName)
+                        }
+                        disabled={deleting === branch.id}
+                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:bg-red-400 text-sm"
+                      >
+                        {deleting === branch.id ? "..." : "Delete"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

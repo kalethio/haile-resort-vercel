@@ -1,54 +1,140 @@
-// D:\(adminPages)\8systemAdmin\user-role\components\UsersTab.tsx
+// app/admin/8systemAdmin/user-role/components/UsersTab.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ViewUserModal from "./modals/ViewUseModal";
 import EditUserModal from "./modals/EditUserModal";
 import CreateUserModal from "./modals/CreateUserModal";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@hotel.com",
-    role: "Hotel Manager",
-    status: "active",
-    lastActive: "2024-01-15 14:30",
-    phone: "+1-555-0123",
-    department: "Management",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@hotel.com",
-    role: "Front Desk",
-    status: "active",
-    lastActive: "2024-01-15 13:15",
-    phone: "+1-555-0124",
-    department: "Reception",
-  },
-];
-
-const mockRoles = [
-  { id: 1, name: "Super Admin", color: "bg-red-100 text-red-800" },
-  { id: 2, name: "Hotel Manager", color: "bg-blue-100 text-blue-800" },
-  { id: 3, name: "Front Desk", color: "bg-green-100 text-green-800" },
-];
+interface User {
+  id: number;
+  name: string | null;
+  email: string;
+  role?: {
+    id: number;
+    name: string;
+    description: string | null;
+  };
+  branch?: {
+    id: number;
+    branchName: string;
+    slug: string;
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function UsersTab() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const handleViewUser = (user: any) => {
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/system/users");
+      const data = await response.json();
+
+      if (response.ok) {
+        setUsers(data.users);
+      } else {
+        setError(data.error || "Failed to fetch users");
+      }
+    } catch (err) {
+      setError("Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async (userData: any) => {
+    try {
+      const response = await fetch("/api/admin/system/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        await fetchUsers(); // Refresh the list
+        setShowCreateModal(false);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to create user");
+      }
+    } catch (err) {
+      alert("Failed to create user");
+    }
+  };
+
+  const handleUpdateUser = async (userData: any) => {
+    if (!selectedUser) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin/system/users/${selectedUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(userData),
+        }
+      );
+
+      if (response.ok) {
+        await fetchUsers(); // Refresh the list
+        setShowEditModal(false);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to update user");
+      }
+    } catch (err) {
+      alert("Failed to update user");
+    }
+  };
+
+  const handleViewUser = (user: User) => {
     setSelectedUser(user);
     setShowViewModal(true);
   };
 
-  const handleEditUser = (user: any) => {
+  const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setShowEditModal(true);
   };
+
+  const getRoleColor = (roleName: string) => {
+    const colors: { [key: string]: string } = {
+      SUPER_ADMIN: "bg-red-100 text-red-800",
+      ADMIN: "bg-purple-100 text-purple-800",
+      MANAGER: "bg-blue-100 text-blue-800",
+      STAFF: "bg-green-100 text-green-800",
+    };
+    return colors[roleName] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  if (loading) return <div className="p-8 text-center">Loading users...</div>;
+  if (error)
+    return <div className="p-8 text-center text-red-600">Error: {error}</div>;
 
   return (
     <div>
@@ -73,41 +159,55 @@ export default function UsersTab() {
             <tr>
               <th className="p-4 text-left text-black font-semibold">User</th>
               <th className="p-4 text-left text-black font-semibold">Role</th>
-              <th className="p-4 text-left text-black font-semibold">
-                Last Active
-              </th>
+              <th className="p-4 text-left text-black font-semibold">Branch</th>
               <th className="p-4 text-left text-black font-semibold">Status</th>
+              <th className="p-4 text-left text-black font-semibold">
+                Created
+              </th>
               <th className="p-4 text-left text-black font-semibold">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody>
-            {mockUsers.map((user) => (
+            {users.map((user) => (
               <tr
                 key={user.id}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <td className="p-4">
                   <div>
-                    <div className="font-medium text-black">{user.name}</div>
+                    <div className="font-medium text-black">
+                      {user.name || "No Name"}
+                    </div>
                     <div className="text-gray-600 text-sm">{user.email}</div>
                   </div>
                 </td>
                 <td className="p-4">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${mockRoles.find((r) => r.name === user.role)?.color || "bg-gray-100 text-gray-800"}`}
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role?.name || "")}`}
                   >
-                    {user.role}
+                    {user.role?.name || "No Role"}
                   </span>
                 </td>
-                <td className="p-4 text-gray-600 text-sm">{user.lastActive}</td>
+                <td className="p-4 text-gray-600 text-sm">
+                  {user.branch?.branchName || "System"}
+                </td>
                 <td className="p-4">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.status === "ACTIVE"
+                        ? "bg-green-100 text-green-800"
+                        : user.status === "SUSPENDED"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                    }`}
                   >
-                    {user.status}
+                    {user.status.toLowerCase()}
                   </span>
+                </td>
+                <td className="p-4 text-gray-600 text-sm">
+                  {formatDate(user.createdAt)}
                 </td>
                 <td className="p-4">
                   <div className="flex gap-3">
@@ -135,10 +235,7 @@ export default function UsersTab() {
       {showCreateModal && (
         <CreateUserModal
           onClose={() => setShowCreateModal(false)}
-          onSave={(userData) => {
-            console.log("Create user:", userData);
-            setShowCreateModal(false);
-          }}
+          onSave={handleCreateUser}
         />
       )}
 
@@ -157,10 +254,7 @@ export default function UsersTab() {
         <EditUserModal
           user={selectedUser}
           onClose={() => setShowEditModal(false)}
-          onSave={(userData) => {
-            console.log("Update user:", userData);
-            setShowEditModal(false);
-          }}
+          onSave={handleUpdateUser}
         />
       )}
     </div>

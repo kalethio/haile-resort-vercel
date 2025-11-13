@@ -5,20 +5,18 @@ import { IconType } from "react-icons";
 import {
   FaBuilding,
   FaRobot,
-  FaGift,
   FaNewspaper,
-  FaImages,
   FaStar,
   FaEnvelope,
 } from "react-icons/fa";
+import { useSession } from "next-auth/react";
 
 // Import CMS content components
 import BranchManagerContent from "./CMS/sections/BranchManagerModal";
 import ChatbotContent from "./CMS/sections/ChatbotModal";
-import PackagesContent from "./CMS/sections/PackagesModal";
 import NewsContent from "./CMS/sections/NewsModal";
-import GalleryContent from "./CMS/sections/GalleryModal";
 import ReviewsContent from "./CMS/sections/ReviewModal";
+import EmailMarketingContent from "./emailMarketing/page";
 
 type SectionDef = {
   id: string;
@@ -26,6 +24,7 @@ type SectionDef = {
   icon: IconType;
   Component: React.ComponentType<{ onClose: () => void }>;
   type: "cms" | "marketing";
+  requiredPermission?: string; // Add permission requirement for each section
 };
 
 const SECTIONS: SectionDef[] = [
@@ -35,6 +34,7 @@ const SECTIONS: SectionDef[] = [
     icon: FaBuilding,
     Component: BranchManagerContent,
     type: "cms",
+    requiredPermission: "cms_branch_manager",
   },
   {
     id: "chatbot",
@@ -42,14 +42,15 @@ const SECTIONS: SectionDef[] = [
     icon: FaRobot,
     Component: ChatbotContent,
     type: "cms",
+    requiredPermission: "cms_chatbot",
   },
-
   {
     id: "news",
     title: "Latest News",
     icon: FaNewspaper,
     Component: NewsContent,
     type: "cms",
+    requiredPermission: "cms_news",
   },
   {
     id: "reviews",
@@ -57,32 +58,20 @@ const SECTIONS: SectionDef[] = [
     icon: FaStar,
     Component: ReviewsContent,
     type: "cms",
+    requiredPermission: "cms_review",
   },
   {
     id: "email",
     title: "Email Marketing",
     icon: FaEnvelope,
-    Component: ({ onClose }) => (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Email Marketing
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Manage your email campaigns and templates
-        </p>
-        <button
-          onClick={onClose}
-          className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          Close
-        </button>
-      </div>
-    ),
+    Component: EmailMarketingContent,
     type: "marketing",
+    requiredPermission: "email_marketing",
   },
 ];
 
 export default function MarketingAndCMS() {
+  const { data: session } = useSession();
   const [openId, setOpenId] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const open = openId !== null;
@@ -93,6 +82,44 @@ export default function MarketingAndCMS() {
 
   const close = () => setOpenId(null);
 
+  // Build permissions object (same logic as layout)
+  const buildPermissions = () => {
+    const permissions: { [key: string]: boolean } = {};
+
+    if (session?.user.role === "SUPER_ADMIN") {
+      // Super admin has all permissions
+      SECTIONS.forEach((section) => {
+        if (section.requiredPermission) {
+          permissions[section.requiredPermission] = true;
+        }
+      });
+      return permissions;
+    }
+
+    // Build permissions based on actual module permissions
+    session?.user.permissions.forEach((permission) => {
+      const key = `${permission.module}.${permission.action}`;
+      permissions[key] = true;
+    });
+
+    return permissions;
+  };
+
+  const userPermissions = buildPermissions();
+
+  // Filter sections based on permissions
+  const filteredSections = SECTIONS.filter((section) => {
+    if (!section.requiredPermission) return true;
+    if (session?.user.role === "SUPER_ADMIN") return true;
+    return userPermissions[section.requiredPermission];
+  });
+
+  const cmsSections = filteredSections.filter((s) => s.type === "cms");
+  const marketingSections = filteredSections.filter(
+    (s) => s.type === "marketing"
+  );
+
+  // ... rest of your existing useEffect and handlers remain the same
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") close();
@@ -148,9 +175,6 @@ export default function MarketingAndCMS() {
     }
   }
 
-  const cmsSections = SECTIONS.filter((s) => s.type === "cms");
-  const marketingSections = SECTIONS.filter((s) => s.type === "marketing");
-
   return (
     <div className="min-h-screen bg-white p-6">
       <div className="max-w-4xl mx-auto">
@@ -165,51 +189,67 @@ export default function MarketingAndCMS() {
         </div>
 
         {/* CMS Sections */}
-        <div className="mb-12">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Content Management
-          </h2>
-          <div className="space-y-3">
-            {cmsSections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setOpenId(section.id)}
-                  className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-                >
-                  <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
-                  <span className="text-gray-900">{section.title}</span>
-                  {section.id === "reviews" && pendingCount > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold bg-red-600 text-white min-w-[20px]">
-                      {pendingCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        {cmsSections.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Content Management
+            </h2>
+            <div className="space-y-3">
+              {cmsSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setOpenId(section.id)}
+                    className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
+                    <span className="text-gray-900">{section.title}</span>
+                    {section.id === "reviews" && pendingCount > 0 && (
+                      <span className="ml-auto inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold bg-red-600 text-white min-w-[20px]">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Marketing Sections */}
-        <div>
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Marketing</h2>
-          <div className="space-y-3">
-            {marketingSections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setOpenId(section.id)}
-                  className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-                >
-                  <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
-                  <span className="text-gray-900">{section.title}</span>
-                </button>
-              );
-            })}
+        {marketingSections.length > 0 && (
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Marketing
+            </h2>
+            <div className="space-y-3">
+              {marketingSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setOpenId(section.id)}
+                    className="flex items-center w-md cursor-pointer p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <Icon className="text-gray-700 mr-4 text-xl flex-shrink-0" />
+                    <span className="text-gray-900">{section.title}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Show message if no sections available */}
+        {filteredSections.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              No marketing or CMS modules available with your current
+              permissions.
+            </p>
+          </div>
+        )}
 
         {/* Modal */}
         {open && active && (
