@@ -1,3 +1,4 @@
+// /app/api/bookings/route.ts - NO TAX VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
       guestPhone,
       guestCountry = "",
       specialRequests = "",
+      totalAmount,
+      baseAmount,
+      nights,
     } = body;
 
     // ✅ Validate required fields
@@ -30,7 +34,13 @@ export async function POST(request: NextRequest) {
       !checkOut ||
       !adults ||
       !guestName ||
-      !guestEmail
+      !guestEmail ||
+      totalAmount === undefined || // ✅ Allows 0
+      totalAmount === null ||
+      baseAmount === undefined || // ✅ Allows 0
+      baseAmount === null ||
+      nights === undefined || // ✅ Allows 0
+      nights === null
     ) {
       console.log("❌ Missing fields:", {
         branchSlug,
@@ -40,9 +50,12 @@ export async function POST(request: NextRequest) {
         adults,
         guestName,
         guestEmail,
+        totalAmount,
+        baseAmount,
+        nights,
       });
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields including pricing data" },
         { status: 400 }
       );
     }
@@ -52,7 +65,7 @@ export async function POST(request: NextRequest) {
     const checkOutDate = new Date(checkOut);
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    today.setHours(0, 0, 0, 0);
 
     const localCheckIn = new Date(checkIn);
     localCheckIn.setHours(0, 0, 0, 0);
@@ -134,14 +147,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 🧮 Pricing calculation
-    const nights = Math.ceil(
-      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const baseAmount = roomType.basePrice * nights;
-    const taxAmount = baseAmount * 0.1;
-    const totalAmount = baseAmount + taxAmount;
-
     // 👤 Create or find guest
     let guest = await prisma.guest.findUnique({
       where: { email: guestEmail },
@@ -159,7 +164,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 🏨 Create booking
+    // 🏨 Create booking - NO TAX FIELDS
     const booking = await prisma.booking.create({
       data: {
         type: "ROOM",
@@ -174,9 +179,9 @@ export async function POST(request: NextRequest) {
         adults,
         children,
         infants,
-        baseAmount,
-        taxAmount,
-        totalAmount,
+        totalAmount, // Your provided total
+        baseAmount: 0, // ← ADD THIS (required by Prisma)
+        taxAmount: 0, // ← ADD THIS (required by Prisma)
         currency: "USD",
         branchId: branch.id,
         guestId: guest.id,

@@ -154,8 +154,8 @@ export default function HeroHybridCarousel() {
       </AnimatePresence>
 
       {/* Content wrapper */}
-      <div className="relative z-20 h-full flex flex-col justify-center px-4 sm:px-6 lg:px-12">
-        <div className="w-full max-w-full sm:max-w-xl lg:w-3/5 lg:max-w-2xl">
+      <div className="relative z-20 mt-16 md:mt-32 h-full max-h-[80vh] flex flex-col justify-between py-8 pb-32 px-4 sm:px-6 lg:px-12">
+        <div className="w-full max-w-full sm:max-w-xl lg:w-3/5 lg:max-w-2xl mt-8 lg:mt-0">
           {/* Headline */}
           <motion.h1
             className="text-2xl sm:text-4xl md:text-6xl font-extrabold leading-tight text-white drop-shadow-2xl tracking-tight"
@@ -211,7 +211,6 @@ export default function HeroHybridCarousel() {
           </div>
         </div>
         {/* Booking Form */}
-
         <CheckBooking />
       </div>
     </section>

@@ -1,11 +1,15 @@
-// app/booking/components/BookingSummary.tsx
+// app/booking/components/BookingSummary.tsx - NO TAX VERSION
 "use client";
 import React from "react";
-import { RoomType, BookingParams, BookingSummary } from "../types/booking";
+import {
+  RoomType,
+  BookingParams,
+  BookingSummary as BookingSummaryType,
+} from "../types/booking";
 
 interface BookingSummaryProps {
   bookingParams: BookingParams;
-  bookingSummary: BookingSummary | null;
+  bookingSummary: BookingSummaryType | null;
   selectedRoom: number | null;
   roomTypes: RoomType[];
   onProceed: () => void;
@@ -48,52 +52,50 @@ export default function BookingSummary({
               </span>
             </div>
 
-            {bookingSummary && (
+            {bookingSummary ? (
               <>
                 <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between text-sm mb-2">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-600 font-light">
                       {bookingSummary.nights} night
                       {bookingSummary.nights > 1 ? "s" : ""}
                     </span>
                     <span className="font-medium text-gray-900">
-                      $
-                      {(
-                        bookingSummary.roomPrice * bookingSummary.nights
-                      ).toLocaleString()}
+                      ${bookingSummary.total.toLocaleString()}
                     </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span className="font-light">Taxes & fees</span>
-                    <span>${bookingSummary.taxes.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex justify-between font-medium text-lg">
-                    <span className="text-gray-900">Total</span>
+                    <span className="text-gray-900">Total Amount</span>
                     <span className="text-primary">
                       ${bookingSummary.total.toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 font-light">
-                    Including all taxes and charges
-                  </p>
                 </div>
               </>
+            ) : (
+              <div className="border-t border-gray-200 pt-4 text-center py-8">
+                <div className="text-gray-400 text-sm">
+                  Select a room to see pricing
+                </div>
+              </div>
             )}
           </div>
 
           <button
             onClick={onProceed}
             disabled={!selectedRoom}
-            className={`w-full mt-6 py-3.5 rounded-xl font-medium text-lg transition-all duration-300 transform hover:scale-105 ${
+            className={`w-full mt-6 py-3.5 rounded-xl font-medium text-lg transition-all duration-300 ${
               selectedRoom
-                ? "bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md"
+                ? "bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md active:scale-95"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            Continue to Guest Details
+            {selectedRoom
+              ? "Continue to Guest Details"
+              : "Select a Room to Continue"}
           </button>
 
           <div className="mt-6 space-y-3 text-xs text-gray-500 font-light">

@@ -1,10 +1,7 @@
 // app/api/admin/system/audit-logs/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
-// GET all audit logs with user and branch info
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,6 +9,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const action = searchParams.get("action") || "";
     const targetType = searchParams.get("targetType") || "";
+    const user = searchParams.get("user") || "";
     const startDate = searchParams.get("startDate") || "";
     const endDate = searchParams.get("endDate") || "";
 
@@ -26,6 +24,12 @@ export async function GET(request: NextRequest) {
 
     if (targetType) {
       where.targetType = targetType;
+    }
+
+    if (user) {
+      where.user = {
+        email: { contains: user, mode: "insensitive" },
+      };
     }
 
     if (startDate || endDate) {

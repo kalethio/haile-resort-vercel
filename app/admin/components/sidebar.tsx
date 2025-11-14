@@ -133,7 +133,7 @@ export default function Sidebar({ user, permissions }: SidebarProps) {
         </Link>
       </div>
       {/* User Info & Sign Out */}
-      <div className="px-4 py-3 border-b border-gray-100">
+      <div className="px-4 py-3 my-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">

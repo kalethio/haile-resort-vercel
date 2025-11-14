@@ -116,24 +116,9 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
-            <p className="font-medium mb-2">Test Credentials:</p>
-            <div className="space-y-1 text-xs">
-              <p>
-                <strong>Super Admin:</strong> superadmin@haileresorts.com
-              </p>
-              <p>
-                <strong>Admin (Hawassa):</strong> admin@hawassa.com
-              </p>
-              <p>
-                <strong>Manager (Hawassa):</strong> manager@hawassa.com
-              </p>
-              <p>
-                <strong>Staff (Hawassa):</strong> staff@hawassa.com
-              </p>
-              <p>
-                <strong>Password for all:</strong> admin123
-              </p>
-            </div>
+            <p>
+              <strong>Super Admin:</strong> superadmin@haileresorts.com
+            </p>
           </div>
         </form>
       </div>

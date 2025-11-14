@@ -1,6 +1,6 @@
-// app/booking/components/GuestInfoForm.tsx
+// app/booking/components/GuestInfoForm.tsx - PRODUCTION READY
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   RoomType,
   BookingParams,
@@ -14,8 +14,22 @@ interface GuestInfoFormProps {
   bookingSummary: BookingSummary | null;
   submitting: boolean;
   onBack: () => void;
-  onSubmit: (guestInfo: GuestInfo) => void;
+  onSubmit: (guestInfo: GuestInfo) => Promise<boolean>;
 }
+
+// Essential countries for immediate load
+const ESSENTIAL_COUNTRIES = [
+  { code: "ET", name: "Ethiopia", phoneCode: "+251" },
+  { code: "US", name: "United States", phoneCode: "+1" },
+  { code: "GB", name: "United Kingdom", phoneCode: "+44" },
+  { code: "CN", name: "China", phoneCode: "+86" },
+  { code: "IN", name: "India", phoneCode: "+91" },
+  { code: "DE", name: "Germany", phoneCode: "+49" },
+  { code: "FR", name: "France", phoneCode: "+33" },
+  { code: "AE", name: "United Arab Emirates", phoneCode: "+971" },
+  { code: "SA", name: "Saudi Arabia", phoneCode: "+966" },
+  { code: "KE", name: "Kenya", phoneCode: "+254" },
+].sort((a, b) => a.name.localeCompare(b.name));
 
 export default function GuestInfoForm({
   selectedRoomData,
@@ -27,85 +41,139 @@ export default function GuestInfoForm({
 }: GuestInfoFormProps) {
   const [formErrors, setFormErrors] = useState<Partial<GuestInfo>>({});
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [formData, setFormData] = useState<Partial<GuestInfo>>({});
+  const [countries, setCountries] = useState(ESSENTIAL_COUNTRIES);
+  const [selectedCountry, setSelectedCountry] = useState(
+    ESSENTIAL_COUNTRIES[0]
+  );
+  const [localPhone, setLocalPhone] = useState("");
 
-  const validateForm = (formData: FormData): GuestInfo | null => {
+  // Load saved form data and countries
+  useEffect(() => {
+    // Load form data
+    const saved = localStorage.getItem("guestInfoFormData");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setFormData(parsed);
+
+      // Restore phone number and country
+      if (parsed.phone) {
+        const country =
+          ESSENTIAL_COUNTRIES.find((c) =>
+            parsed.phone?.startsWith(c.phoneCode)
+          ) || ESSENTIAL_COUNTRIES[0];
+
+        setSelectedCountry(country);
+        setLocalPhone(parsed.phone.replace(country.phoneCode, ""));
+      }
+
+      if (parsed.guestCountry) {
+        const country = ESSENTIAL_COUNTRIES.find(
+          (c) => c.name === parsed.guestCountry
+        );
+        if (country) setSelectedCountry(country);
+      }
+    }
+
+    // Load full country list in background
+    fetch("/api/countries")
+      .then((res) => res.json())
+      .then(setCountries)
+      .catch(() => console.log("Using essential countries list"));
+  }, []);
+
+  // Save form data
+  useEffect(() => {
+    if (Object.keys(formData).length > 0) {
+      localStorage.setItem("guestInfoFormData", JSON.stringify(formData));
+    }
+  }, [formData]);
+
+  const handleInputChange = (field: keyof GuestInfo, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    const country = countries.find((c) => c.code === countryCode);
+    if (country) {
+      setSelectedCountry(country);
+      handleInputChange("guestCountry", country.name);
+      // Update phone with new country code
+      if (localPhone) {
+        handleInputChange("phone", `${country.phoneCode}${localPhone}`);
+      }
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    // Only allow numbers and common separators
+    const cleaned = value.replace(/[^\d\s\-\(\)\.]/g, "");
+    setLocalPhone(cleaned);
+    handleInputChange("phone", `${selectedCountry.phoneCode}${cleaned}`);
+  };
+
+  const validateForm = (): GuestInfo | null => {
     const errors: Partial<GuestInfo> = {};
     const guestInfo: GuestInfo = {
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      specialRequests: formData.get("specialRequests") as string,
+      firstName: formData.firstName?.trim() || "",
+      lastName: formData.lastName?.trim() || "",
+      email: formData.email?.trim() || "",
+      phone: formData.phone?.trim() || "",
+      guestCountry: formData.guestCountry?.trim() || "",
+      specialRequests: formData.specialRequests?.trim() || "",
     };
 
-    // Validation rules
-    if (!guestInfo.firstName?.trim())
-      errors.firstName = "First name is required";
-    if (!guestInfo.lastName?.trim()) errors.lastName = "Last name is required";
+    // Validation
+    if (!guestInfo.firstName) errors.firstName = "First name is required";
+    if (!guestInfo.lastName) errors.lastName = "Last name is required";
 
-    if (!guestInfo.email?.trim()) {
+    if (!guestInfo.email) {
       errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email)) {
       errors.email = "Please enter a valid email address";
     }
 
-    if (!guestInfo.phone?.trim()) {
+    if (!guestInfo.phone) {
       errors.phone = "Phone number is required";
-    } else if (
-      !/^\+?[\d\s-()]{10,}$/.test(guestInfo.phone.replace(/\s/g, ""))
-    ) {
-      errors.phone = "Please enter a valid phone number";
+    } else {
+      const digitsOnly = guestInfo.phone.replace(/\D/g, "");
+      if (digitsOnly.length < 10) {
+        errors.phone = "Please enter a valid phone number";
+      }
+    }
+
+    if (!guestInfo.guestCountry) {
+      errors.guestCountry = "Country is required";
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0 ? guestInfo : null;
   };
 
-  // Handle newsletter subscription separately
-  const handleNewsletterSubscription = async (
-    email: string,
-    firstName: string
-  ) => {
-    if (!marketingOptIn) return;
-
-    try {
-      const res = await fetch("/api/subscribers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          name: firstName,
-        }),
-      });
-
-      if (!res.ok) {
-        console.warn(
-          "Newsletter subscription failed, but booking will continue"
-        );
-      } else {
-        console.log("Successfully subscribed to newsletter");
-      }
-    } catch (error) {
-      console.warn("Newsletter subscription error:", error);
-      // Don't fail the booking if subscription fails
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const validatedData = validateForm(formData);
+    const validatedData = validateForm();
 
     if (validatedData) {
-      // Submit booking first
-      await onSubmit(validatedData);
+      const success = await onSubmit(validatedData);
 
-      // Then handle newsletter subscription separately
-      if (marketingOptIn) {
-        await handleNewsletterSubscription(
-          validatedData.email,
-          validatedData.firstName
-        );
+      // Only subscribe if booking was successful
+      if (success && marketingOptIn) {
+        try {
+          await fetch("/api/subscribers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: validatedData.email,
+              name: validatedData.firstName,
+            }),
+          });
+        } catch (error) {
+          console.warn("Newsletter subscription failed");
+        }
       }
     }
   };
@@ -123,22 +191,23 @@ export default function GuestInfoForm({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 transition-all duration-300 hover:shadow-md transform hover:-translate-y-1">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Name Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div
-                  className="animate-fadeInUp"
-                  style={{ animationDelay: "0.1s" }}
-                >
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     First Name *
                   </label>
                   <input
                     type="text"
-                    name="firstName"
+                    value={formData.firstName || ""}
+                    onChange={(e) =>
+                      handleInputChange("firstName", e.target.value)
+                    }
                     required
                     disabled={submitting}
-                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.firstName
                         ? "border-red-300"
                         : "border-gray-300"
@@ -151,19 +220,19 @@ export default function GuestInfoForm({
                     </p>
                   )}
                 </div>
-                <div
-                  className="animate-fadeInUp"
-                  style={{ animationDelay: "0.2s" }}
-                >
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Last Name *
                   </label>
                   <input
                     type="text"
-                    name="lastName"
+                    value={formData.lastName || ""}
+                    onChange={(e) =>
+                      handleInputChange("lastName", e.target.value)
+                    }
                     required
                     disabled={submitting}
-                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.lastName ? "border-red-300" : "border-gray-300"
                     }`}
                     placeholder="Enter last name"
@@ -176,20 +245,19 @@ export default function GuestInfoForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div
-                  className="animate-fadeInUp"
-                  style={{ animationDelay: "0.3s" }}
-                >
+              {/* Contact Fields */}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Email Address *
                   </label>
                   <input
                     type="email"
-                    name="email"
+                    value={formData.email || ""}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
                     required
                     disabled={submitting}
-                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light disabled:opacity-50 disabled:cursor-not-allowed ${
                       formErrors.email ? "border-red-300" : "border-gray-300"
                     }`}
                     placeholder="your@email.com"
@@ -200,59 +268,94 @@ export default function GuestInfoForm({
                     </p>
                   )}
                 </div>
-                <div
-                  className="animate-fadeInUp"
-                  style={{ animationDelay: "0.4s" }}
-                >
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    WhatsApp Number *
+                    Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    required
-                    disabled={submitting}
-                    className={`w-full text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      formErrors.phone ? "border-red-300" : "border-gray-300"
-                    }`}
-                    placeholder="+1 (555) 000-0000"
-                  />
+                  <div className="flex gap-3">
+                    <select
+                      value={selectedCountry.code}
+                      onChange={(e) => handleCountryChange(e.target.value)}
+                      disabled={submitting}
+                      className="w-32 px-3 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white text-gray-900 disabled:opacity-50"
+                    >
+                      {countries.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.phoneCode}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={localPhone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      required
+                      disabled={submitting}
+                      className={`flex-1 text-gray-900 px-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light disabled:opacity-50 disabled:cursor-not-allowed ${
+                        formErrors.phone ? "border-red-300" : "border-gray-300"
+                      }`}
+                      placeholder="Phone number"
+                    />
+                  </div>
                   {formErrors.phone && (
                     <p className="text-red-600 text-sm mt-2">
                       {formErrors.phone}
                     </p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Country *
+                  </label>
+                  <select
+                    value={selectedCountry.code}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    required
+                    disabled={submitting}
+                    className="w-full text-gray-900 px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white disabled:opacity-50"
+                  >
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.guestCountry && (
+                    <p className="text-red-600 text-sm mt-2">
+                      {formErrors.guestCountry}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div
-                className="animate-fadeInUp"
-                style={{ animationDelay: "0.5s" }}
-              >
+              {/* Special Requests */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Special Requests
                 </label>
                 <textarea
-                  name="specialRequests"
+                  value={formData.specialRequests || ""}
+                  onChange={(e) =>
+                    handleInputChange("specialRequests", e.target.value)
+                  }
                   rows={4}
                   disabled={submitting}
-                  className="w-full text-gray-900 px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 font-light resize-none transform hover:scale-105 focus:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-gray-900 px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Any special requirements, dietary restrictions, or room preferences..."
                 />
               </div>
 
-              {/* Marketing Opt-in Checkbox */}
-              <div
-                className="animate-fadeInUp"
-                style={{ animationDelay: "0.55s" }}
-              >
+              {/* Marketing Opt-in */}
+              <div>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={marketingOptIn}
                     onChange={(e) => setMarketingOptIn(e.target.checked)}
                     disabled={submitting}
-                    className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary/20 focus:ring-2 transition-all duration-300 group-hover:scale-110 disabled:opacity-50"
+                    className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary/20 focus:ring-2 transition-all duration-200 disabled:opacity-50"
                   />
                   <span className="text-sm text-gray-600 font-light leading-relaxed">
                     Yes, I would like to receive exclusive offers, promotions,
@@ -262,22 +365,20 @@ export default function GuestInfoForm({
                 </label>
               </div>
 
-              <div
-                className="flex justify-between pt-6 animate-fadeInUp"
-                style={{ animationDelay: "0.6s" }}
-              >
+              {/* Form Actions */}
+              <div className="flex justify-between pt-6">
                 <button
                   type="button"
                   onClick={onBack}
                   disabled={submitting}
-                  className="px-8 py-3.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all duration-300 hover:shadow-sm transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ← Back to Rooms
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-8 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -295,7 +396,7 @@ export default function GuestInfoForm({
 
         {/* Room Summary Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md transform hover:-translate-y-1">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
             <h4 className="font-normal text-gray-900 mb-6 text-lg tracking-tight">
               Your Room
             </h4>

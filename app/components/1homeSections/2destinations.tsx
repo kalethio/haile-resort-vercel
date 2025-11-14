@@ -93,11 +93,11 @@ export default function SpotlightLargeCard() {
   if (loading) {
     return (
       <section className="w-full flex justify-center py-5 lg:py-20">
-        <div className="w-screen lg:w-[75vw] lg:max-w-screen-lg mx-auto">
+        <div className="w-screen lg:max-w-screen-lg mx-auto">
           <div className="bg-gradient-to-br from-white/90 via-white/80 to-white/90 border border-primary/20 shadow-2xl rounded-3xl overflow-hidden backdrop-blur-xl">
             <div className="flex flex-col lg:flex-row min-h-[75vh]">
               <div className="flex-1 relative bg-gray-200 animate-pulse" />
-              <div className="w-full lg:w-80 xl:w-96 p-6 bg-white/90">
+              <div className="w-full p-6 bg-white/90">
                 <div className="space-y-3">
                   {[...Array(4)].map((_, i) => (
                     <div

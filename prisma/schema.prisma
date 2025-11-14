@@ -8,82 +8,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ADD Admin Panel Models FIRST:
 model Role {
   id          Int          @id @default(autoincrement())
   name        String       @unique
   description String?
-  isSystem    Boolean      @default(false) // for SUPER_ADMIN, ADMIN etc.
+  isSystem    Boolean      @default(false)
   createdAt   DateTime     @default(now())
-  
   permissions Permission[]
   users       User[]
 }
 
 model Permission {
-  id        Int      @id @default(autoincrement())
-  module    String   // "reservations", "rooms", "hr", "system_admin"
-  action    String   // "read", "write", "delete", "manage"
-  roleId    Int
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
+  id     Int    @id @default(autoincrement())
+  module String
+  action String
+  roleId Int
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
   @@unique([roleId, module, action])
   @@index([module, action])
 }
 
-// UPDATE User model to match admin requirements:
 model User {
   id        Int        @id @default(autoincrement())
   name      String?
   email     String     @unique
-  password  String?    // hashed
+  password  String?
   roleId    Int?
   branchId  Int?
-  status    UserStatus @default(ACTIVE)
+  status    UserStatus @default("ACTIVE")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  
-  role      Role?      @relation(fields: [roleId], references: [id])
-  branch    Branch?    @relation(fields: [branchId], references: [id])
   auditLogs AuditLog[]
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  role      Role?      @relation(fields: [roleId], references: [id])
 
   @@index([branchId, roleId])
   @@index([email, status])
 }
 
-// ADD ApiConnection model for admin panel:
 model ApiConnection {
-  id          Int       @id @default(autoincrement())
-  name        String    // "Stripe", "SendGrid", "Cloudbeds"
-  type        String    // "payment", "email", "pms"
-  status      String    // "active", "inactive", "error"
-  apiKey      String?   // encrypted
-  config      Json?     // additional configuration
-  lastTest    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int       @id @default(autoincrement())
+  name      String
+  type      String
+  status    String
+  apiKey    String?
+  config    Json?
+  lastTest  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
-// REPLACE existing AuditLog model with enhanced version:
 model AuditLog {
-  id         Int       @id @default(autoincrement())
-  action     String    // "user_created", "role_updated"
-  userId     Int?      // who performed the action
-  userEmail  String?   // cached user email
-  targetType String?   // "User", "Role", "Booking"
-  targetId   Int?      // which record was affected
-  oldValues  Json?     // previous state
-  newValues  Json?     // new state
+  id         Int      @id @default(autoincrement())
+  action     String
+  userId     Int?
+  userEmail  String?
+  targetType String?
+  targetId   Int?
+  oldValues  Json?
+  newValues  Json?
   ipAddress  String?
   userAgent  String?
-  createdAt  DateTime  @default(now())
-  
-  user       User?     @relation(fields: [userId], references: [id])
-  branch     Branch?   @relation(fields: [branchId], references: [id])
+  createdAt  DateTime @default(now())
   branchId   Int?
+  branch     Branch?  @relation(fields: [branchId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
-// KEEP all your existing models below (unchanged):
 model Branch {
   id               Int               @id @default(autoincrement())
   slug             String            @unique
@@ -134,25 +126,22 @@ model Guest {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   branchId         Int
+  guestType        GuestType              @default("REGULAR")
+  company          String?
+  notes            String?
+  totalStays       Int                    @default(0)
+  totalNights      Int                    @default(0)
+  lifetimeValue    Float                  @default(0)
+  lastStayAt       DateTime?
   bookings         Booking[]
   branch           Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   favoritePackages GuestFavoritePackage[]
   loyaltyPoints    LoyaltyPoints[]
   reviews          Review[]
 
-  // ADD THESE NEW FIELDS:
-  guestType        GuestType              @default(REGULAR) // ← ADD
-  company          String?                // ← ADD  
-  notes            String?                // ← ADD
-  totalStays       Int                    @default(0) // ← ADD
-  totalNights      Int                    @default(0) // ← ADD
-  lifetimeValue    Float                  @default(0) // ← ADD
-  lastStayAt       DateTime?              // ← ADD
-
   @@index([branchId, email])
 }
 
-// ADD this new model
 model RoomFeature {
   id          Int        @id @default(autoincrement())
   name        String
@@ -160,12 +149,11 @@ model RoomFeature {
   price       Float
   available   Boolean    @default(true)
   branchId    Int
-  roomTypes   RoomType[]
-  
+  roomTypes   RoomType[] @relation("RoomFeatureToRoomType")
+
   @@index([branchId, available])
 }
 
-// UPDATE RoomType model - ADD roomFeatures relation
 model RoomType {
   id               Int             @id @default(autoincrement())
   name             String
@@ -180,19 +168,18 @@ model RoomType {
   rooms            Room[]
   branch           Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
   roomTypeMedia    RoomTypeMedia[]
-  roomFeatures     RoomFeature[]    // ← ADD THIS LINE
-  
+  roomFeatures     RoomFeature[]   @relation("RoomFeatureToRoomType")
+
   @@unique([branchId, name])
   @@index([branchId, available])
 }
 
-// ... (rest of your existing models remain exactly the same)
 model Room {
   id           Int           @id @default(autoincrement())
   roomNumber   String
   floor        String?
   features     Json?
-  status       RoomStatus    @default(AVAILABLE)
+  status       RoomStatus    @default("AVAILABLE")
   roomTypeId   Int
   branchId     Int
   branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -205,8 +192,8 @@ model Room {
 
 model Booking {
   id              String           @id @default(uuid())
-  type            BookingType      @default(ROOM)
-  status          BookingStatus    @default(PENDING)
+  type            BookingType      @default("ROOM")
+  status          BookingStatus    @default("PENDING")
   guestName       String
   guestEmail      String
   guestPhone      String?
@@ -260,7 +247,7 @@ model Payment {
   id              Int           @id @default(autoincrement())
   amount          Float
   method          PaymentMethod
-  status          PaymentStatus @default(PENDING)
+  status          PaymentStatus @default("PENDING")
   transactionId   String?
   isInternational Boolean       @default(false)
   currency        String        @default("USD")
@@ -289,8 +276,8 @@ model Package {
   branchId        Int
   experienceId    Int?
   favoriteOf      GuestFavoritePackage[]
-  experience      Experience?            @relation(fields: [experienceId], references: [id], onDelete: Cascade)
   branch          Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  experience      Experience?            @relation(fields: [experienceId], references: [id], onDelete: Cascade)
   packageBookings PackageBooking[]
   packageMedia    PackageMedia[]
 
@@ -311,8 +298,8 @@ model PackageBooking {
   specialInstructions String?
   bookingId           String
   packageId           Int
-  package             Package   @relation(fields: [packageId], references: [id])
   booking             Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  package             Package   @relation(fields: [packageId], references: [id])
 
   @@index([packageId, startDate])
 }
@@ -322,8 +309,8 @@ model GuestFavoritePackage {
   guestId   Int
   packageId Int
   createdAt DateTime @default(now())
-  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
   guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@unique([guestId, packageId])
 }
@@ -363,8 +350,8 @@ model PackageMedia {
   order       Int        @default(0)
   packageId   Int
   mediaId     Int
-  media       MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   package     Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  media       MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
   @@unique([packageId, mediaId])
   @@index([packageId, isHighlight])
@@ -470,7 +457,7 @@ model JobApplication {
   expectedSalary    String?
   coverLetter       String?
   resumeUrl         String?
-  status            ApplicationStatus @default(PENDING)
+  status            ApplicationStatus @default("PENDING")
   submittedAt       DateTime          @default(now())
   job               JobOpening        @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
@@ -644,7 +631,6 @@ model Location {
   branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
 }
 
-// Enums (keeping all your existing enums)
 enum PackageCategory {
   FAMILY
   ROMANTIC
@@ -710,7 +696,7 @@ enum ApplicationStatus {
 
 enum GuestType {
   REGULAR
-  FREQUENT 
+  FREQUENT
   CORPORATE
   VIP
   CELEBRITY

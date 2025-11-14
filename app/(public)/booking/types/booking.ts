@@ -1,4 +1,4 @@
-// app/booking/types/booking.ts
+// app/booking/types/booking.ts - IMPROVED
 
 export interface RoomType {
   id: number;
@@ -11,6 +11,7 @@ export interface RoomType {
   available: boolean;
   availableRoomsCount?: number;
   totalRooms?: number;
+  branchName?: string; // ✅ Added for payment section
 }
 
 export interface BookingSummary {
@@ -26,6 +27,7 @@ export interface GuestInfo {
   email: string;
   phone: string;
   specialRequests: string;
+  guestCountry: string;
 }
 
 export interface BookingParams {
@@ -33,9 +35,27 @@ export interface BookingParams {
   checkIn: string;
   checkOut: string;
   guests: number;
-  adults: number; // ✅ ADD THIS
-  children: number; // ✅ ADD THIS
+  adults: number;
+  children: number;
+  guestInfo?: GuestInfo; // ✅ ADD THIS - FIXES THE ISSUE
 }
 
-export type PaymentMethod = "chapa" | "stripe" | null;
+export type PaymentMethod = "bank" | "gateway" | null; // ✅ Fixed to match your system
 export type BookingStep = 1 | 2 | 3 | 4;
+
+// ✅ ADD PAYMENT STATUS TYPES
+export type PaymentStatus =
+  | "pending"
+  | "instructions_sent"
+  | "awaiting_verification"
+  | "confirmed"
+  | "failed";
+
+// ✅ ADD PAYMENT CONFIG TYPE
+export interface PaymentConfig {
+  active: boolean;
+  provider: string;
+  type: "bank" | "gateway";
+  config: any;
+  instructions: string[];
+}

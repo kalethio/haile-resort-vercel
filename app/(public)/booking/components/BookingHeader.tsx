@@ -31,27 +31,36 @@ export default function BookingHeader({ step, params }: BookingHeaderProps) {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center space-x-6">
-            {steps.map((stepItem) => (
-              <div key={stepItem.number} className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${
-                    step === stepItem.number || step > stepItem.number
-                      ? "bg-primary border-primary text-white shadow-sm"
-                      : "border-gray-300 text-gray-500"
-                  }`}
-                >
-                  {step > stepItem.number ? "✓" : stepItem.number}
+          <div className="w-full lg:w-auto">
+            <div className="flex justify-between lg:justify-center lg:space-x-8">
+              {steps.map((stepItem, index) => (
+                <div key={stepItem.number} className="flex items-center">
+                  <div className="flex items-center">
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 ${
+                        step === stepItem.number || step > stepItem.number
+                          ? "bg-primary border-primary text-white shadow-sm"
+                          : "border-gray-300 text-gray-500"
+                      }`}
+                    >
+                      {step > stepItem.number ? "✓" : stepItem.number}
+                    </div>
+                    <span
+                      className={`hidden sm:block ml-2 font-medium text-sm ${
+                        step === stepItem.number
+                          ? "text-primary"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {stepItem.label}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className="hidden lg:block w-8 h-px bg-gray-300 mx-2" />
+                  )}
                 </div>
-                <span
-                  className={`ml-2 font-medium text-sm ${
-                    step === stepItem.number ? "text-primary" : "text-gray-500"
-                  }`}
-                >
-                  {stepItem.label}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
