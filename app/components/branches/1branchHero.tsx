@@ -133,9 +133,9 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
           >
             <button
               className="rounded-full px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 border border-white/20 text-xs sm:text-sm font-medium backdrop-blur-sm hover:bg-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label="Check room availability"
+              aria-label="Book a room"
             >
-              Check Availability
+              Book Now
             </button>
           </motion.div>
 
