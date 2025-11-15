@@ -37,12 +37,12 @@ export async function POST(req: Request, { params }: Params) {
       );
     }
 
-    // ✅ FIX: Only create new packages, don't delete existing ones
+    // ✅ FIXED: Convert externalId to string
     const createdPackages = await Promise.all(
       packages.map((pkg: any) =>
         prisma.package.create({
           data: {
-            externalId: pkg.id || pkg.externalId || null,
+            externalId: pkg.externalId ? String(pkg.externalId) : null, // Convert to string
             title: pkg.title,
             subtitle: pkg.subtitle || null,
             description: pkg.description || null,

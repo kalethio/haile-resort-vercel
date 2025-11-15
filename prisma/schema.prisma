@@ -36,7 +36,7 @@ model User {
   password  String?
   roleId    Int?
   branchId  Int?
-  status    UserStatus @default("ACTIVE")
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   auditLogs AuditLog[]
@@ -126,7 +126,7 @@ model Guest {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   branchId         Int
-  guestType        GuestType              @default("REGULAR")
+  guestType        GuestType              @default(REGULAR)
   company          String?
   notes            String?
   totalStays       Int                    @default(0)
@@ -179,7 +179,7 @@ model Room {
   roomNumber   String
   floor        String?
   features     Json?
-  status       RoomStatus    @default("AVAILABLE")
+  status       RoomStatus    @default(AVAILABLE)
   roomTypeId   Int
   branchId     Int
   branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -192,8 +192,8 @@ model Room {
 
 model Booking {
   id              String           @id @default(uuid())
-  type            BookingType      @default("ROOM")
-  status          BookingStatus    @default("PENDING")
+  type            BookingType      @default(ROOM)
+  status          BookingStatus    @default(PENDING)
   guestName       String
   guestEmail      String
   guestPhone      String?
@@ -247,7 +247,7 @@ model Payment {
   id              Int           @id @default(autoincrement())
   amount          Float
   method          PaymentMethod
-  status          PaymentStatus @default("PENDING")
+  status          PaymentStatus @default(PENDING)
   transactionId   String?
   isInternational Boolean       @default(false)
   currency        String        @default("USD")
@@ -457,7 +457,7 @@ model JobApplication {
   expectedSalary    String?
   coverLetter       String?
   resumeUrl         String?
-  status            ApplicationStatus @default("PENDING")
+  status            ApplicationStatus @default(PENDING)
   submittedAt       DateTime          @default(now())
   job               JobOpening        @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
@@ -502,8 +502,9 @@ model ChatbotResponse {
   active   Boolean @default(true)
   branchId Int?
   branch   Branch? @relation(fields: [branchId], references: [id])
-
-  @@index([branchId, active, role])
+  type     String? @default("RESPONSE") 
+  
+  @@index([branchId, active, role, type])
 }
 
 model Subscriber {

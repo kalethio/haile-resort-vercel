@@ -48,3 +48,25 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 }
+export async function GET(req: Request, { params }: Params) {
+  try {
+    const { slug } = await params;
+
+    const branch = await prisma.branch.findFirst({
+      where: { slug },
+      include: { contact: true },
+    });
+
+    if (!branch?.contact) {
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(branch.contact);
+  } catch (error) {
+    console.error("Contact fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch contact" },
+      { status: 500 }
+    );
+  }
+}

@@ -21,19 +21,19 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // ✅ FIX: Only create new experiences, don't delete existing ones
+    // ✅ FIXED: Convert externalId to string for experiences AND packages
     const createdExperiences = await Promise.all(
       experiences.map((exp: any) =>
         prisma.experience.create({
           data: {
-            externalId: exp.externalId || null,
+            externalId: exp.externalId ? String(exp.externalId) : null, // Convert to string
             title: exp.title,
             description: exp.description || null,
             highlightImage: exp.highlightImage || null,
             branchId: branch.id,
             packages: {
               create: (exp.packages || []).map((pkg: any) => ({
-                externalId: pkg.id || pkg.externalId || null,
+                externalId: pkg.externalId ? String(pkg.externalId) : null, // Convert to string
                 title: pkg.title,
                 subtitle: pkg.subtitle || null,
                 description: pkg.description || null,
@@ -68,6 +68,7 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 }
+
 export async function GET(req: Request, { params }: Params) {
   try {
     const { slug } = await params;

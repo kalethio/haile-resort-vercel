@@ -21,12 +21,14 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // ✅ FIX: Only create new attractions, don't delete existing ones
+    // ✅ FIXED: Convert externalId to string
     const createdAttractions = await Promise.all(
       attractions.map((attraction: any) =>
         prisma.attraction.create({
           data: {
-            externalId: attraction.id || null,
+            externalId: attraction.externalId
+              ? String(attraction.externalId)
+              : null,
             label: attraction.label,
             image: attraction.image || null,
             branchId: branch.id,

@@ -1,41 +1,82 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  INITIAL_MESSAGES,
-  BOT_RESPONSES,
-  DEFAULT_RESPONSE,
-  STAFF_CONTACTS,
-  StaffRole,
-} from "../data/chatBot";
 
-// FAQ Quick replies - organized by priority
-const MAIN_QUICK_REPLIES = ["Booking", "Prices", "Amenities"];
-const EXPANDED_FAQ = [
-  "Check-in/out times",
-  "Room types",
-  "WiFi & internet",
-  "Parking",
-  "Pet policy",
-  "Cancellation",
-  "Transportation",
-  "Special requests",
-  "Breakfast included",
-  "Pool hours",
-];
+// Remove static data imports - we'll fetch from database
+// import { INITIAL_MESSAGES, BOT_RESPONSES, DEFAULT_RESPONSE, STAFF_CONTACTS, StaffRole } from "../data/chatBot";
+
+type StaffRole = "reception" | "spa" | "restaurant" | "booking";
+
+type BotResponse = {
+  triggers: string[];
+  response: string;
+  role?: StaffRole;
+};
+
+const STAFF_CONTACTS: Record<StaffRole, string> = {
+  reception: "https://wa.me/251900000001",
+  spa: "https://wa.me/251900000002",
+  restaurant: "https://wa.me/251900000003",
+  booking: "https://wa.me/251900000004",
+};
+
+const DEFAULT_RESPONSE =
+  "🤔 Sorry, I'm not sure about that. Try rephrasing your question, check for hints or contact support via WhatsApp.";
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<
+    { from: "user" | "bot"; text: string }[]
+  >([]);
   const [input, setInput] = useState("");
   const [currentLink, setCurrentLink] = useState(STAFF_CONTACTS["reception"]);
   const [showExpandedFAQ, setShowExpandedFAQ] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [chatHeight, setChatHeight] = useState(350); // Start with smaller height
+  const [chatHeight, setChatHeight] = useState(350);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Database state
+  const [botResponses, setBotResponses] = useState<BotResponse[]>([]);
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load chatbot data from database
+  useEffect(() => {
+    const loadChatbotData = async () => {
+      try {
+        const response = await fetch("/api/chatbot/data");
+        const data = await response.json();
+
+        setBotResponses(data.botResponses);
+        setQuickReplies(data.quickReplies);
+
+        // Set initial welcome message
+        setMessages([
+          {
+            from: "bot",
+            text: "👋 Hello! Welcome to Haile Resorts. How can I assist you today?",
+          },
+        ]);
+      } catch (error) {
+        console.error("Failed to load chatbot data:", error);
+        // Fallback to initial message only
+        setMessages([
+          {
+            from: "bot",
+            text: "👋 Hello! Welcome to Haile Resorts. How can I assist you today?",
+          },
+        ]);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadChatbotData();
+  }, []);
 
   // Close when clicking outside
   useEffect(() => {
@@ -58,8 +99,8 @@ const ChatBot = () => {
   // Auto-open with welcome - INCREASED DELAY
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsOpen(true);
-    }, 3000); // Changed from 1500ms to 3000ms (3 seconds)
+      setIsOpen(false);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -73,8 +114,7 @@ const ChatBot = () => {
   // Expand chat height when messages increase
   useEffect(() => {
     if (messages.length > 2) {
-      // More than just the initial welcome message
-      setChatHeight(500); // Expand to full height
+      setChatHeight(500);
     }
   }, [messages.length]);
 
@@ -83,15 +123,19 @@ const ChatBot = () => {
     return text
       .toLowerCase()
       .trim()
-      .replace(/[^\w\s]/g, "") // Remove punctuation
-      .replace(/\s+/g, " "); // Normalize spaces
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ");
   };
 
   const findBestMatch = (message: string) => {
+    if (botResponses.length === 0) {
+      return { response: DEFAULT_RESPONSE, role: "reception" as StaffRole };
+    }
+
     const normalized = normalizeText(message);
 
     // Check for exact matches first
-    for (const bot of BOT_RESPONSES) {
+    for (const bot of botResponses) {
       for (const trigger of bot.triggers) {
         const normalizedTrigger = normalizeText(trigger);
         if (normalized.includes(normalizedTrigger)) {
@@ -104,11 +148,10 @@ const ChatBot = () => {
     }
 
     // Fuzzy matching for common misspellings and variations
-    for (const bot of BOT_RESPONSES) {
+    for (const bot of botResponses) {
       for (const trigger of bot.triggers) {
         const normalizedTrigger = normalizeText(trigger);
 
-        // Check if message contains significant parts of the trigger
         const triggerWords = normalizedTrigger.split(" ");
         const messageWords = normalized.split(" ");
 
@@ -118,7 +161,6 @@ const ChatBot = () => {
           )
         );
 
-        // If more than 50% of trigger words match, consider it a match
         if (matchingWords.length >= Math.ceil(triggerWords.length * 0.5)) {
           return {
             response: bot.response,
@@ -157,6 +199,10 @@ const ChatBot = () => {
     setShowExpandedFAQ(!showExpandedFAQ);
   };
 
+  // Use database quick replies
+  const MAIN_QUICK_REPLIES = quickReplies.slice(0, 3); // First 3 for main area
+  const EXPANDED_FAQ = quickReplies.slice(3); // Rest for expanded area
+
   return (
     <div ref={containerRef} className="fixed bottom-6 right-6 z-50 font-sans">
       {/* Floating Button */}
@@ -165,15 +211,17 @@ const ChatBot = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <button onClick={() => setIsOpen(!isOpen)} className="">
+        <button onClick={() => setIsOpen(!isOpen)} className="relative">
           <AnimatePresence mode="wait">
             {isOpen ? (
               <motion.span
                 key="close"
                 initial={{ rotate: -90, opacity: 0 }}
                 animate={{ rotate: 0, opacity: 1 }}
-                className="visually-hidden "
-              ></motion.span>
+                className="visually-hidden"
+              >
+                {" "}
+              </motion.span>
             ) : (
               <motion.span
                 key="chat"
