@@ -1,16 +1,11 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { PACKAGES, Package } from "../../data/favPackages";
-import Link from "next/link";
-// --------------------------------------
-// Package type definition
-// --------------------------------------
-// --------------------------------------
-// Section heading description (rich JSX)
-// --------------------------------------
+import BookingForm from "../bookingform";
+
 const serviceDescription = (
   <>
     All-in-one service built by <strong>“ይቻላል”</strong> <br />
@@ -18,28 +13,21 @@ const serviceDescription = (
   </>
 );
 
-// ------------------------------------
-
-// --------------------------------------
-// Main Component
-// --------------------------------------
 export default function HaileFavouritePackages() {
   const containerRef = useRef<HTMLElement | null>(null);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
-  // Track scroll progress within section
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start center", "end center"],
   });
 
-  // Fade out effect as the user scrolls through
   const globalOpacity = useTransform(
     scrollYProgress,
     [0, 0.6, 1],
     [1, 1, 0.95]
   );
 
-  // Adjust bottom spacer dynamically to fit number of packages
   const bottomSpacerVH = Math.max(5, PACKAGES.length * 2);
 
   return (
@@ -60,10 +48,8 @@ export default function HaileFavouritePackages() {
 
       {/* Desktop Version: scroll takeover */}
       <div className="hidden md:block">
-        {/* Spacer before cards start appearing */}
         <div className="h-[10vh]" />
 
-        {/* Sticky container that holds all package cards */}
         <motion.div
           style={{ opacity: globalOpacity }}
           className="pointer-events-none sticky top-0 left-0 right-0 z-30 flex items-center justify-center"
@@ -71,49 +57,73 @@ export default function HaileFavouritePackages() {
           <div className="max-w-6xl mx-auto w-full px-6 md:px-12 lg:px-20">
             <div className="space-y-28">
               {PACKAGES.map((pkg, index) => (
-                <PackageCard key={pkg.id} pkg={pkg} index={index} />
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  index={index}
+                  onBookNow={() => setIsBookingOpen(true)}
+                />
               ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Spacer after cards to allow scrolling through */}
         <div style={{ height: `${bottomSpacerVH}vh` }} />
       </div>
 
       {/* Mobile Version: stacked cards with expand/collapse */}
       <div className="md:hidden max-w-3xl mx-auto px-4 space-y-6">
         {PACKAGES.map((pkg) => (
-          <MobilePackageCard key={pkg.id} pkg={pkg} />
+          <MobilePackageCard
+            key={pkg.id}
+            pkg={pkg}
+            onBookNow={() => setIsBookingOpen(true)}
+          />
         ))}
       </div>
+
+      {/* Booking Form Popup */}
+      {isBookingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIsBookingOpen(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+            >
+              <span className="text-xl">×</span>
+            </button>
+            <BookingForm />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
-// --------------------------------------
-// Desktop Card Component
-// --------------------------------------
-function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
+function PackageCard({
+  pkg,
+  index,
+  onBookNow,
+}: {
+  pkg: Package;
+  index: number;
+  onBookNow: () => void;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Track scroll for individual card
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "center center"],
   });
 
-  // Animate image scaling, card Y position, and opacity on scroll
   const imgScale = useTransform(
     scrollYProgress,
     [0, 0.3, 1],
     [0.95, 1.08, 1.2]
   );
   const cardY = useTransform(scrollYProgress, [0, 0.4, 1], [50, 0, -40]);
-
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.45], [0, 1, 1]);
 
-  // Alternate layout (image left/right) for each card
   const isReversed = index % 2 === 1;
 
   return (
@@ -159,12 +169,12 @@ function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
             {pkg.description}
           </p>
           {pkg.ctaLabel && (
-            <a
-              href="@/app/components/1homeSections/2destinations"
+            <button
+              onClick={onBookNow}
               className="inline-block mt-5 w-fit rounded-lg px-8 py-3 text-sm font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
             >
               {pkg.ctaLabel}
-            </a>
+            </button>
           )}
         </div>
       </motion.div>
@@ -172,10 +182,13 @@ function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
   );
 }
 
-// --------------------------------------
-// Mobile Card Component (expandable)
-// --------------------------------------
-function MobilePackageCard({ pkg }: { pkg: Package }) {
+function MobilePackageCard({
+  pkg,
+  onBookNow,
+}: {
+  pkg: Package;
+  onBookNow: () => void;
+}) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -215,12 +228,12 @@ function MobilePackageCard({ pkg }: { pkg: Package }) {
           {pkg.description}
         </p>
         {pkg.ctaLabel && (
-          <Link
-            href="/booking"
+          <button
+            onClick={onBookNow}
             className="inline-block rounded-lg px-6 py-2 text-xs font-semibold bg-black text-white shadow-md hover:bg-primary transition"
           >
             {pkg.ctaLabel}
-          </Link>
+          </button>
         )}
       </motion.div>
     </div>
