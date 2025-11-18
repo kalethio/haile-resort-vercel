@@ -159,10 +159,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
                   className="block text-xs sm:text-sm font-semibold hover:text-primary/80 transition-colors"
                   aria-label="Call us"
                 >
-                  📞{" "}
-                  <span className="text-transparent hover:text-primary/80 ">
-                    {contact.phone}
-                  </span>
+                  📞 {contact.phone}
                 </a>
               ) : (
                 <p className="text-xs sm:text-sm text-gray-300 italic">
@@ -174,7 +171,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
               {contact.email ? (
                 <a
                   href={`mailto:${contact.email}`}
-                  className="block text-xs sm:text-sm mt-1 sm:mt-2 hover:text-primary/80 transition-colors hover:underline"
+                  className="block text-xs sm:text-sm mt-1 sm:mt-2 hover:text-primary/80 transition-colors "
                   aria-label="Send us an email"
                 >
                   ✉️ {contact.email}

@@ -189,7 +189,7 @@ export default function BookingForm() {
 
           {/* Guests - Full width on mobile, 1 col on desktop */}
           <div className="lg:col-span-1">
-            <label className="block font-medium mb-2 text-sm">Guests</label>
+            <label className="block font-medium mb-2 text-xs">Guests</label>
             <div className="space-y-3 bg-white/5 border border-primary/30 rounded-lg p-4">
               {/* Adults */}
               <div className="flex items-center justify-between">
