@@ -7,23 +7,32 @@ import {
   Mail,
   FileText,
   Loader,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Booking } from "./types";
 
 interface BookingCardProps {
   booking: Booking;
-  onStatusChange: (bookingId: string, newStatus: string) => void;
+  onStatusChange: (bookingId: string, newStatus: string) => Promise<void>;
   onRefresh: (showRefresh?: boolean, page?: number) => void;
+  isLoading?: boolean;
 }
 
 const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   onStatusChange,
   onRefresh,
+  isLoading = false,
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"idle" | "success" | "error">(
+    "idle"
+  );
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -37,22 +46,25 @@ const BookingCard: React.FC<BookingCardProps> = ({
   };
 
   const getAvailableStatuses = (currentStatus: string) => {
-    const workflow = ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT"];
-    const currentIndex = workflow.indexOf(currentStatus);
-
-    if (currentIndex === -1) return [];
-
-    const available = workflow.slice(currentIndex);
-    return [...available, "CANCELLED"];
+    const workflow: Record<string, string[]> = {
+      PENDING: ["CONFIRMED", "CANCELLED"],
+      CONFIRMED: ["CHECKED_IN", "CANCELLED", "PENDING"],
+      CHECKED_IN: ["CHECKED_OUT", "CONFIRMED"],
+      CHECKED_OUT: ["CHECKED_IN"],
+      CANCELLED: ["PENDING"],
+    };
+    return workflow[currentStatus] || [];
   };
 
   const handleStatusUpdate = async (newStatus: string) => {
     setIsUpdating(true);
+    setUpdateError(null);
     try {
       await onStatusChange(booking.id, newStatus);
       setShowConfirmation(false);
-      onRefresh(true); // Refresh data after status change
+      // Status will be updated via parent refresh
     } catch (error) {
+      setUpdateError("Failed to update status");
       console.error("Failed to update status:", error);
     } finally {
       setIsUpdating(false);
@@ -87,17 +99,27 @@ Nights: ${booking.roomBookings[0]?.totalNights}
   };
 
   const sendConfirmationEmail = async (bookingId: string) => {
+    setIsSendingEmail(true);
+    setEmailStatus("idle");
     try {
       const res = await fetch("/api/admin/send-transactional", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId, emailType: "confirmation" }),
       });
+
       if (res.ok) {
-        console.log("Email sent successfully");
+        setEmailStatus("success");
+        setTimeout(() => setEmailStatus("idle"), 3000);
+      } else {
+        throw new Error("Failed to send email");
       }
     } catch (error) {
+      setEmailStatus("error");
       console.error("Failed to send email:", error);
+      setTimeout(() => setEmailStatus("idle"), 3000);
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -106,7 +128,7 @@ Nights: ${booking.roomBookings[0]?.totalNights}
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white relative">
       {/* Loading Overlay */}
-      {isUpdating && (
+      {(isUpdating || isLoading) && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-lg z-10">
           <Loader size={20} className="animate-spin text-blue-600" />
         </div>
@@ -173,17 +195,36 @@ Nights: ${booking.roomBookings[0]?.totalNights}
       <div className="flex gap-2 pt-3 border-t border-gray-100">
         <button
           onClick={() => downloadBookingDetails(booking)}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors"
+          disabled={isUpdating || isLoading}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
           <FileText size={14} /> Download
         </button>
+
         <button
           onClick={() => sendConfirmationEmail(booking.id)}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors"
+          disabled={isSendingEmail || isUpdating || isLoading}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 transition-colors disabled:opacity-50 relative"
         >
-          <Mail size={14} /> Email
+          {isSendingEmail ? (
+            <Loader size={14} className="animate-spin" />
+          ) : emailStatus === "success" ? (
+            <CheckCircle size={14} className="text-green-400" />
+          ) : emailStatus === "error" ? (
+            <XCircle size={14} className="text-red-400" />
+          ) : (
+            <Mail size={14} />
+          )}
+          Email
         </button>
       </div>
+
+      {/* Error Message */}
+      {updateError && (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {updateError}
+        </div>
+      )}
 
       {/* Status Dropdown with Confirmation */}
       <div className="mt-3 pt-3 border-t border-gray-100">
@@ -202,7 +243,10 @@ Nights: ${booking.roomBookings[0]?.totalNights}
                 ✓ Confirm
               </button>
               <button
-                onClick={() => setShowConfirmation(false)}
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setUpdateError(null);
+                }}
                 disabled={isUpdating}
                 className="flex-1 px-2 py-1 border border-gray-300 text-gray-700 text-xs rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
@@ -218,25 +262,26 @@ Nights: ${booking.roomBookings[0]?.totalNights}
               if (e.target.value !== booking.status) {
                 setPendingStatus(e.target.value);
                 setShowConfirmation(true);
+                setUpdateError(null);
               }
             }}
-            disabled={isUpdating}
+            disabled={isUpdating || isLoading}
             className="w-full text-xs p-2 border border-gray-300 rounded focus:ring-1 focus:ring-gray-800 disabled:opacity-50 text-gray-900 bg-white"
           >
             <option value={booking.status}>
               Keep {booking.status.replace("_", " ")}
             </option>
-            {availableStatuses
-              .filter((status) => status !== booking.status)
-              .map((status) => (
-                <option key={status} value={status}>
-                  {status === "CANCELLED"
-                    ? "✗ Cancel Booking"
-                    : status === "CHECKED_OUT"
-                      ? "✓ Check Out"
+            {availableStatuses.map((status) => (
+              <option key={status} value={status}>
+                {status === "CANCELLED"
+                  ? "✗ Cancel Booking"
+                  : status === "CHECKED_OUT"
+                    ? "✓ Check Out"
+                    : status === "CONFIRMED"
+                      ? "✓ Confirm Booking"
                       : `→ ${status.replace("_", " ")}`}
-                </option>
-              ))}
+              </option>
+            ))}
           </select>
         )}
       </div>

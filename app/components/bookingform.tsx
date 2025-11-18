@@ -129,157 +129,170 @@ export default function BookingForm() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-0 p-4">
+    <div className="flex justify-center items-center min-h-0 p-1">
       <form
-        className="space-y-4 text-sm text-primary max-w-sm w-full mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg"
+        className="space-y-4 text-sm text-primary w-fit mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg"
         onSubmit={handleSubmit}
       >
-        {/* Destination */}
-        <div>
-          <label className="block font-medium mb-2 text-sm">Destination</label>
-          <select
-            value={branchSlug}
-            onChange={(e) => {
-              const selectedBranch = branches.find(
-                (b) => b.slug === e.target.value
-              );
-              if (selectedBranch) {
-                setBranch(selectedBranch.branchName);
-                setBranchSlug(selectedBranch.slug);
-              }
-            }}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
-          >
-            {branches.map((b) => (
-              <option key={b.slug} value={b.slug}>
-                {b.branchName}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Dates */}
-        <div>
-          <label className="block font-medium mb-2 text-sm">Dates</label>
-          <div className="w-full rounded-lg bg-white/5 border border-primary/30 overflow-hidden scale-90 origin-left">
-            <DateRange
-              ranges={[selectionRange]}
-              onChange={(ranges: RangeKeyDict) => {
-                const range = ranges.selection;
-                if (range.startDate && range.endDate) {
-                  setSelectionRange({
-                    startDate: range.startDate,
-                    endDate: range.endDate,
-                    key: "selection",
-                  });
+        {/* Responsive Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          {/* Destination */}
+          <div className="lg:col-span-1">
+            <label className="block font-medium mb-2 text-sm">
+              Destination
+            </label>
+            <select
+              value={branchSlug}
+              onChange={(e) => {
+                const selectedBranch = branches.find(
+                  (b) => b.slug === e.target.value
+                );
+                if (selectedBranch) {
+                  setBranch(selectedBranch.branchName);
+                  setBranchSlug(selectedBranch.slug);
                 }
               }}
-              minDate={new Date()}
-              rangeColors={["#F59E0B"]}
-            />
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
+            >
+              {branches.map((b) => (
+                <option key={b.slug} value={b.slug}>
+                  {b.branchName}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="text-xs text-gray-400 mt-1 text-center">
-            {nights} night{nights > 1 ? "s" : ""}
-          </div>
-        </div>
 
-        {/* Guests */}
-        <div>
-          <label className="block font-medium mb-2 text-sm">Guests</label>
-
-          {/* Adults */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-xs font-medium text-gray-300">Adults</div>
+          {/* Dates - Full width on mobile, 2 cols on desktop */}
+          <div className="md:col-span-2 lg:col-span-2">
+            <label className="block font-medium mb-2 text-sm">Dates</label>
+            <div className="w-full rounded-lg bg-white/5 border border-primary/30 overflow-hidden scale-90 md:scale-100 origin-left">
+              <DateRange
+                ranges={[selectionRange]}
+                onChange={(ranges: RangeKeyDict) => {
+                  const range = ranges.selection;
+                  if (range.startDate && range.endDate) {
+                    setSelectionRange({
+                      startDate: range.startDate,
+                      endDate: range.endDate,
+                      key: "selection",
+                    });
+                  }
+                }}
+                minDate={new Date()}
+                rangeColors={["#F59E0B"]}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => changeAdults(-1)}
-                className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-              >
-                -
-              </button>
-              <span className="text-sm font-medium min-w-6 text-center">
-                {adults}
-              </span>
-              <button
-                type="button"
-                onClick={() => changeAdults(1)}
-                className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-              >
-                +
-              </button>
+            <div className="text-xs text-gray-400 mt-1 text-center">
+              {nights} night{nights > 1 ? "s" : ""}
             </div>
           </div>
 
-          {/* Children */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-xs font-medium text-gray-300">
-                Children (0–12)
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => changeChildren(-1)}
-                className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-              >
-                -
-              </button>
-              <span className="text-sm font-medium min-w-6 text-center">
-                {children}
-              </span>
-              <button
-                type="button"
-                onClick={() => changeChildren(1)}
-                className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Children Ages */}
-          {children > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-300">
-                Children Ages
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {Array.from({ length: children }).map((_, i) => (
-                  <div key={i} className="flex flex-col">
-                    <input
-                      type="number"
-                      min={0}
-                      max={12}
-                      value={childrenAges[i] ?? ""}
-                      onChange={(e) =>
-                        setChildAge(
-                          i,
-                          e.target.value === ""
-                            ? null
-                            : Math.max(0, Math.min(12, Number(e.target.value)))
-                        )
-                      }
-                      placeholder="Age"
-                      className="w-full px-2 py-1 text-sm rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
-                    />
+          {/* Guests - Full width on mobile, 1 col on desktop */}
+          <div className="lg:col-span-1">
+            <label className="block font-medium mb-2 text-sm">Guests</label>
+            <div className="space-y-3 bg-white/5 border border-primary/30 rounded-lg p-4">
+              {/* Adults */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-medium text-gray-300">
+                    Adults
                   </div>
-                ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => changeAdults(-1)}
+                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
+                  >
+                    -
+                  </button>
+                  <span className="text-sm font-medium min-w-6 text-center">
+                    {adults}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => changeAdults(1)}
+                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
+
+              {/* Children */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-medium text-gray-300">
+                    Children (0–12)
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => changeChildren(-1)}
+                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
+                  >
+                    -
+                  </button>
+                  <span className="text-sm font-medium min-w-6 text-center">
+                    {children}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => changeChildren(1)}
+                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Children Ages */}
+              {children > 0 && (
+                <div className="space-y-2 pt-2 border-t border-primary/20">
+                  <div className="text-xs font-medium text-gray-300">
+                    Children Ages
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Array.from({ length: children }).map((_, i) => (
+                      <div key={i} className="flex flex-col">
+                        <input
+                          type="number"
+                          min={0}
+                          max={12}
+                          value={childrenAges[i] ?? ""}
+                          onChange={(e) =>
+                            setChildAge(
+                              i,
+                              e.target.value === ""
+                                ? null
+                                : Math.max(
+                                    0,
+                                    Math.min(12, Number(e.target.value))
+                                  )
+                            )
+                          }
+                          placeholder="Age"
+                          className="w-full px-2 py-1 text-sm rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          className="w-full py-2.5 rounded-lg font-medium bg-primary text-white text-sm shadow-sm hover:brightness-90 transition mt-2"
-        >
-          Book Now
-        </button>
+        {/* Submit Button - Full width on mobile, auto on desktop */}
+        <div className="flex justify-center md:justify-end">
+          <button
+            type="submit"
+            className="w-full md:w-auto px-8 py-2.5 rounded-lg font-medium bg-primary text-white text-sm shadow-sm hover:brightness-90 transition mt-2"
+          >
+            Book Now
+          </button>
+        </div>
       </form>
     </div>
   );

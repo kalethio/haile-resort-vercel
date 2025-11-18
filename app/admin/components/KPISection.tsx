@@ -151,32 +151,24 @@ export default function KPISection() {
             title="This Week Revenue"
             value={`$${(stats.weeklyRevenue / 1000).toFixed(0)}K`}
             subtitle="Revenue this week"
-            trend="up"
-            trendValue="+12.5%"
             icon={Building}
           />
           <MetricCard
             title="Today New Booking"
             value={stats.todayBookings.toString()}
             subtitle="New reservations today"
-            trend="up"
-            trendValue="+8%"
             icon={Calendar}
           />
           <MetricCard
             title="Today Check In"
             value={stats.todayCheckIns.toString()}
             subtitle="Arrivals today"
-            trend="up"
-            trendValue="+15%"
             icon={Users}
           />
           <MetricCard
             title="Today Check Out"
             value={stats.todayCheckOuts.toString()}
             subtitle="Departures today"
-            trend="down"
-            trendValue="-3%"
             icon={LogOut}
           />
         </div>

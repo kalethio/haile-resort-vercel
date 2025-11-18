@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import DashboardHeader from "./components/DashboardHeader";
 import KPISection from "./components/KPISection";
 import BranchOverview from "./components/BranchOverview";
-import RecentActivitySection from "./components/RecentActivitySection";
 
 interface DashboardData {
   stats: {
@@ -82,7 +81,6 @@ export default function AdminDashboard() {
       <DashboardHeader />
       <KPISection />
       <BranchOverview />
-      <RecentActivitySection bookings={dashboardData.recentBookings} />
     </div>
   );
 }

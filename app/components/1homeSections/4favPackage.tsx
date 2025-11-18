@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { PACKAGES, Package } from "../../data/favPackages";
+import Link from "next/link";
 // --------------------------------------
 // Package type definition
 // --------------------------------------
@@ -159,8 +160,8 @@ function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
           </p>
           {pkg.ctaLabel && (
             <a
-              href="#"
-              className="inline-block mt-5 rounded-lg px-8 py-3 text-sm font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
+              href="@/app/components/1homeSections/2destinations"
+              className="inline-block mt-5 w-fit rounded-lg px-8 py-3 text-sm font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
             >
               {pkg.ctaLabel}
             </a>
@@ -214,12 +215,12 @@ function MobilePackageCard({ pkg }: { pkg: Package }) {
           {pkg.description}
         </p>
         {pkg.ctaLabel && (
-          <a
-            href="#"
+          <Link
+            href="/booking"
             className="inline-block rounded-lg px-6 py-2 text-xs font-semibold bg-black text-white shadow-md hover:bg-primary transition"
           >
             {pkg.ctaLabel}
-          </a>
+          </Link>
         )}
       </motion.div>
     </div>

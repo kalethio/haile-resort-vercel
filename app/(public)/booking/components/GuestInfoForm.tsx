@@ -329,24 +329,6 @@ export default function GuestInfoForm({
                   )}
                 </div>
               </div>
-
-              {/* Special Requests */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Special Requests
-                </label>
-                <textarea
-                  value={formData.specialRequests || ""}
-                  onChange={(e) =>
-                    handleInputChange("specialRequests", e.target.value)
-                  }
-                  rows={4}
-                  disabled={submitting}
-                  className="w-full text-gray-900 px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 font-light resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Any special requirements, dietary restrictions, or room preferences..."
-                />
-              </div>
-
               {/* Marketing Opt-in */}
               <div>
                 <label className="flex items-start gap-3 cursor-pointer group">

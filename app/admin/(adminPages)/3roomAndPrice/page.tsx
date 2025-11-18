@@ -53,15 +53,8 @@ export default function InventoryDashboard() {
         </p>
       </div>
 
-      {/* Branch Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {branches.map((branch) => (
-          <BranchCard key={branch.id} branch={branch} />
-        ))}
-      </div>
-
-      {/* Quick Stats Footer */}
-      <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+      {/* Quick Stats - MOVED TO TOP */}
+      <div className="mb-8 p-6 bg-gray-50 rounded-lg">
         <h3 className="font-semibold text-gray-900 mb-4">Quick Overview</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div className="text-center">
@@ -76,26 +69,15 @@ export default function InventoryDashboard() {
             </div>
             <div className="text-gray-600">Total Rooms</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {Math.round(
-                branches.reduce((sum, b) => sum + b.occupancyRate, 0) /
-                  branches.length
-              )}
-              %
-            </div>
-            <div className="text-gray-600">Avg Occupancy</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              $
-              {branches
-                .reduce((sum, b) => sum + b.totalRevenue, 0)
-                .toLocaleString()}
-            </div>
-            <div className="text-gray-600">Total Revenue</div>
-          </div>
+          {/* REMOVED: Avg Occupancy and Total Revenue stats */}
         </div>
+      </div>
+
+      {/* Branch Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {branches.map((branch) => (
+          <BranchCard key={branch.id} branch={branch} />
+        ))}
       </div>
     </div>
   );
@@ -125,30 +107,14 @@ function BranchCard({ branch }: { branch: Branch }) {
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Rooms:</span>
-            <span className="font-medium">{branch.roomCount}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Occupancy:</span>
-            <span
-              className={`font-medium ${
-                branch.occupancyRate > 70
-                  ? "text-green-600"
-                  : branch.occupancyRate > 50
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              }`}
-            >
-              {branch.occupancyRate}%
+            <span className="font-medium text-gray-700">
+              {branch.roomCount}
             </span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Revenue:</span>
-            <span className="font-medium">
-              ${branch.totalRevenue.toLocaleString()}
-            </span>
-          </div>
+          {/* REMOVED: Occupancy percentage text line */}
+          {/* REMOVED: Revenue line */}
 
-          {/* Occupancy Bar */}
+          {/* Occupancy Bar - KEPT */}
           <div className="pt-2">
             <div className="flex justify-between text-xs text-gray-600 mb-1">
               <span>Occupancy</span>

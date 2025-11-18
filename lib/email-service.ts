@@ -51,6 +51,7 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
     return false;
   }
 }
+
 function generateBookingEmail(
   template: string,
   data: BookingConfirmationData
@@ -85,8 +86,16 @@ async function findOrCreateBookingTemplate(): Promise<{
   content: string;
 }> {
   try {
+    // FIX: Use absolute URL for server-side calls
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+
     // Try to find existing booking confirmation template
-    const response = await fetch("/api/email-templates");
+    const response = await fetch(`${baseUrl}/api/email-templates`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const templates = await response.json();
 
     const bookingTemplate = templates.find(
@@ -134,8 +143,8 @@ async function findOrCreateBookingTemplate(): Promise<{
       `,
     };
 
-    // Save the template
-    await fetch("/api/email-templates", {
+    // Save the template with absolute URL
+    await fetch(`${baseUrl}/api/email-templates`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(defaultTemplate),
@@ -155,3 +164,5 @@ async function findOrCreateBookingTemplate(): Promise<{
     };
   }
 }
+
+// REMOVE ANY DUPLICATE sendBookingConfirmation FUNCTION BELOW THIS LINE
