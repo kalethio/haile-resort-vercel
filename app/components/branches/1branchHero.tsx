@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import BookingForm from "../bookingform";
 // Attraction type
 export interface Attraction {
   id: string;
@@ -32,7 +32,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-
+  const [showBookingForm, setShowBookingForm] = useState(false);
   // Active attraction or fallback hero image
   const active =
     activeIndex !== null
@@ -76,7 +76,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
   const hasContactInfo = contact.phone || contact.email;
 
   return (
-    <section className="relative w-full h-screen overflow-hidden text-white">
+    <section className="relative w-full h-screen max-h-screen overflow-hidden text-white">
       {/* Hero Background with loading state */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -99,7 +99,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
       )}
 
       {/* Hero Text Container - MOBILE ADJUSTMENTS */}
-      <div className="relative z-20 max-w-7xl mx-auto mt-20 px-4 sm:px-6 h-full flex flex-col justify-start">
+      <div className="relative md:z-20 max-w-7xl mx-auto mt-20 px-4 sm:px-6 h-full flex flex-col justify-start">
         <div className="max-w-xl">
           {/* Welcome Heading - MOBILE FIX */}
           <motion.h1
@@ -132,7 +132,8 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
             transition={{ delay: 0.35, duration: 0.5 }}
           >
             <button
-              className="rounded-full px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 border border-white/20 text-xs sm:text-sm font-medium backdrop-blur-sm hover:bg-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+              onClick={() => setShowBookingForm(true)} // ADD THIS ONCLICK
+              className="rounded-full px-6 sm:px-8 py-3 sm:py-4 bg-white/10 border border-white/20 text-sm sm:text-base font-medium backdrop-blur-sm hover:bg-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 active:scale-95"
               aria-label="Book a room"
             >
               Book Now
@@ -158,7 +159,10 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
                   className="block text-xs sm:text-sm font-semibold hover:text-primary/80 transition-colors"
                   aria-label="Call us"
                 >
-                  📞 {contact.phone}
+                  📞{" "}
+                  <span className="text-transparent hover:text-primary/80 ">
+                    {contact.phone}
+                  </span>
                 </a>
               ) : (
                 <p className="text-xs sm:text-sm text-gray-300 italic">
@@ -213,7 +217,7 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
 
         {/* Attractions Horizontal Scroll - LOWERED ON MOBILE */}
         {branch.attractions.length > 0 && (
-          <div className="absolute top-[65vh] sm:top-[55vh] md:top-[60vh] left-0 w-full overflow-hidden">
+          <div className="absolute top-[50vh] sm:top-[55vh] md:top-[60vh] left-0 w-full overflow-hidden">
             <div
               ref={listRef}
               className="flex gap-3 sm:gap-4 px-3 sm:px-4 overflow-x-auto scroll-smooth scrollbar-hide md:overflow-visible md:justify-end pb-3 sm:pb-4"
@@ -266,6 +270,20 @@ export default function HeroAttractions({ branch }: HeroAttractionsProps) {
           </div>
         )}
       </div>
+      {/* Booking Form Popup */}
+      {showBookingForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowBookingForm(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+            >
+              <span className="text-xl">×</span>
+            </button>
+            <BookingForm />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
