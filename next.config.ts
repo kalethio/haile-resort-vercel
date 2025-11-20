@@ -1,6 +1,8 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: "export", // enables static export for cPanel
+import { NextConfig } from "next";
+
+/** Vercel-ready Next.js config (no static "export" mode) */
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
   images: {
     domains: ["hotel.amdeconsult.com"],
     unoptimized: true,
@@ -18,4 +20,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
