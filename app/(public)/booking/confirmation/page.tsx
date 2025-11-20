@@ -1,47 +1,32 @@
-"use client";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+// app/booking/confirmation/page.tsx
+import { Suspense } from "react";
+import BookingConfirmationContent from "./BookingConfirmationContent";
 
-export default function BookingConfirmation() {
-  const searchParams = useSearchParams();
-  const bookingId = searchParams.get("bookingId");
-  const guestName = searchParams.get("guestName");
+export default function BookingConfirmationPage() {
+  return (
+    <Suspense fallback={<ConfirmationSkeleton />}>
+      <BookingConfirmationContent />
+    </Suspense>
+  );
+}
 
+function ConfirmationSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl">✅</span>
+          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+            <div className="w-8 h-8 bg-gray-300 rounded"></div>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Booking Confirmed!
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Thank you {guestName}! Your reservation is confirmed.
-          </p>
+          <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto mb-6 animate-pulse"></div>
 
-          {bookingId && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-600">Booking Reference</p>
-              <p className="font-mono font-bold text-lg">{bookingId}</p>
-            </div>
-          )}
+          <div className="h-16 bg-gray-100 rounded-lg mb-6 animate-pulse"></div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/"
-              className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              Back to Home
-            </Link>
-            <Link
-              href="/booking"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Book Another Stay
-            </Link>
+            <div className="h-12 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded-lg w-40 animate-pulse"></div>
           </div>
         </div>
       </div>

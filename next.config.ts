@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export", // enables static export for cPanel
   images: {
-    domains: ["localhost"],
-    unoptimized: true, // Optional: for local development
+    domains: ["hotel.amdeconsult.com"],
+    unoptimized: true,
   },
   typescript: {
     ignoreBuildErrors: true,
