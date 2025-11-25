@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --no-lint",
+    "build": "npx prisma migrate deploy && next build --no-lint",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
