@@ -49,7 +49,7 @@ async function main() {
 }
 
 // ============================
-// SUPER_ADMIN FUNCTIONS
+// SUPER_ADMIN FUNCTION
 // ============================
 async function createSuperAdminRole() {
   // Clear existing roles and permissions
