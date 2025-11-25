@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm install --save-dev tsx && DATABASE_URL=\"your-vercel-postgres-url\" prisma generate && prisma db push && prisma db seed && next build",
+    "build": "prisma generate && prisma db push && prisma db seed && next build",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write ."
