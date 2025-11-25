@@ -49,7 +49,7 @@ async function main() {
 }
 
 // ============================
-// SUPER_ADMIN FUNCTION
+// SUPER_ADMIN FUNCTIONs
 // ============================
 async function createSuperAdminRole() {
   // Clear existing roles and permissions
@@ -265,7 +265,7 @@ async function createAttractions(branches: any[]) {
 }
 
 async function createAccommodations(branches: any[]) {
-  console.log("🏠 Creating accommodations...");
+  console.log("🛏 ️ Creating accommodations...");
 
   const accommodationsData = [
     {
