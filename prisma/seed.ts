@@ -11,7 +11,7 @@ async function main() {
     console.log("👑 Creating SUPER_ADMIN role...");
     await createSuperAdminRole();
 
-    // 2. Create Branches
+    // 2. Create Branches seed
     console.log("🏨 Creating branches...");
     const branches = await createBranches();
 
