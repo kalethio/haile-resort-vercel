@@ -10,6 +10,9 @@
     "lint": "eslint",
     "format": "prettier --write ."
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^6.17.1",
     "bcryptjs": "^3.0.3",
