@@ -8,8 +8,7 @@
     "build": "prisma generate && prisma db push && prisma db seed && next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write .",
-    "postinstall": "prisma generate"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
