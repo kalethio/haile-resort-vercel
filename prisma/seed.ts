@@ -7,7 +7,8 @@ async function main() {
   console.log("🚀 Starting seed...");
 
   try {
-    // 1. Create SUPER_ADMIN Role & Permissions FIRST
+    // 1. Create SUPER_ADMIN Role & Permissions FIR
+
     console.log("👑 Creating SUPER_ADMIN role...");
     await createSuperAdminRole();
 
