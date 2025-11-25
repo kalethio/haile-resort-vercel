@@ -19,10 +19,6 @@ async function main() {
     console.log("👥 Creating SUPER_ADMIN user...");
     await createSuperAdminUser();
 
-    // 4. Create Room Data
-    console.log("🛏️ Creating rooms...");
-    await createRoomData(branches);
-
     // 5. Create Experiences & Packages
     console.log("🎯 Creating experiences...");
     await createExperiencesWithPackages(branches);
