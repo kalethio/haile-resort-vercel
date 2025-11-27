@@ -43,7 +43,7 @@ export default function BookingContent() {
   // ---------------------------------------------------------
   const bookingParams: BookingParams = React.useMemo(() => {
     const checkIn = searchParams.get("checkIn");
-    const checkOut = searchParams.get("checkOut");
+    const checkOut = searchParams.get("checkOut"); //parma
 
     if (checkIn && checkOut) {
       const start = new Date(checkIn);
