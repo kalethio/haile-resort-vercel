@@ -1,108 +1,136 @@
-// app/booking/components/ConfirmationStep.tsx - SIMPLIFIED
+// app/booking/components/BookingWizard.tsx
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import ConfirmationStep from "./ConfirmationStep";
 
-interface ConfirmationStepProps {
-  bookingId: string | null;
-  onReset: () => void;
-  onDone: () => void;
+interface BookingData {
+  guestEmail: string;
+  guestName: string;
+  checkIn: string;
+  checkOut: string;
+  roomType: string;
+  totalAmount: number;
+  branchName: string;
+  // ... other booking fields
 }
 
-export default function ConfirmationStep({
-  bookingId,
-  onReset,
-  onDone,
-}: ConfirmationStepProps) {
+export default function BookingWizard() {
+  const [currentStep, setCurrentStep] = useState("form");
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleBookingComplete = async (bookingData: BookingData) => {
+    setLoading(true);
+    try {
+      // 1. Create booking in database
+      const bookingResponse = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
+      });
+
+      const booking = await bookingResponse.json();
+
+      if (!bookingResponse.ok) {
+        throw new Error(booking.error || "Failed to create booking");
+      }
+
+      // 2. Send payment instructions email
+      const paymentResponse = await fetch("/api/payment/send-instructions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guestEmail: bookingData.guestEmail,
+          guestName: bookingData.guestName,
+          bookingId: booking.id,
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          roomType: bookingData.roomType,
+          totalAmount: bookingData.totalAmount,
+          branchName: bookingData.branchName,
+        }),
+      });
+
+      if (!paymentResponse.ok) {
+        console.warn("Payment email failed, but continuing...");
+      }
+
+      // 3. Send booking confirmation email
+      const confirmationResponse = await fetch(
+        "/api/admin/send-transactional",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingId: booking.id,
+            emailType: "confirmation",
+          }),
+        }
+      );
+
+      if (!confirmationResponse.ok) {
+        console.warn("Confirmation email failed, but continuing...");
+      }
+
+      // 4. Show confirmation step
+      setBookingId(booking.id);
+      setCurrentStep("confirmation");
+    } catch (error) {
+      console.error("Booking completion failed:", error);
+      alert("Booking failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setCurrentStep("form");
+    setBookingId(null);
+  };
+
+  const handleDone = () => {
+    window.location.href = "/";
+  };
+
+  if (currentStep === "confirmation") {
+    return (
+      <ConfirmationStep
+        bookingId={bookingId}
+        onReset={handleReset}
+        onDone={handleDone}
+      />
+    );
+  }
+
+  // Your existing booking form goes here
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-        {/* Success Header */}
-        <div className="mb-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-2xl text-green-600">✓</span>
-          </div>
-          <h2 className="text-3xl font-light text-gray-900 mb-4">
-            Booking Confirmed!
-          </h2>
-          <p className="text-gray-600 mb-2">
-            Thank you for choosing Haile Resorts
-          </p>
-          {bookingId && (
-            <p className="text-sm text-gray-500">
-              Reference:{" "}
-              <span className="font-mono text-primary">{bookingId}</span>
-            </p>
-          )}
-        </div>
-
-        {/* Next Steps */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-          <h3 className="font-semibold text-gray-900 mb-3">
-            What Happens Next?
-          </h3>
-          <div className="space-y-3 text-sm text-gray-700 text-left">
-            <div className="flex items-start gap-3">
-              <span className="text-blue-600 mt-0.5">①</span>
-              <span>
-                <strong>Payment Details Sent</strong> - Check your email for
-                bank transfer instructions
-              </span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-blue-600 mt-0.5">②</span>
-              <span>
-                <strong>Complete Payment</strong> - Transfer the amount using
-                provided bank details
-              </span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-blue-600 mt-0.5">③</span>
-              <span>
-                <strong>Booking Secured</strong> - Your reservation will be
-                confirmed within 2-4 hours after payment
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Support Reminder */}
-        <div className="border border-gray-200 rounded-xl p-4 mb-8">
-          <p className="text-sm text-gray-600">
-            <strong>Need help with payment?</strong> Our team is ready to
-            assist:
-          </p>
-          <div className="flex justify-center gap-6 mt-2 text-sm">
-            <a
-              href="tel:+251111234567"
-              className="text-primary hover:text-primary/80"
-            >
-              📞 +251 11 123 4567
-            </a>
-            <a
-              href="mailto:bookings@haileresorts.com"
-              className="text-primary hover:text-primary/80"
-            >
-              ✉️ bookings@haileresorts.com
-            </a>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={onReset}
-            className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-colors"
-          >
-            Book Another Stay
-          </button>
-          <button
-            onClick={onDone}
-            className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium transition-colors shadow-sm"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
+    <div>
+      {/* Your booking form */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          const bookingData: BookingData = {
+            guestEmail: formData.get("email") as string,
+            guestName: formData.get("name") as string,
+            checkIn: formData.get("checkIn") as string,
+            checkOut: formData.get("checkOut") as string,
+            roomType: formData.get("roomType") as string,
+            totalAmount: parseFloat(formData.get("totalAmount") as string),
+            branchName: formData.get("branchName") as string,
+          };
+          handleBookingComplete(bookingData);
+        }}
+      >
+        {/* Form fields */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 font-medium disabled:opacity-50"
+        >
+          {loading ? "Processing..." : "Complete Booking"}
+        </button>
+      </form>
     </div>
   );
 }

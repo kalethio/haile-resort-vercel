@@ -185,8 +185,12 @@ export default function EmailMarketingAdmin() {
       return;
     }
 
-    const targetIds = Object.keys(selected).filter((id) => selected[id]);
-    if (targetIds.length === 0) {
+    // FIX: Get email addresses instead of subscriber IDs
+    const targetEmails = subs
+      .filter((sub) => selected[sub.id])
+      .map((sub) => sub.email);
+
+    if (targetEmails.length === 0) {
       setMessage({
         type: "error",
         text: "Please select at least one subscriber",
@@ -201,14 +205,18 @@ export default function EmailMarketingAdmin() {
       const res = await fetch("/api/subscribers/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, html, targetIds }),
+        body: JSON.stringify({
+          subject,
+          html,
+          targetIds: targetEmails, // Now sending emails, not IDs
+        }),
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || "Send failed");
 
       setMessage({
         type: "success",
-        text: `Campaign sent to ${targetIds.length} subscribers`,
+        text: `Campaign sent to ${targetEmails.length} subscribers`,
       });
       setSubject("");
       setHtml("");
@@ -224,6 +232,9 @@ export default function EmailMarketingAdmin() {
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
   const totalCount = subs.length;
+  const targetEmails = subs
+    .filter((sub) => selected[sub.id])
+    .map((sub) => sub.email);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -435,7 +446,7 @@ export default function EmailMarketingAdmin() {
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
-                  {sending ? "Sending..." : `Send to ${selectedCount}`}
+                  {sending ? "Sending..." : `Send to ${targetEmails.length}`}
                 </button>
               </div>
             </div>
