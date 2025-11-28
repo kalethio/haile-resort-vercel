@@ -24,7 +24,7 @@ const createTransporter = () => {
 };
 export async function POST(req: Request) {
   try {
-    const { subject, html, targetIds, isTransactional } = await req.json();
+    const { subject, html, targetIds } = await req.json();
 
     // Validate input
     if (!subject || !html || !targetIds || !Array.isArray(targetIds)) {
