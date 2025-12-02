@@ -1,16 +1,18 @@
-// app/booking/components/ConfirmationStep.tsx
+// app/booking/components/ConfirmationStep.tsx - FIXED
 "use client";
 import React, { useState, useEffect } from "react";
 import { Mail, Download } from "lucide-react";
 
 interface ConfirmationStepProps {
   bookingId: string | null;
+  customerEmail?: string; // ADD THIS
   onReset: () => void;
   onDone: () => void;
 }
 
 export default function ConfirmationStep({
   bookingId,
+  customerEmail, // USE THIS
   onReset,
   onDone,
 }: ConfirmationStepProps) {
@@ -18,12 +20,16 @@ export default function ConfirmationStep({
     "idle" | "sending" | "sent" | "failed"
   >("idle");
 
-  // Send email on mount
+  // Send email on mount IF customerEmail exists
   useEffect(() => {
-    sendConfirmationEmail();
-  }, []);
+    if (customerEmail) {
+      sendConfirmationEmail();
+    }
+  }, [customerEmail]);
 
   const sendConfirmationEmail = async () => {
+    if (!customerEmail) return;
+
     setEmailStatus("sending");
     try {
       const response = await fetch("/api/subscribers/send", {
@@ -32,7 +38,7 @@ export default function ConfirmationStep({
         body: JSON.stringify({
           subject: `Booking Confirmation #${bookingId}`,
           html: generateEmailContent(),
-          targetIds: ["booking-confirmation"],
+          targetIds: [customerEmail], // USE ACTUAL EMAIL
         }),
       });
 
@@ -51,7 +57,6 @@ export default function ConfirmationStep({
   };
 
   const generatePDF = () => {
-    // Simple PDF generation for demo
     const content = `Booking Confirmation: ${bookingId}`;
     const blob = new Blob([content], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
@@ -92,15 +97,29 @@ export default function ConfirmationStep({
               Confirmation Email
             </span>
           </div>
-          {emailStatus === "sending" && (
-            <p className="text-blue-600 text-sm">Sending...</p>
-          )}
-          {emailStatus === "sent" && (
-            <p className="text-green-600 text-sm">✓ Email sent successfully</p>
-          )}
-          {emailStatus === "failed" && (
-            <p className="text-red-600 text-sm">Failed to send email</p>
-          )}
+          {!customerEmail ? (
+            <p className="text-yellow-600 text-sm">
+              No email provided for confirmation
+            </p>
+          ) : emailStatus === "sending" ? (
+            <p className="text-blue-600 text-sm">
+              Sending to {customerEmail}...
+            </p>
+          ) : emailStatus === "sent" ? (
+            <p className="text-green-600 text-sm">
+              ✓ Email sent to {customerEmail}
+            </p>
+          ) : emailStatus === "failed" ? (
+            <div className="text-red-600 text-sm">
+              <p>Failed to send email</p>
+              <button
+                onClick={sendConfirmationEmail}
+                className="mt-2 text-sm underline hover:text-red-700"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* PDF Download */}

@@ -315,11 +315,11 @@ export default function BookingContent() {
         return (
           <ConfirmationStep
             bookingId={bookingId}
+            customerEmail={guestInfo?.email}
             onReset={handleResetBooking}
             onDone={handleDone}
           />
         );
-
       default:
         return <div>Invalid step</div>;
     }
