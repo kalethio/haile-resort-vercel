@@ -170,7 +170,7 @@ export default function CheckBookingLuxuryBar() {
           </button>
 
           {openPanel === "where" && (
-            <div className="absolute top-full mt-2 lg:bottom-full lg:top-auto lg:mb-2 bg-white rounded-xl shadow-xl border border-gray-100 w-full lg:w-[320px] p-3 z-50">
+            <div className="absolute bottom-full mb-2 bg-white rounded-xl shadow-xl border border-gray-100 w-full p-3 z-50">
               {branches.map((b) => (
                 <button
                   key={b.slug}
@@ -215,7 +215,7 @@ export default function CheckBookingLuxuryBar() {
           </button>
 
           {openPanel === "dates" && (
-            <div className="absolute top-full mt-2 lg:bottom-full lg:top-auto lg:mb-2 z-50 left-0 right-0 lg:left-auto lg:right-auto">
+            <div className="absolute bottom-full mb-2 left-0 right-0 z-50">
               <DateRange
                 ranges={[selectionRange]}
                 onChange={(ranges: RangeKeyDict) => {

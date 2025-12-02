@@ -27,10 +27,26 @@ export const DATA = {
   headline: "EXPERIENCE ETHIOPIA THE HAILE WAY",
   subheadline: "Hospitality redefined across Ethiopia's finest destinations.",
   services: [
-    { title: "Scenic Destinations", image: "/images/main-hero/hero1.jpg" },
-    { title: "Luxurious treats", image: "/images/main-hero/hero2.jpg" },
-    { title: "Lakeside Adventures", image: "/images/main-hero/hero3.jpg" },
-    { title: "Nature Within Reach", image: "/images/main-hero/hero4.jpg" },
+    {
+      title: "Scenic Destinations",
+      image: "/images/main-hero/hero1.jpg",
+      alt: "Beautiful landscape view of Ethiopian highlands at Haile Resorts",
+    },
+    {
+      title: "Luxurious treats",
+      image: "/images/main-hero/hero2.jpg",
+      alt: "Luxurious room interior and amenities at Haile Resorts",
+    },
+    {
+      title: "Lakeside Adventures",
+      image: "/images/main-hero/hero3.jpg",
+      alt: "Serene lake view and water activities at Haile Resorts",
+    },
+    {
+      title: "Nature Within Reach",
+      image: "/images/main-hero/hero4.jpg",
+      alt: "Natural surroundings and wildlife experiences at Haile Resorts",
+    },
   ],
   autoAdvanceMs: 7000,
 };
@@ -44,25 +60,15 @@ export default function HeroHybridCarousel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch branches from API with caching
+  // Fetch branches from API - REMOVED sessionStorage
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        // Check cache first (lasts for page session)
-        const cached = sessionStorage.getItem("branches");
-        if (cached) {
-          setBranches(JSON.parse(cached));
-          setLoading(false);
-          return;
-        }
-
         const response = await fetch("/api/branches");
         if (!response.ok) throw new Error("Failed to fetch");
 
         const data = await response.json();
         setBranches(data);
-        // Cache for 5 minutes
-        sessionStorage.setItem("branches", JSON.stringify(data));
         setError(null);
       } catch (err) {
         setError("Unable to load destinations");
@@ -79,7 +85,6 @@ export default function HeroHybridCarousel() {
   const { scrollY } = useScroll();
   const bgY = useTransform(scrollY, [0, 500], [0, 100]);
   const headlineY = useTransform(scrollY, [0, 500], [0, 200]);
-  const subheadlineY = useTransform(scrollY, [0, 500], [0, 300]);
 
   // Auto-advance service carousel
   useEffect(() => {
@@ -140,9 +145,10 @@ export default function HeroHybridCarousel() {
             >
               <Image
                 src={s.image}
-                alt={s.title}
+                alt={s.alt} // IMPROVED ALT TEXTS
                 fill
                 priority
+                quality={80} // ADDED QUALITY OPTIMIZATION
                 sizes="100vw"
                 className="object-cover scale-105"
               />

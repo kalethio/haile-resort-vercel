@@ -15,19 +15,16 @@ export default function BookingForm() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
 
-  // Branches
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branch, setBranch] = useState<string>("");
   const [branchSlug, setBranchSlug] = useState<string>("");
 
-  // Dates
   const [selectionRange, setSelectionRange] = useState({
     startDate: new Date(),
     endDate: addDays(new Date(), 1),
     key: "selection",
   });
 
-  // Guests
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(0);
   const [childrenAges, setChildrenAges] = useState<(number | null)[]>([]);
@@ -119,23 +116,20 @@ export default function BookingForm() {
         .join(","),
     });
 
-    // Close form immediately when Book Now is clicked
     setIsOpen(false);
     router.push(`/booking?${params.toString()}`);
   };
 
-  if (!isOpen) {
-    return null; // Form completely disappears when closed
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className="flex justify-center items-center min-h-0 p-1">
+    <div className="flex justify-center items-center min-h-0 p-2">
       <form
-        className="space-y-4 text-sm text-primary w-fit mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg"
+        className="space-y-6 text-sm text-primary w-fit mx-auto bg-white/10 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-white/20 shadow-xl"
         onSubmit={handleSubmit}
       >
-        {/* Responsive Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+        {/* Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 items-start">
           {/* Destination */}
           <div className="lg:col-span-1">
             <label className="block font-medium mb-2 text-sm">
@@ -152,7 +146,7 @@ export default function BookingForm() {
                   setBranchSlug(selectedBranch.slug);
                 }
               }}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
+              className="w-full px-3 py-2 text-sm rounded-xl bg-white/5 border border-primary/30 focus:ring-1 focus:ring-primary outline-none"
             >
               {branches.map((b) => (
                 <option key={b.slug} value={b.slug}>
@@ -162,10 +156,10 @@ export default function BookingForm() {
             </select>
           </div>
 
-          {/* Dates - Full width on mobile, 2 cols on desktop */}
+          {/* Dates */}
           <div className="md:col-span-2 lg:col-span-2">
             <label className="block font-medium mb-2 text-sm">Dates</label>
-            <div className="w-full rounded-lg bg-white/5 border border-primary/30 overflow-hidden scale-90 md:scale-100 origin-left">
+            <div className="w-full rounded-xl bg-white/5 border border-primary/30 overflow-hidden scale-90 md:scale-100 origin-left">
               <DateRange
                 ranges={[selectionRange]}
                 onChange={(ranges: RangeKeyDict) => {
@@ -187,18 +181,14 @@ export default function BookingForm() {
             </div>
           </div>
 
-          {/* Guests - Full width on mobile, 1 col on desktop */}
+          {/* Guests */}
           <div className="lg:col-span-1">
             <label className="block font-medium mb-2 text-xs">Guests</label>
-            <div className="space-y-3 bg-white/5 border border-primary/30 rounded-lg p-4">
+            <div className="space-y-4 bg-white/5 border border-primary/30 rounded-xl p-4">
               {/* Adults */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium text-gray-300">
-                    Adults
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="text-xs font-medium text-gray-300">Adults</div>
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => changeAdults(-1)}
@@ -221,12 +211,10 @@ export default function BookingForm() {
 
               {/* Children */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium text-gray-300">
-                    Children (0–12)
-                  </div>
+                <div className="text-xs font-medium text-gray-300">
+                  Children (0–12)
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => changeChildren(-1)}
@@ -249,11 +237,11 @@ export default function BookingForm() {
 
               {/* Children Ages */}
               {children > 0 && (
-                <div className="space-y-2 pt-2 border-t border-primary/20">
+                <div className="space-y-2 pt-3 border-t border-primary/20">
                   <div className="text-xs font-medium text-gray-300">
                     Children Ages
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {Array.from({ length: children }).map((_, i) => (
                       <div key={i} className="flex flex-col">
                         <input
@@ -273,7 +261,7 @@ export default function BookingForm() {
                             )
                           }
                           placeholder="Age"
-                          className="w-full px-2 py-1 text-sm rounded-lg bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
+                          className="w-full px-2 py-1 text-sm rounded-xl bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
                         />
                       </div>
                     ))}
@@ -284,11 +272,11 @@ export default function BookingForm() {
           </div>
         </div>
 
-        {/* Submit Button - Full width on mobile, auto on desktop */}
+        {/* Submit Button */}
         <div className="flex justify-center md:justify-end">
           <button
             type="submit"
-            className="w-full md:w-auto px-8 py-2.5 rounded-lg font-medium bg-primary text-white text-sm shadow-sm hover:brightness-90 transition mt-2"
+            className="w-full md:w-auto px-10 py-3 rounded-xl font-medium bg-primary text-white text-sm shadow-md hover:brightness-90 transition mt-3"
           >
             Book Now
           </button>

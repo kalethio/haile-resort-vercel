@@ -654,7 +654,7 @@ function PackageModal({
                 {pkg.description}
               </p>
 
-              <div className="flex gap-3 mt-8">
+              {/* <div className="flex gap-3 mt-8">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -670,7 +670,7 @@ function PackageModal({
                 >
                   Close
                 </motion.button>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         </motion.div>

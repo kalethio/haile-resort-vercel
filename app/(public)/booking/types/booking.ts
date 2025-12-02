@@ -59,3 +59,18 @@ export interface PaymentConfig {
   config: any;
   instructions: string[];
 }
+export interface Branch {
+  slug: string;
+  branchName: string;
+  heroImage: string;
+  starRating: number;
+  location: {
+    city: string;
+    region: string;
+  };
+}
+
+export interface Service {
+  title: string;
+  image: string;
+}
