@@ -17,9 +17,10 @@ export default function Home() {
       >
         <HeroSection />
       </motion.div>
-      <ServicesSection />
-      <FavPackageSection />
+
       <DestinationSection />
+      <FavPackageSection />
+      <ServicesSection />
       <SubscribeSection />
     </div>
   );

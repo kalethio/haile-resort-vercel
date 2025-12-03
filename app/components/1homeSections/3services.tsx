@@ -1,10 +1,14 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
-export const SERVICES = [
+export type Service = {
+  title: string;
+  description?: string;
+  video: string;
+};
+
+export const SERVICES: Service[] = [
   {
     title: "Welcome to Haile Grand Addis Ababa",
     description:
@@ -12,7 +16,7 @@ export const SERVICES = [
     video: "iCS0YIJx3Ek",
   },
   {
-    title: "Farm to Table Experience",
+    title: "Farm to Table",
     description:
       "Straight from our garden to your fork: Watch us pick, wash, and whip up those crisp salads and fresh herbs into something delicious. Real food, real fresh—enjoy the magic",
     video: "5j6QwqWHiNA",
@@ -32,214 +36,161 @@ export const SERVICES = [
 ];
 
 export default function ServicesSection() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const activeService = SERVICES[activeIndex];
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const total = SERVICES.length;
 
-  // Check mobile on mount and resize
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const prev = () => setActiveIndex((s) => (s === 0 ? total - 1 : s - 1));
+  const next = () => setActiveIndex((s) => (s === total - 1 ? 0 : s + 1));
 
-  const nextService = useCallback(
-    () => setActiveIndex((prev) => (prev + 1) % SERVICES.length),
-    []
-  );
-
-  const prevService = useCallback(
-    () =>
-      setActiveIndex((prev) => (prev - 1 + SERVICES.length) % SERVICES.length),
-    []
-  );
-
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") prevService();
-      if (e.key === "ArrowRight") nextService();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [prevService, nextService]);
+  }, []);
 
-  // Mobile video URL with different parameters
-  const videoUrl = isMobile
-    ? `https://www.youtube-nocookie.com/embed/${activeService.video}?autoplay=1&mute=1&playsinline=1&rel=0&controls=0&modestbranding=1`
-    : `https://www.youtube-nocookie.com/embed/${activeService.video}?autoplay=1&mute=1&loop=1&playlist=${activeService.video}&controls=0&modestbranding=1&rel=0`;
+  // Video URL with loop to prevent recommendations
+  const getVideoUrl = (videoId: string) => {
+    return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&showinfo=0&iv_load_policy=3&modestbranding=0&playsinline=1&disablekb=1&fs=0&loop=1&playlist=${videoId}`;
+  };
 
   return (
-    <section className="w-full min-h-screen md:min-h-[90vh] flex flex-col px-4 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Header - Responsive padding */}
-      <motion.h2
-        className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-center pt-12 sm:pt-16 lg:pt-20 pb-8 sm:pb-10 lg:pb-12 tracking-tight text-primary px-4"
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        Experience the Haile Difference
-      </motion.h2>
-
-      {/* Main Container */}
-      <motion.div
-        className="flex-1 flex flex-col lg:flex-row bg-background rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl border border-gray-100 mx-auto w-full max-w-7xl"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-      >
-        {/* Video Section */}
-        <div className="lg:w-3/4 xl:w-4/5 h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-full relative">
-          {/* Video Container with proper aspect ratio */}
-          <div className="relative w-full h-full bg-black">
-            <iframe
-              src={videoUrl}
-              className="absolute inset-0 w-full h-full"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              frameBorder="0"
-              title={activeService.title}
-              loading="lazy"
-              playsInline={isMobile}
-            />
-          </div>
-
-          {/* Mobile Navigation Overlay */}
-          <div className="lg:hidden absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-6 px-4">
-            <div className="flex flex-col items-center gap-4">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="text-center px-4"
-                >
-                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
-                    {activeService.title}
-                  </h3>
-                  <p className="text-sm text-white/80 line-clamp-2">
-                    {activeService.description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-
-              <div className="flex items-center justify-center gap-4 sm:gap-6">
+    <section className="w-full font-sans bg-bg">
+      {/* Desktop layout */}
+      <div className="hidden lg:flex w-full h-[85vh] relative">
+        <div className="w-3/4 h-full overflow-hidden rounded-xl shadow-2xl bg-bg">
+          <iframe
+            key={SERVICES[activeIndex].video}
+            className="w-full h-full rounded-xl pointer-events-none"
+            src={getVideoUrl(SERVICES[activeIndex].video)}
+            title={SERVICES[activeIndex].title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{
+              border: "none",
+              overflow: "hidden",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+        <aside className="w-1/4 h-full p-6 flex flex-col justify-between rounded-r-xl ml-4 bg-bg">
+          <div>
+            <div className="space-y-4">
+              {SERVICES.map((s, idx) => (
                 <button
-                  onClick={prevService}
-                  className="p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-all active:scale-95"
-                  aria-label="Previous service"
+                  key={idx}
+                  onClick={() => setActiveIndex(idx)}
+                  className={`w-full text-left p-4 rounded-lg transition-all duration-300 flex flex-col gap-2 border-2 ${
+                    idx === activeIndex
+                      ? "border-primary bg-bg/50 shadow-lg"
+                      : "border-transparent hover:border-primary/30 hover:bg-bg/20"
+                  }`}
                 >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="text-primary font-medium text-base">
+                    {s.title}
+                  </div>
+                  <p className="text-primary/80 text-sm line-clamp-2">
+                    {s.description}
+                  </p>
                 </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-text/10">
+            <div className="text-xs text-text/40">
+              {activeIndex + 1} / {total}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={prev}
+                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-all"
+              >
+                ‹
+              </button>
+              <button
+                onClick={next}
+                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-md transition-all"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
 
-                {/* Mobile Dots Indicator */}
-                <div className="flex gap-2">
-                  {SERVICES.map((_, idx) => (
+      {/* Mobile layout */}
+      <div className="lg:hidden w-full relative">
+        <div className="w-full h-[60vh] md:h-[65vh] relative overflow-hidden rounded-xl shadow-2xl bg-bg">
+          <iframe
+            key={SERVICES[activeIndex].video}
+            className="w-full h-full rounded-xl pointer-events-none"
+            src={getVideoUrl(SERVICES[activeIndex].video)}
+            title={SERVICES[activeIndex].title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{
+              border: "none",
+              overflow: "hidden",
+              objectFit: "cover",
+            }}
+          />
+          <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/50 to-transparent p-5 rounded-b-xl">
+            <div className="max-w-3xl mx-auto flex flex-col items-center gap-4">
+              <h3 className="text-white text-center text-lg md:text-xl font-semibold leading-tight tracking-wide">
+                {SERVICES[activeIndex].title}
+              </h3>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={prev}
+                  className="w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-medium flex items-center justify-center shadow-lg"
+                >
+                  ‹
+                </button>
+                <div className="flex items-center gap-3">
+                  {SERVICES.map((_, i) => (
                     <button
-                      key={idx}
-                      onClick={() => setActiveIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        idx === activeIndex
-                          ? "bg-white scale-125"
+                      key={i}
+                      onClick={() => setActiveIndex(i)}
+                      className={`w-3 h-3 rounded-full ${
+                        i === activeIndex
+                          ? "bg-primary shadow-md"
                           : "bg-white/40"
                       }`}
-                      aria-label={`Go to service ${idx + 1}`}
                     />
                   ))}
                 </div>
-
                 <button
-                  onClick={nextService}
-                  className="p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-all active:scale-95"
-                  aria-label="Next service"
+                  onClick={next}
+                  className="w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-medium flex items-center justify-center shadow-lg"
                 >
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  ›
                 </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Desktop Side Panel */}
-        <div className="hidden lg:flex lg:w-1/4 xl:w-1/5 h-full">
-          <div className="w-full h-full flex flex-col p-4 lg:p-6">
-            {/* Active Service Card */}
-            <div className="flex-1 flex flex-col justify-center">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl lg:rounded-2xl shadow-lg border border-primary/10 p-4 lg:p-6 mb-4 lg:mb-6"
-                >
-                  <h3 className="text-base lg:text-lg font-bold text-gray-900 mb-2 lg:mb-3">
-                    {activeService.title}
-                  </h3>
-                  <p className="text-xs lg:text-sm text-gray-600 leading-relaxed">
-                    {activeService.description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Service List */}
-            <div className="space-y-2 lg:space-y-3">
-              {SERVICES.map((service, index) => (
-                <motion.button
-                  key={service.title}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveIndex(index)}
-                  className={`w-full text-left p-3 lg:p-4 rounded-lg lg:rounded-xl transition-all duration-200 ${
-                    index === activeIndex
-                      ? "bg-primary/10 border border-primary/20 shadow-sm"
-                      : "bg-gray-50 hover:bg-gray-100 border border-transparent"
-                  }`}
-                >
-                  <h4
-                    className={`text-sm font-medium ${
-                      index === activeIndex ? "text-primary" : "text-gray-700"
-                    }`}
-                  >
-                    {service.title}
-                  </h4>
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="flex justify-between mt-4 lg:mt-6 pt-4 border-t border-gray-100">
-              <button
-                onClick={prevService}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors"
-                aria-label="Previous service"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </button>
-              <div className="text-xs text-gray-400">
-                {activeIndex + 1} / {SERVICES.length}
+        <div className="px-4 py-3 bg-bg/20 flex gap-4 overflow-x-auto rounded-b-xl mt-2">
+          {SERVICES.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`min-w-[160px] flex-shrink-0 p-4 rounded-lg text-left border-2 transition-all ${
+                i === activeIndex
+                  ? "border-primary bg-bg/50 shadow-lg"
+                  : "border-transparent hover:border-primary/30 hover:bg-bg/20"
+              }`}
+            >
+              <div className="text-text font-medium text-base">{s.title}</div>
+              <div className="text-text/80 text-sm line-clamp-2">
+                {s.description}
               </div>
-              <button
-                onClick={nextService}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors"
-                aria-label="Next service"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            </button>
+          ))}
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
