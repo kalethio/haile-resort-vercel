@@ -6,11 +6,16 @@ interface RouteParams {
     id: string;
   };
 }
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params; // ✅ AWAIT FIRST
+    const connectionId = parseInt(id);
+
     const connection = await prisma.apiConnection.findUnique({
-      where: { id },
+      where: { id: connectionId },
     });
 
     if (!connection) {

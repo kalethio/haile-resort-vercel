@@ -16,6 +16,9 @@ export async function POST(req: Request) {
       published,
       location,
       seo,
+      // NEW FIELDS ADDED:
+      heroVideoUrl,
+      heroTagline,
     } = body;
 
     // Validate required fields
@@ -48,6 +51,9 @@ export async function POST(req: Request) {
         directionsUrl: directionsUrl || null,
         starRating: starRating || 4,
         published: published || false,
+        // NEW FIELDS ADDED:
+        heroVideoUrl: heroVideoUrl || null,
+        heroTagline: heroTagline || null,
         location: {
           create: {
             city: location?.city || null,
@@ -79,6 +85,7 @@ export async function POST(req: Request) {
   }
 }
 
+// GET method remains unchanged
 export async function GET() {
   try {
     const branches = await prisma.branch.findMany({

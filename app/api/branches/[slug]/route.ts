@@ -15,7 +15,9 @@ export async function GET(req: Request, { params }: Params) {
       include: {
         location: true,
         contact: true,
-        attractions: true,
+        attractions: {
+          orderBy: { order: "asc" }, // NEW: Added ordering
+        },
         accommodations: true,
         experiences: {
           include: {
@@ -29,15 +31,8 @@ export async function GET(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    console.log("🔄 EDIT API - Loading data for:", slug, {
-      attractions: branch.attractions.length,
-      accommodations: branch.accommodations.length,
-      experiences: branch.experiences.length,
-    });
-
     // ✅ Return the EXACT structure that EditBranchForm expects
     return NextResponse.json({
-      // Basic Info
       slug: branch.slug,
       branchName: branch.branchName,
       description: branch.description || "",
@@ -45,22 +40,19 @@ export async function GET(req: Request, { params }: Params) {
       directionsUrl: branch.directionsUrl || "",
       starRating: branch.starRating || 4,
       published: branch.published || false,
-
-      // Location
+      // NEW FIELDS ADDED:
+      heroVideoUrl: branch.heroVideoUrl || "",
+      heroTagline: branch.heroTagline || "",
       location: {
         city: branch.location?.city || "",
         region: branch.location?.region || "",
         country: branch.location?.country || "Ethiopia",
       },
-
-      // Contact
       contact: {
         phone: branch.contact?.phone || "",
         email: branch.contact?.email || "",
         address: branch.contact?.address || "",
       },
-
-      // ✅ CRITICAL: Return the actual arrays from database
       attractions: branch.attractions,
       accommodations: branch.accommodations,
       experiences: branch.experiences.map((exp) => ({
@@ -69,7 +61,7 @@ export async function GET(req: Request, { params }: Params) {
       })),
     });
   } catch (error) {
-    console.error("Edit form GET error:", error);
+    console.error("Branch page GET error:", error);
     return NextResponse.json(
       { error: "Failed to load branch data" },
       { status: 500 }

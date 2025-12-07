@@ -1,3 +1,4 @@
+//app/api/admin/branches/[slug]/attractions/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -11,7 +12,6 @@ export async function POST(req: Request, { params }: Params) {
     const body = await req.json();
     const attractions = body.attractions || [];
 
-    // Find branch ID
     const branch = await prisma.branch.findFirst({
       where: { slug: slug },
       select: { id: true },
@@ -21,7 +21,6 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // ✅ FIXED: Convert externalId to string
     const createdAttractions = await Promise.all(
       attractions.map((attraction: any) =>
         prisma.attraction.create({
@@ -31,6 +30,9 @@ export async function POST(req: Request, { params }: Params) {
               : null,
             label: attraction.label,
             image: attraction.image || null,
+            // NEW FIELDS ADDED:
+            description: attraction.description || null,
+            order: attraction.order || 0,
             branchId: branch.id,
           },
         })
@@ -46,6 +48,7 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 }
+
 export async function GET(req: Request, { params }: Params) {
   try {
     const { slug } = await params;
@@ -66,7 +69,11 @@ export async function GET(req: Request, { params }: Params) {
         label: true,
         image: true,
         externalId: true,
+        // NEW FIELDS ADDED:
+        description: true,
+        order: true,
       },
+      orderBy: { order: "asc" }, // NEW: Added ordering
     });
 
     return NextResponse.json(attractions);

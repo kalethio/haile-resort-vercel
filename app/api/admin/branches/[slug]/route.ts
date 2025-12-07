@@ -1,3 +1,4 @@
+//app/api/admin/branches/[slug]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -14,7 +15,9 @@ export async function GET(req: Request, { params }: Params) {
       include: {
         location: true,
         contact: true,
-        attractions: true,
+        attractions: {
+          orderBy: { order: "asc" }, // NEW: Added ordering
+        },
         accommodations: true,
         experiences: {
           include: {
@@ -37,6 +40,9 @@ export async function GET(req: Request, { params }: Params) {
       directionsUrl: branch.directionsUrl,
       starRating: branch.starRating,
       published: branch.published,
+      // NEW FIELDS ADDED:
+      heroVideoUrl: branch.heroVideoUrl,
+      heroTagline: branch.heroTagline,
       location: branch.location,
       contact: branch.contact,
       // ✅ CRITICAL: Return the raw arrays without transformation
@@ -52,6 +58,7 @@ export async function GET(req: Request, { params }: Params) {
     );
   }
 }
+
 export async function PATCH(req: Request, { params }: Params) {
   try {
     const { slug } = await params;
@@ -72,6 +79,7 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
+    // UPDATED: Added new fields to valid list
     const validBranchFields = [
       "slug",
       "branchName",
@@ -80,6 +88,8 @@ export async function PATCH(req: Request, { params }: Params) {
       "directionsUrl",
       "starRating",
       "published",
+      "heroVideoUrl", // NEW
+      "heroTagline", // NEW
     ];
 
     const filteredBranchUpdates = Object.keys(updates)
@@ -108,12 +118,11 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
-// ✅ ADD: DELETE method for branch removal
+// DELETE method remains unchanged
 export async function DELETE(req: Request, { params }: Params) {
   try {
     const { slug } = await params;
 
-    // Find the branch first
     const branch = await prisma.branch.findFirst({
       where: { slug },
       select: { id: true, branchName: true },
@@ -123,18 +132,15 @@ export async function DELETE(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
-    // Delete the branch
     await prisma.branch.delete({
       where: { id: branch.id },
     });
 
-    // ✅ ADD: Cache busting headers
     const response = NextResponse.json({
       success: true,
       message: `Branch "${branch.branchName}" deleted successfully`,
     });
 
-    // Invalidate cache for branches list and this specific branch
     response.headers.set(
       "Cache-Control",
       "no-cache, no-store, must-revalidate"
