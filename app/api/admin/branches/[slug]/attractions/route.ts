@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: Params) {
               : null,
             label: attraction.label,
             image: attraction.image || null,
-            order: attraction.order || 0,
+            order: parseInt(attraction.order) || 0,
             branchId: branch.id,
           },
         })
