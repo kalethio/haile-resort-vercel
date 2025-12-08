@@ -30,8 +30,6 @@ export async function POST(req: Request, { params }: Params) {
               : null,
             label: attraction.label,
             image: attraction.image || null,
-            // NEW FIELDS ADDED:
-            description: attraction.description || null,
             order: attraction.order || 0,
             branchId: branch.id,
           },
@@ -69,8 +67,6 @@ export async function GET(req: Request, { params }: Params) {
         label: true,
         image: true,
         externalId: true,
-        // NEW FIELDS ADDED:
-        description: true,
         order: true,
       },
       orderBy: { order: "asc" }, // NEW: Added ordering
