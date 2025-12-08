@@ -1,3 +1,4 @@
+// app/admin/reservations/components/BookingCard.tsx
 import React, { useState } from "react";
 import {
   Calendar,
@@ -5,10 +6,11 @@ import {
   Users,
   DollarSign,
   Mail,
-  FileText,
   Loader,
   CheckCircle,
   XCircle,
+  Phone,
+  Printer,
 } from "lucide-react";
 import { Booking } from "./types";
 
@@ -62,7 +64,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
     try {
       await onStatusChange(booking.id, newStatus);
       setShowConfirmation(false);
-      // Status will be updated via parent refresh
     } catch (error) {
       setUpdateError("Failed to update status");
       console.error("Failed to update status:", error);
@@ -71,31 +72,206 @@ const BookingCard: React.FC<BookingCardProps> = ({
     }
   };
 
-  const downloadBookingDetails = (booking: Booking) => {
-    const content = `
-BOOKING DETAILS
-===============
+  // SIMPLE PRINT FUNCTION
+  const printBooking = () => {
+    // Create a print-friendly window
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to print booking details");
+      return;
+    }
 
-Guest: ${booking.guestName}
-Email: ${booking.guestEmail}
-Status: ${booking.status}
-Check-in: ${new Date(booking.checkIn).toLocaleDateString()}
-Check-out: ${new Date(booking.checkOut).toLocaleDateString()}
-Branch: ${booking.branch.branchName}
-Total: $${booking.totalAmount}
+    const statusColor = getStatusColor(booking.status);
+    const bgColor = statusColor.split(" ")[0].replace("bg-", "");
+    const textColor = statusColor.split(" ")[1].replace("text-", "");
 
-Room: ${booking.roomBookings[0]?.room.roomNumber}
-Type: ${booking.roomBookings[0]?.room.roomType.name}
-Nights: ${booking.roomBookings[0]?.totalNights}
-    `.trim();
+    printWindow.document.write(`
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>Booking ${booking.id} - Haile Hotel and Resorts</title>
+      <style>
+        @media print {
+          @page { margin: 18mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: Arial, sans-serif;
+          color: #333;
+          line-height: 1.2;
+          padding: 15px;
+          max-width: 750px;
+          margin: 0 auto;
+          font-size: 14px;
+        }
+        .header {
+          border-bottom: 2px solid #780b2d;
+          padding-bottom: 15px;
+          margin-bottom: 20px;
+        }
+        .resort-logo {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+        .logo-box {
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #780b1a, #780b2d);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 20px;
+        }
+        .resort-name { font-size: 14px; font-weight: 600; color: #780b2d; }
+        .subtitle { color: #6b7280; margin-top: 1px; font-size: 12px; }
+        .booking-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .status-badge {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 16px;
+          font-weight: bold;
+          text-transform: uppercase;
+          font-size: 10px;
+          background-color: var(--status-bg, #f3f4f6);
+          color: var(--status-text, #374151);
+        }
+        .grid-2col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .info-card {
+          background: #f8fafc;
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .section-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #780b2d;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background-color: #3b82f6; }
+        .dot-green { background-color: #10b981; }
+        .dot-yellow { background-color: #f59e0b; }
+        .info-row { margin-bottom: 6px; }
+        .info-row strong { display: inline-block; width: 110px; color: #4b5563; }
+        .total-card {
+          background: linear-gradient(135deg, #1e40af, #3b82f6);
+          padding: 20px;
+          border-radius: 8px;
+          color: white;
+          margin-bottom: 20px;
+        }
+        .total-amount { display: flex; justify-content: space-between; align-items: center; }
+        .amount { font-size: 28px; font-weight: bold; }
+        .footer {
+          margin-top: 20px;
+          padding-top: 15px;
+          border-top: 1px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 11px;
+          text-align: center;
+        }
+        @media (max-width: 768px) { .grid-2col { grid-template-columns: 1fr; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="resort-logo">
+          <div class="logo-box">H</div>
+          <div>
+            <div class="resort-name">HAILE RESORT</div>
+            <div class="subtitle">Booking Confirmation</div>
+          </div>
+        </div>
+      </div>
 
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `booking-${booking.id}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+      <div class="booking-header">
+        <div>
+          <h2 style="font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 6px;">
+            Booking Details
+          </h2>
+          <p style="color: #6b7280; font-size: 13px;">Booking ID: ${booking.id}</p>
+          <p style="color: #6b7280; font-size: 13px;">Created: ${new Date(booking.createdAt).toLocaleDateString()}</p>
+        </div>
+        <span class="status-badge" style="--status-bg: ${bgColor}; --status-text: ${textColor};">
+          ${booking.status.replace("_", " ")}
+        </span>
+      </div>
+
+      <div class="grid-2col">
+        <div class="info-card">
+          <div class="section-title">
+            <span class="dot"></span> Guest Information
+          </div>
+          <div class="info-row"><strong>Name:</strong> ${booking.guestName}</div>
+          <div class="info-row"><strong>Email:</strong> ${booking.guestEmail}</div>
+          <div class="info-row"><strong>Phone:</strong> ${booking.guestPhone || "Not provided"}</div>
+        </div>
+
+        <div class="info-card">
+          <div class="section-title">
+            <span class="dot dot-green"></span> Stay Details
+          </div>
+          <div class="info-row"><strong>Check-in:</strong> ${new Date(booking.checkIn).toLocaleDateString()}</div>
+          <div class="info-row"><strong>Check-out:</strong> ${new Date(booking.checkOut).toLocaleDateString()}</div>
+          <div class="info-row"><strong>Nights:</strong> ${booking.roomBookings[0]?.totalNights}</div>
+          <div class="info-row"><strong>Guests:</strong> ${booking.adults} adults, ${booking.children} children</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="section-title">
+          <span class="dot dot-yellow"></span> Room Information
+        </div>
+        <div class="info-row"><strong>Branch:</strong> ${booking.branch.branchName}</div>
+        <div class="info-row"><strong>Room:</strong> ${booking.roomBookings[0]?.room.roomNumber}</div>
+        <div class="info-row"><strong>Room Type:</strong> ${booking.roomBookings[0]?.room.roomType.name}</div>
+        <div class="info-row"><strong>Price per night:</strong> $${booking.roomBookings[0]?.pricePerNight}</div>
+      </div>
+
+      <div class="total-card" style="padding: 15px; border-radius: 6px;">
+  <div class="total-amount">
+    <div>
+      <h3 style="font-size: 11px; font-weight: 600; margin-bottom: 1px;">Total Amount</h3>
+      <p style="opacity: 0.9; font-size: 11px;">All taxes and fees included</p>
+    </div>
+    <div style="text-align: right;">
+      <div class="amount" style="font-size: 24px; font-weight: 600;">$${booking.totalAmount}</div>
+      <p style="opacity: 0.9; font-size: 11px;">USD</p>
+    </div>
+  </div>
+</div>
+
+
+      <div class="footer">
+        <p>This is an official booking confirmation from Haile Resort.</p>
+        <p style="margin-top: 4px;">For any questions, please contact ${booking.branch.branchName} branch.</p>
+        <p style="margin-top: 4px;">Document printed on ${new Date().toLocaleDateString()}</p>
+      </div>
+
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(() => window.close(), 1000);
+        };
+      </script>
+    </body>
+  </html>
+`);
+
+    printWindow.document.close();
   };
 
   const sendConfirmationEmail = async (bookingId: string) => {
@@ -149,7 +325,7 @@ Nights: ${booking.roomBookings[0]?.totalNights}
         </span>
       </div>
 
-      {/* Booking Details */}
+      {/* Booking Details - WITH PHONE */}
       <div className="space-y-2 text-sm text-gray-600 mb-4">
         <div className="flex items-center gap-2">
           <Calendar size={14} />
@@ -162,6 +338,14 @@ Nights: ${booking.roomBookings[0]?.totalNights}
         <div className="flex items-center gap-2">
           <Building size={14} />
           <span>{booking.branch.branchName}</span>
+        </div>
+
+        {/* ADDED PHONE DISPLAY */}
+        <div className="flex items-center gap-2">
+          <Phone size={14} className="text-gray-500" />
+          <span className={!booking.guestPhone ? "text-gray-400 italic" : ""}>
+            {booking.guestPhone || "No phone provided"}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -191,14 +375,14 @@ Nights: ${booking.roomBookings[0]?.totalNights}
         </p>
       </div>
 
-      {/* Actions */}
+      {/* Actions - SIMPLIFIED WITH PRINT */}
       <div className="flex gap-2 pt-3 border-t border-gray-100">
         <button
-          onClick={() => downloadBookingDetails(booking)}
+          onClick={printBooking}
           disabled={isUpdating || isLoading}
           className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
-          <FileText size={14} /> Download
+          <Printer size={14} /> Print
         </button>
 
         <button

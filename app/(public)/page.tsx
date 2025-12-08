@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import HeroSection from "../components/1homeSections/1herosection";
 import DestinationSection from "../components/1homeSections/2destinations";
-import ServicesSection from "../components/1homeSections/3services";
 import FavPackageSection from "../components/1homeSections/4favPackage";
 import SubscribeSection from "../components/1homeSections/7subscribe";
 
@@ -20,7 +19,6 @@ export default function Home() {
 
       <DestinationSection />
       <FavPackageSection />
-      <ServicesSection />
       <SubscribeSection />
     </div>
   );

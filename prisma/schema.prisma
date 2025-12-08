@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Role {
   id          Int          @id @default(autoincrement())
   name        String       @unique
@@ -89,6 +88,8 @@ model Branch {
   updatedAt        DateTime          @updatedAt
   email            String?
   phone            String?
+  heroVideoUrl     String?
+  heroTagline      String?
   accommodations   Accommodation[]
   attractions      Attraction[]
   auditLogs        AuditLog[]
@@ -502,8 +503,8 @@ model ChatbotResponse {
   active   Boolean @default(true)
   branchId Int?
   branch   Branch? @relation(fields: [branchId], references: [id])
-  type     String? @default("RESPONSE") 
-  
+  type     String? @default("RESPONSE")
+
   @@index([branchId, active, role, type])
 }
 
@@ -531,8 +532,6 @@ model Campaign {
   subject     String
   content     String
   targetCount Int
-  sentCount   Int       @default(0) 
-  failedCount Int       @default(0)  
   status      String
   sentAt      DateTime?
   createdAt   DateTime  @default(now())
@@ -586,6 +585,7 @@ model Attraction {
   id         Int      @id @default(autoincrement())
   externalId String?
   label      String
+  order Int @default(0)  
   image      String?
   branchId   Int
   createdAt  DateTime @default(now())

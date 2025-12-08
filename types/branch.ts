@@ -5,6 +5,8 @@ export interface Attraction {
   externalId?: string;
   label: string;
   image?: string;
+  description?: string; // NEW: For detailed attraction info
+  order?: number; // NEW: For ordering attractions
 }
 
 export interface Accommodation {
@@ -73,6 +75,10 @@ export interface BranchType {
   createdAt: string;
   updatedAt: string;
 
+  // NEW FIELDS for hero section
+  heroVideoUrl?: string;
+  heroTagline?: string;
+
   // Relations
   location?: Location;
   contact?: Contact;
@@ -92,6 +98,11 @@ export interface CreateBranchData {
   directionsUrl?: string;
   starRating?: number;
   published?: boolean;
+
+  // NEW FIELDS
+  heroVideoUrl?: string;
+  heroTagline?: string;
+
   location?: {
     city: string;
     region?: string;
@@ -111,6 +122,10 @@ export interface UpdateBranchData {
   directionsUrl?: string;
   starRating?: number;
   published?: boolean;
+
+  // NEW FIELDS
+  heroVideoUrl?: string;
+  heroTagline?: string;
 }
 
 // In your types/branch.ts file, make sure you have:
@@ -121,6 +136,10 @@ export interface BranchFormData {
   description: string;
   starRating: number;
   published: boolean;
+
+  // NEW FIELDS
+  heroVideoUrl?: string;
+  heroTagline?: string;
 
   // Location
   location: {
@@ -144,6 +163,8 @@ export interface BranchFormData {
   attractions: Array<{
     label: string;
     image: string;
+    description?: string; // NEW
+    order?: number; // NEW
   }>;
 
   accommodations: Array<{
@@ -200,13 +221,18 @@ export interface BranchTemplateProps {
     description?: string;
     shortDescription?: string;
     directionsUrl?: string;
+
+    // NEW FIELDS
+    heroVideoUrl?: string;
+    heroTagline?: string;
+
     location?: { mapsUrl?: string };
     contact?: {
       phone?: string;
       email?: string;
     };
-    attractions?: { image: string; label: string }[];
-    accommodations: any[];
+    attractions?: Attraction[];
+    accommodations: Accommodation[];
     experiences?: {
       id: number;
       highlightImage: string;
@@ -236,6 +262,26 @@ export interface ExperienceProps {
   image: string;
   packages: any[];
   serviceDescription: string[];
+}
+
+// NEW COMPONENT PROP TYPES
+export interface HeroSectionProps {
+  branch: {
+    branchName: string;
+    heroVideoUrl?: string;
+    heroTagline?: string;
+    contact?: {
+      phone?: string;
+      email?: string;
+    };
+    directionsUrl?: string;
+  };
+}
+
+export interface AttractionsSectionProps {
+  attractions: Attraction[];
+  description?: string;
+  branchName: string;
 }
 
 // ==================== FORM TYPES ====================

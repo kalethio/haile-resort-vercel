@@ -25,6 +25,8 @@ export default function SpotlightLargeCard() {
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   // Fetch branches from API
   useEffect(() => {
     const fetchBranches = async () => {
@@ -44,7 +46,7 @@ export default function SpotlightLargeCard() {
     fetchBranches();
   }, []);
 
-  // expand animation on scroll
+  // expand animation on scroll - KEEPING THIS
   useEffect(() => {
     const el = containerRef.current;
     if (!el || destinations.length === 0) return;
@@ -87,6 +89,44 @@ export default function SpotlightLargeCard() {
 
   const handleNext = () => {
     setActive((prev) => (prev + 1) % destinations.length);
+  };
+
+  // Render star rating
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const stars = [];
+
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(
+          <span key={i} className="text-yellow-500">
+            ★
+          </span>
+        );
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(
+          <span key={i} className="text-yellow-500">
+            ★
+          </span>
+        );
+      } else {
+        stars.push(
+          <span key={i} className="text-gray-300">
+            ★
+          </span>
+        );
+      }
+    }
+
+    return (
+      <div className="flex items-center gap-1">
+        {stars}
+        <span className="ml-2 text-sm text-gray-600">
+          ({rating.toFixed(1)})
+        </span>
+      </div>
+    );
   };
 
   // Loading state
@@ -136,44 +176,46 @@ export default function SpotlightLargeCard() {
         className={`transition-all duration-1000 ease-in-out mx-auto relative
           ${
             expanded
-              ? "w-screen lg:max-w-screen-xl"
-              : "w-screen lg:w-[75vw] lg:max-w-screen-lg"
+              ? "w-[90vw] lg:max-w-[90vw]" // Expanded to 90vw
+              : "w-screen lg:w-[75vw] lg:max-w-screen-lg" // Collapsed to 75vw
           }`}
       >
         <div className="bg-gradient-to-br from-white/90 via-white/80 to-white/90 border border-primary/20 shadow-2xl rounded-3xl overflow-hidden backdrop-blur-xl">
           <div className="flex flex-col lg:flex-row min-h-[75vh]">
-            {/* LEFT: hero */}
-            <div className="flex-1 relative">
-              {destinations.map((d, i) => {
-                const isActive = i === active;
-                return (
-                  <div
-                    key={d.slug}
-                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                      isActive ? "opacity-100 z-20" : "opacity-0 z-0"
-                    }`}
-                  >
-                    <img
-                      src={d.heroImage}
-                      alt={d.branchName}
-                      className={`w-full h-full object-cover transition-transform duration-[3000ms] ${
-                        isActive ? "scale-100" : "scale-110"
-                      }`}
-                    />
-                    <div className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 md:left-10 md:bottom-10 bg-black/50 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-primary/30">
-                      <h3 className="text-lg sm:text-xl md:text-3xl font-serif text-white leading-snug drop-shadow-md">
-                        {d.branchName} — {d.seo?.title || "Haile Resort"}
-                      </h3>
-                      <p className="mt-1 text-xs sm:text-sm text-primary/80">
-                        {d.location.city}, {d.location.country}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* LEFT: Local Video Background */}
+            <div className="flex-1 relative bg-black">
+              <div className="absolute inset-0">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                  preload="metadata"
+                >
+                  <source src="/video/resorts.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                {/* Dark overlay for text readability */}
+                <div className="absolute inset-0 bg-black/30" />
+              </div>
+
+              {/* Branch info overlay - unchanged */}
+              <div className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 md:left-10 md:bottom-10 bg-black/50 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-primary/30">
+                <h3 className="text-lg sm:text-xl md:text-3xl font-serif text-white leading-snug drop-shadow-md">
+                  {destinations[active].branchName}
+                </h3>
+                <div className="mt-2 flex items-center">
+                  {renderStars(destinations[active].starRating || 4)}
+                </div>
+                <p className="mt-2 text-xs sm:text-sm text-primary/80 italic">
+                  Click any branch below to visit
+                </p>
+              </div>
             </div>
 
-            {/* RIGHT: list */}
+            {/* RIGHT: Branch list */}
             <aside className="w-full lg:w-80 xl:w-96 p-4 md:p-6 lg:p-8 bg-gradient-to-b from-white/95 to-white/90 border-l border-primary/20 flex flex-col justify-center">
               <div>
                 {/* MOBILE TRIGGER */}
@@ -206,7 +248,7 @@ export default function SpotlightLargeCard() {
                   Where will your journey begin?
                 </h4>
 
-                {/* LIST */}
+                {/* BRANCH LIST */}
                 <div
                   className={`overflow-hidden transition-all duration-500 ${
                     mobileOpen ? "max-h-[500px] mt-3" : "max-h-0 lg:max-h-none"
@@ -218,16 +260,31 @@ export default function SpotlightLargeCard() {
                         {destinations.map((d, i) => {
                           const isActive = i === active;
                           return (
-                            <button
+                            <Link
                               key={d.slug}
-                              onClick={() => handleSelect(i)}
-                              className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
+                              href={`/branches/${d.slug}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleSelect(i);
+                                // Small delay before navigation for visual feedback
+                                setTimeout(() => {
+                                  window.location.href = `/branches/${d.slug}`;
+                                }, 150);
+                              }}
+                              className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 border relative group ${
                                 isActive
                                   ? "bg-gradient-to-r from-primary/5 to-white shadow-md border-primary ring-2 ring-primary/50"
-                                  : "bg-white hover:bg-gray-50 border-gray-100"
+                                  : "bg-white hover:bg-gray-50 border-gray-100 hover:border-primary/30"
                               }`}
                             >
-                              <div className="flex flex-col">
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-300 flex items-center justify-center">
+                                <span className="text-primary font-medium text-sm bg-white/90 px-3 py-1 rounded-lg shadow-sm">
+                                  Click to visit →
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col relative z-10">
                                 <span
                                   className={`text-sm sm:text-base font-semibold tracking-tight ${
                                     isActive ? "text-primary" : "text-gray-700"
@@ -235,11 +292,16 @@ export default function SpotlightLargeCard() {
                                 >
                                   {d.branchName}
                                 </span>
-                                <span className="text-xs text-gray-500 mt-1">
-                                  {d.location.city}, {d.location.country}
-                                </span>
+                                <div className="flex items-center justify-between mt-1">
+                                  <div className="flex items-center gap-1">
+                                    {renderStars(d.starRating || 4)}
+                                  </div>
+                                  <span className="text-xs text-gray-500">
+                                    {d.location.city}
+                                  </span>
+                                </div>
                               </div>
-                            </button>
+                            </Link>
                           );
                         })}
                       </div>
@@ -248,7 +310,7 @@ export default function SpotlightLargeCard() {
                 </div>
               </div>
 
-              {/* FOOTER */}
+              {/* FOOTER - Only Next button (no View details) */}
               <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex gap-2 w-full sm:w-auto">
                   <button
@@ -257,12 +319,6 @@ export default function SpotlightLargeCard() {
                   >
                     ›
                   </button>
-                  <Link
-                    href={`/branches/${destinations[active].slug}`}
-                    className="flex-1 sm:flex-none max-w-fit inline-flex items-center justify-center gap-2 px-2 py-2 rounded-full bg-primary text-text text-xs font-medium shadow hover:brightness-105 transition"
-                  >
-                    View details
-                  </Link>
                 </div>
               </div>
             </aside>

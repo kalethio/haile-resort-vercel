@@ -7,11 +7,14 @@ import {
   Home,
   Star,
   Image as ImageIcon,
+  VideoIcon,
+  TagIcon,
   Globe,
   Users,
   Award,
   Plus,
   Trash2,
+  Search,
 } from "lucide-react";
 import ImageUpload from "@/app/components/ImageUpload";
 import {
@@ -19,100 +22,73 @@ import {
   TabType,
   BranchFormData,
   Attraction,
-  Accommodation,
-  Experience,
-  ExperiencePackage,
 } from "@/types";
 
-// ===== MAIN COMPONENT =====
-
-// ===== MAIN COMPONENT =====
 export default function EditBranchForm({
   branch,
   onCancel,
   onSuccess,
 }: EditBranchFormProps) {
-  console.log("🔍 BRANCH PROP - Full object:", JSON.stringify(branch, null, 2));
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<BranchFormData | null>(null);
 
-  // Initialize form data from branch prop AND fetch additional content
   useEffect(() => {
     const fetchBranchContent = async () => {
       if (!branch) return;
 
       try {
-        console.log("🔄 FETCHING - Starting to fetch branch content...");
+        const attractionsRes = await fetch(
+          `/api/admin/branches/${branch.slug}/attractions`
+        );
+        const contactRes = await fetch(
+          `/api/admin/branches/${branch.slug}/contact`
+        );
+        const seoRes = await fetch(`/api/admin/branches/${branch.slug}/seo`);
 
-        // Fetch all content data in parallel
-        const [attractionsRes, accommodationsRes, experiencesRes, contactRes] =
-          await Promise.all([
-            fetch(`/api/admin/branches/${branch.slug}/attractions`),
-            fetch(`/api/admin/branches/${branch.slug}/accommodations`),
-            fetch(`/api/admin/branches/${branch.slug}/experiences`),
-            fetch(`/api/admin/branches/${branch.slug}/contact`),
-          ]);
-
-        // Parse responses
         const attractions = attractionsRes.ok
           ? await attractionsRes.json()
           : [];
-        const accommodations = accommodationsRes.ok
-          ? await accommodationsRes.json()
-          : [];
-        const experiences = experiencesRes.ok
-          ? await experiencesRes.json()
-          : [];
         const contact = contactRes.ok ? await contactRes.json() : {};
-
-        console.log("📥 FETCHED DATA:", {
-          attractions,
-          accommodations,
-          experiences,
-          contact,
-        });
+        const seo = seoRes.ok ? await seoRes.json() : {};
 
         setFormData({
-          // Basic Info
           slug: branch.slug || "",
           branchName: branch.branchName || "",
           description: branch.description || "",
+          heroVideoUrl: branch.heroVideoUrl || "",
+          heroTagline: branch.heroTagline || "",
           starRating: branch.starRating || 4,
           published: branch.published || false,
-
-          // Location
           location: {
             city: branch.location?.city || "",
             region: branch.location?.region || "",
             country: branch.location?.country || "Ethiopia",
           },
-
-          // Media
           heroImage: branch.heroImage || "",
           directionsUrl: branch.directionsUrl || "",
-
-          // Contact - use fetched data or fallback
           contact: {
             phone: contact.phone || branch.contact?.phone || "",
             email: contact.email || branch.contact?.email || "",
             address: contact.address || branch.contact?.address || "",
           },
-
-          // Use fetched arrays, not empty arrays
           attractions: Array.isArray(attractions) ? attractions : [],
-          accommodations: Array.isArray(accommodations) ? accommodations : [],
-          experiences: Array.isArray(experiences) ? experiences : [],
+          seo: {
+            title: seo.title || branch.seo?.title || "",
+            description: seo.description || branch.seo?.description || "",
+            keywords: seo.keywords || branch.seo?.keywords || [],
+          },
         });
       } catch (error) {
-        console.error("❌ FETCH ERROR - Failed to load branch content:", error);
-        // Fallback to basic data if fetch fails
+        console.error("❌ FETCH ERROR:", error);
         setFormData({
           slug: branch.slug || "",
           branchName: branch.branchName || "",
           description: branch.description || "",
+          heroVideoUrl: branch.heroVideoUrl || "",
+          heroTagline: branch.heroTagline || "",
           starRating: branch.starRating || 4,
           published: branch.published || false,
           location: {
@@ -128,8 +104,11 @@ export default function EditBranchForm({
             address: branch.contact?.address || "",
           },
           attractions: branch.attractions || [],
-          accommodations: branch.accommodations || [],
-          experiences: branch.experiences || [],
+          seo: {
+            title: branch.seo?.title || "",
+            description: branch.seo?.description || "",
+            keywords: branch.seo?.keywords || [],
+          },
         });
       } finally {
         setLoading(false);
@@ -138,14 +117,14 @@ export default function EditBranchForm({
 
     fetchBranchContent();
   }, [branch]);
-  // Handle form field changes
+
   const handleChange = (field: string, value: string | number | boolean) => {
     setFormData((prev) => {
       if (!prev) return prev;
 
       if (field.includes(".")) {
         const [parent, child] = field.split(".");
-        if (parent === "location" || parent === "contact") {
+        if (parent === "location" || parent === "contact" || parent === "seo") {
           return {
             ...prev,
             [parent]: {
@@ -160,29 +139,15 @@ export default function EditBranchForm({
     });
   };
 
-  // Handle array data changes
-  const handleArrayChange = (
-    type: "attractions" | "accommodations" | "experiences",
-    items: Attraction[] | Accommodation[] | Experience[]
-  ) => {
-    console.log(`🔄 ARRAY CHANGE - ${type}:`, items);
-
+  const handleArrayChange = (items: Attraction[]) => {
     setFormData((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        [type]: items,
-      };
+      return { ...prev, attractions: items };
     });
   };
 
-  // Save all branch data to respective APIs
   const saveAllBranchData = async (formData: BranchFormData) => {
     try {
-      console.log("🔄 SAVE ALL - Starting to save branch data...");
-
-      // Save core branch data
-      console.log("🔄 SAVE ALL - Saving core branch data...");
       const coreResponse = await fetch(`/api/admin/branches/${branch.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -190,19 +155,16 @@ export default function EditBranchForm({
           branchName: formData.branchName,
           description: formData.description,
           heroImage: formData.heroImage,
+          heroVideoUrl: formData.heroVideoUrl,
+          heroTagline: formData.heroTagline,
           directionsUrl: formData.directionsUrl,
           starRating: formData.starRating,
           published: formData.published,
         }),
       });
 
-      if (!coreResponse.ok) {
-        throw new Error("Failed to save core branch data");
-      }
-      console.log("✅ SAVE ALL - Core data saved");
+      if (!coreResponse.ok) throw new Error("Failed to save core branch data");
 
-      // Save contact data
-      console.log("🔄 SAVE ALL - Saving contact data...");
       const contactResponse = await fetch(
         `/api/admin/branches/${branch.slug}/contact`,
         {
@@ -211,14 +173,8 @@ export default function EditBranchForm({
           body: JSON.stringify(formData.contact),
         }
       );
+      if (!contactResponse.ok) throw new Error("Failed to save contact data");
 
-      if (!contactResponse.ok) {
-        throw new Error("Failed to save contact data");
-      }
-      console.log("✅ SAVE ALL - Contact data saved");
-
-      // Save attractions
-      console.log("🔄 SAVE ALL - Saving attractions...", formData.attractions);
       const attractionsResponse = await fetch(
         `/api/admin/branches/${branch.slug}/attractions`,
         {
@@ -227,48 +183,19 @@ export default function EditBranchForm({
           body: JSON.stringify({ attractions: formData.attractions }),
         }
       );
-
-      if (!attractionsResponse.ok) {
+      if (!attractionsResponse.ok)
         throw new Error("Failed to save attractions");
-      }
-      console.log("✅ SAVE ALL - Attractions saved");
 
-      // Save accommodations
-      console.log(
-        "🔄 SAVE ALL - Saving accommodations...",
-        formData.accommodations
-      );
-      const accommodationsResponse = await fetch(
-        `/api/admin/branches/${branch.slug}/accommodations`,
+      const seoResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/seo`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accommodations: formData.accommodations }),
+          body: JSON.stringify(formData.seo),
         }
       );
+      if (!seoResponse.ok) throw new Error("Failed to save SEO data");
 
-      if (!accommodationsResponse.ok) {
-        throw new Error("Failed to save accommodations");
-      }
-      console.log("✅ SAVE ALL - Accommodations saved");
-
-      // Save experiences
-      console.log("🔄 SAVE ALL - Saving experiences...", formData.experiences);
-      const experiencesResponse = await fetch(
-        `/api/admin/branches/${branch.slug}/experiences`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ experiences: formData.experiences }),
-        }
-      );
-
-      if (!experiencesResponse.ok) {
-        throw new Error("Failed to save experiences");
-      }
-      console.log("✅ SAVE ALL - Experiences saved");
-
-      console.log("🎉 SAVE ALL - All data saved successfully!");
       return { success: true };
     } catch (error) {
       console.error("❌ SAVE ALL - Error:", error);
@@ -276,40 +203,22 @@ export default function EditBranchForm({
     }
   };
 
-  // Save form data to API
   const handleSave = async () => {
-    console.log("🔄 HANDLE SAVE - Button clicked, formData:", formData);
-
-    if (!formData) {
-      console.log("❌ HANDLE SAVE - No formData");
-      return;
-    }
+    if (!formData) return;
 
     setSaving(true);
     setErrors({});
 
     try {
-      console.log("🔄 HANDLE SAVE - Calling saveAllBranchData...");
       const result = await saveAllBranchData(formData);
-
-      console.log("🔄 HANDLE SAVE - saveAllBranchData result:", result);
-
       if (result.success) {
-        console.log("✅ HANDLE SAVE - Success, calling onSuccess");
         onSuccess();
       } else {
-        console.log("❌ HANDLE SAVE - Failed:", result.error);
-        setErrors({
-          submit: result.error || "Failed to save changes. Please try again.",
-        });
+        setErrors({ submit: result.error || "Failed to save changes" });
       }
     } catch (error) {
-      console.log("❌ HANDLE SAVE - Exception:", error);
-      setErrors({
-        submit: "Network error. Please check your connection and try again.",
-      });
+      setErrors({ submit: "Network error" });
     } finally {
-      console.log("🔄 HANDLE SAVE - Setting saving to false");
       setSaving(false);
     }
   };
@@ -329,9 +238,8 @@ export default function EditBranchForm({
 
   return (
     <div className="overflow-hidden flex flex-col">
-      {/* Navigation Tabs */}
       <div className="flex border-b mb-6 bg-gray-50 rounded-t-lg">
-        {(["basic", "contact", "content"] as TabType[]).map((tab) => (
+        {(["basic", "contact", "content", "seo"] as TabType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -342,46 +250,37 @@ export default function EditBranchForm({
             }`}
           >
             {tab === "basic" && "Basic Info"}
-            {tab === "contact" && "Contact Details"}
-            {tab === "content" && "Branch Content"}
+            {tab === "contact" && "Contact & Media"}
+            {tab === "content" && "Content"}
+            {tab === "seo" && "SEO"}
           </button>
         ))}
       </div>
 
-      {/* Error Display */}
       {errors.submit && (
         <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm font-semibold">
           {errors.submit}
         </div>
       )}
 
-      {/* Tab Content Area */}
       <div className="flex-1 overflow-y-auto px-1">
         {activeTab === "basic" && (
           <BasicInfoTab formData={formData} onChange={handleChange} />
         )}
-
         {activeTab === "contact" && (
           <ContactTab formData={formData} onChange={handleChange} />
         )}
-
         {activeTab === "content" && (
           <ContentTab
             formData={formData}
-            onAttractionsChange={(items: Attraction[]) =>
-              handleArrayChange("attractions", items)
-            }
-            onAccommodationsChange={(items: Accommodation[]) =>
-              handleArrayChange("accommodations", items)
-            }
-            onExperiencesChange={(items: Experience[]) =>
-              handleArrayChange("experiences", items)
-            }
+            onAttractionsChange={handleArrayChange}
           />
+        )}
+        {activeTab === "seo" && (
+          <SEOTab formData={formData} onChange={handleChange} />
         )}
       </div>
 
-      {/* Form Actions */}
       <div className="flex justify-end gap-3 pt-6 border-t mt-6">
         <button
           type="button"
@@ -391,11 +290,7 @@ export default function EditBranchForm({
           Cancel
         </button>
         <button
-          onClick={() => {
-            console.log("🔄 SAVE BUTTON - Clicked!");
-            console.log("📝 Current formData:", formData);
-            handleSave();
-          }}
+          onClick={handleSave}
           disabled={saving}
           className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
         >
@@ -413,7 +308,6 @@ export default function EditBranchForm({
   );
 }
 
-// ===== BASIC INFO TAB COMPONENT =====
 interface BasicInfoTabProps {
   formData: BranchFormData;
   onChange: (field: string, value: string | number | boolean) => void;
@@ -422,7 +316,6 @@ interface BasicInfoTabProps {
 function BasicInfoTab({ formData, onChange }: BasicInfoTabProps) {
   return (
     <div className="space-y-6">
-      {/* Basic Information Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -460,12 +353,28 @@ function BasicInfoTab({ formData, onChange }: BasicInfoTabProps) {
             onChange={(e) => onChange("description", e.target.value)}
             rows={3}
             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium resize-none"
-            placeholder="Describe your branch location, amenities, and unique features..."
+            placeholder="Describe your branch..."
           />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <TagIcon className="w-4 h-4 text-primary" />
+            Hero Tagline
+          </label>
+          <input
+            type="text"
+            value={formData.heroTagline || ""}
+            onChange={(e) => onChange("heroTagline", e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+            placeholder="Turn Your Vacation Dream Into Reality"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Appears below the branch name in the hero section
+          </p>
         </div>
       </div>
 
-      {/* Location Details Section */}
       <div className="border-t pt-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-primary" />
@@ -513,7 +422,6 @@ function BasicInfoTab({ formData, onChange }: BasicInfoTabProps) {
         </div>
       </div>
 
-      {/* Branch Settings Section */}
       <div className="border-t pt-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-primary" />
@@ -561,11 +469,9 @@ function BasicInfoTab({ formData, onChange }: BasicInfoTabProps) {
   );
 }
 
-// ===== CONTACT TAB COMPONENT =====
 function ContactTab({ formData, onChange }: BasicInfoTabProps) {
   return (
     <div className="space-y-6">
-      {/* Contact Information Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -605,12 +511,11 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
             onChange={(e) => onChange("contact.address", e.target.value)}
             rows={2}
             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium resize-none"
-            placeholder="Complete physical address for this branch location"
+            placeholder="Complete physical address"
           />
         </div>
       </div>
 
-      {/* Media & Links Section */}
       <div className="border-t pt-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Globe className="w-5 h-5 text-primary" />
@@ -620,7 +525,7 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-primary" />
-              Hero Image
+              Hero Image (Fallback)
             </label>
             <ImageUpload
               value={formData.heroImage}
@@ -628,7 +533,24 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
               subfolder="branches"
             />
             <p className="text-xs text-gray-500 mt-2">
-              Upload the main image for your branch (recommended: 1920x1080px)
+              Used as fallback if video is not available
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <VideoIcon className="w-4 h-4 text-primary" />
+              Hero Video (YouTube ID)
+            </label>
+            <input
+              type="text"
+              value={formData.heroVideoUrl || ""}
+              onChange={(e) => onChange("heroVideoUrl", e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+              placeholder="iCS0YIJx3Ek"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              YouTube Video ID (e.g., iCS0YIJx3Ek)
             </p>
           </div>
 
@@ -645,7 +567,7 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
               placeholder="https://maps.app.goo.gl/..."
             />
             <p className="text-xs text-gray-500 mt-2">
-              Google Maps or other navigation service link
+              Google Maps navigation link
             </p>
           </div>
         </div>
@@ -654,44 +576,15 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
   );
 }
 
-// ===== CONTENT TAB COMPONENT =====
-interface ContentTabProps {
-  formData: BranchFormData;
-  onAttractionsChange: (items: Attraction[]) => void;
-  onAccommodationsChange: (items: Accommodation[]) => void;
-  onExperiencesChange: (items: Experience[]) => void;
-}
-
-interface FieldConfig {
-  name: string;
-  label: string;
-  type: string;
-  placeholder: string;
-}
-
-interface SimpleArrayEditorProps {
-  title: string;
-  items: Attraction[] | Accommodation[];
-  onChange: (items: Attraction[] | Accommodation[]) => void;
-  fields: FieldConfig[];
-}
-
-// Reusable component for editing arrays of data (attractions, accommodations)
 function SimpleArrayEditor({
-  title,
   items,
   onChange,
-  fields,
-}: SimpleArrayEditorProps) {
+}: {
+  items: Attraction[];
+  onChange: (items: Attraction[]) => void;
+}) {
   const addItem = () => {
-    const newItem = fields.reduce(
-      (acc: Record<string, string>, field: FieldConfig) => {
-        acc[field.name] = "";
-        return acc;
-      },
-      {}
-    );
-    onChange([...items, newItem as Attraction | Accommodation]);
+    onChange([...items, { label: "", order: 0 }]);
   };
 
   const updateItem = (index: number, field: string, value: string) => {
@@ -707,71 +600,55 @@ function SimpleArrayEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">Attractions</h3>
+          <p className="text-gray-600 text-sm mt-1">
+            Add attractions that will appear in the grid on your branch page
+          </p>
+        </div>
         <button
           type="button"
           onClick={addItem}
           className="bg-primary text-white px-4 py-2 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          <span>Add</span>
+          <span>Add Attraction</span>
         </button>
       </div>
 
-      {/* List of existing items */}
       {items.map((item, index) => (
         <div
           key={index}
           className="border-2 border-gray-200 rounded-xl p-5 bg-white"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {fields.map((field: FieldConfig) => (
-              <div key={field.name}>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  {field.label}
-                </label>
-                {field.type === "textarea" ? (
-                  <textarea
-                    value={
-                      item[
-                        field.name as keyof (Attraction | Accommodation)
-                      ] as string
-                    }
-                    onChange={(e) =>
-                      updateItem(index, field.name, e.target.value)
-                    }
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium resize-none"
-                    placeholder={field.placeholder}
-                  />
-                ) : field.name === "image" ? (
-                  <ImageUpload
-                    value={
-                      item[
-                        field.name as keyof (Attraction | Accommodation)
-                      ] as string
-                    }
-                    onChange={(url) => updateItem(index, field.name, url)}
-                    subfolder={title.toLowerCase()}
-                  />
-                ) : (
-                  <input
-                    type={field.type}
-                    value={
-                      item[
-                        field.name as keyof (Attraction | Accommodation)
-                      ] as string
-                    }
-                    onChange={(e) =>
-                      updateItem(index, field.name, e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
-                    placeholder={field.placeholder}
-                  />
-                )}
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Attraction Name *
+              </label>
+              <input
+                type="text"
+                value={item.label}
+                onChange={(e) => updateItem(index, "label", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+                placeholder="Lagoon View"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Order
+              </label>
+              <input
+                type="number"
+                value={item.order || 0}
+                onChange={(e) => updateItem(index, "order", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+                placeholder="0"
+                min="0"
+              />
+            </div>
           </div>
           <button
             type="button"
@@ -784,463 +661,119 @@ function SimpleArrayEditor({
         </div>
       ))}
 
-      {/* Empty state */}
       {items.length === 0 && (
         <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-          <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="font-medium">No {title.toLowerCase()} added yet</p>
-          <p className="text-sm mt-1">Click Add to create your first one</p>
+          <div className="text-3xl mb-3">🏞️</div>
+          <p className="font-medium">No attractions added yet</p>
+          <p className="text-sm mt-1">Click "Add Attraction" to get started</p>
         </div>
       )}
     </div>
   );
 }
 
-// ===== EXPERIENCES EDITOR COMPONENT =====
-interface ExperiencesEditorProps {
-  experiences: Experience[];
-  onChange: (experiences: Experience[]) => void;
+interface ContentTabProps {
+  formData: BranchFormData;
+  onAttractionsChange: (items: Attraction[]) => void;
 }
 
-function ExperiencesEditor({ experiences, onChange }: ExperiencesEditorProps) {
-  const addExperience = () => {
-    const newExperience: Experience = {
-      title: "",
-      description: "",
-      highlightImage: "",
-      packages: [],
-    };
-    onChange([...experiences, newExperience]);
-  };
-
-  const updateExperience = (index: number, field: string, value: string) => {
-    const newExperiences = experiences.map((exp, i) =>
-      i === index ? { ...exp, [field]: value } : exp
-    );
-    onChange(newExperiences);
-  };
-
-  const removeExperience = (index: number) => {
-    onChange(experiences.filter((_, i) => i !== index));
-  };
-
-  const addPackage = (expIndex: number) => {
-    const newExperiences = [...experiences];
-    newExperiences[expIndex].packages.push({
-      title: "",
-      subtitle: "",
-      description: "",
-      price: 0,
-      duration: "",
-      inclusions: undefined,
-      category: "CULTURAL",
-      available: true,
-      ctaLabel: "",
-    });
-    onChange(newExperiences);
-  };
-
-  const updatePackage = (
-    expIndex: number,
-    pkgIndex: number,
-    field: string,
-    value: string | number | boolean
-  ) => {
-    const newExperiences = [...experiences];
-    newExperiences[expIndex].packages[pkgIndex] = {
-      ...newExperiences[expIndex].packages[pkgIndex],
-      [field]: value,
-    };
-    onChange(newExperiences);
-  };
-
-  const removePackage = (expIndex: number, pkgIndex: number) => {
-    const newExperiences = [...experiences];
-    newExperiences[expIndex].packages = newExperiences[
-      expIndex
-    ].packages.filter((_, i) => i !== pkgIndex);
-    onChange(newExperiences);
-  };
-
+function ContentTab({ formData, onAttractionsChange }: ContentTabProps) {
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Experiences</h3>
-        <button
-          type="button"
-          onClick={addExperience}
-          className="bg-primary text-white px-4 py-2 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Experience</span>
-        </button>
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          Attractions Management
+        </h3>
+        <p className="text-gray-600 text-sm">
+          Add and manage attractions that will appear in the attractions section
+          of your branch page. These will be displayed in a clean grid layout.
+        </p>
       </div>
 
-      {experiences.map((experience, expIndex) => (
-        <div
-          key={expIndex}
-          className="border-2 border-gray-200 rounded-xl p-6 bg-white space-y-6"
-        >
-          {/* Experience Header */}
-          <div className="flex justify-between items-start">
-            <h4 className="text-md font-semibold text-gray-800">
-              Experience #{expIndex + 1}
-            </h4>
-            <button
-              type="button"
-              onClick={() => removeExperience(expIndex)}
-              className="text-red-600 text-sm font-semibold hover:text-red-800 transition-colors flex items-center gap-1"
-            >
-              <Trash2 className="w-4 h-4" />
-              Remove Experience
-            </button>
-          </div>
+      <SimpleArrayEditor
+        items={formData.attractions}
+        onChange={onAttractionsChange}
+      />
 
-          {/* Experience Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Experience Title *
-              </label>
-              <input
-                type="text"
-                value={experience.title}
-                onChange={(e) =>
-                  updateExperience(expIndex, "title", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
-                placeholder="Sunset Safari Adventure"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Description *
-              </label>
-              <textarea
-                value={experience.description}
-                onChange={(e) =>
-                  updateExperience(expIndex, "description", e.target.value)
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium resize-none"
-                placeholder="Describe this amazing experience..."
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Highlight Image
-              </label>
-              <ImageUpload
-                value={experience.highlightImage}
-                onChange={(url) =>
-                  updateExperience(expIndex, "highlightImage", url)
-                }
-                subfolder="experiences"
-              />
-            </div>
-          </div>
-
-          {/* Packages Section */}
-          <div className="border-t pt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h5 className="text-md font-semibold text-gray-800">Packages</h5>
-              <button
-                type="button"
-                onClick={() => addPackage(expIndex)}
-                className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                Add Package
-              </button>
-            </div>
-
-            {experience.packages.map((pkg, pkgIndex) => (
-              <div
-                key={pkgIndex}
-                className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <h6 className="text-sm font-semibold text-gray-700">
-                    Package #{pkgIndex + 1}
-                  </h6>
-                  <button
-                    type="button"
-                    onClick={() => removePackage(expIndex, pkgIndex)}
-                    className="text-red-600 text-xs font-semibold hover:text-red-800 transition-colors flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    Remove
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Package Title *
-                    </label>
-                    <input
-                      type="text"
-                      value={pkg.title}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "title",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="Basic Package"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={pkg.subtitle || ""}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "subtitle",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="All-inclusive experience"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={pkg.price || 0}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "price",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="99.99"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Duration
-                    </label>
-                    <input
-                      type="text"
-                      value={pkg.duration || ""}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "duration",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="2 hours"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Category
-                    </label>
-                    <select
-                      value={pkg.category}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "category",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                    >
-                      <option value="CULTURAL">Cultural</option>
-                      <option value="NATURE">Nature</option>
-                      <option value="ADVENTURE">Adventure</option>
-                      <option value="WELLNESS">Wellness</option>
-                      <option value="ROMANTIC">Romantic</option>
-                      <option value="FAMILY">Family</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`available-${expIndex}-${pkgIndex}`}
-                      checked={pkg.available}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "available",
-                          e.target.checked
-                        )
-                      }
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor={`available-${expIndex}-${pkgIndex}`}
-                      className="ml-2 text-xs font-semibold text-gray-600"
-                    >
-                      Available
-                    </label>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={pkg.description || ""}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "description",
-                          e.target.value
-                        )
-                      }
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm resize-none"
-                      placeholder="Describe what's included in this package..."
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      CTA Label
-                    </label>
-                    <input
-                      type="text"
-                      value={pkg.ctaLabel || ""}
-                      onChange={(e) =>
-                        updatePackage(
-                          expIndex,
-                          pkgIndex,
-                          "ctaLabel",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 text-sm"
-                      placeholder="Book Now"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {experience.packages.length === 0 && (
-              <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                <p className="text-sm">No packages added yet</p>
-                <p className="text-xs mt-1">Add packages to this experience</p>
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-
-      {experiences.length === 0 && (
-        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-          <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="font-medium">No experiences added yet</p>
-          <p className="text-sm mt-1">
-            Click Add Experience to create your first one
+      <div className="border-t pt-6">
+        <div className="text-sm text-gray-500">
+          <p>
+            <strong>Note:</strong> Attractions appear as small boxes in a grid
+            layout on the branch page.
+          </p>
+          <p className="mt-1">
+            Services section (Restaurant, Spa, etc.) is hardcoded and same for
+            all branches.
           </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function ContentTab({
-  formData,
-  onAttractionsChange,
-  onAccommodationsChange,
-  onExperiencesChange,
-}: ContentTabProps) {
-  console.log("🔍 CONTENT TAB - Rendering with:", {
-    attractions: formData.attractions,
-    accommodations: formData.accommodations,
-    experiences: formData.experiences,
-  });
+function SEOTab({ formData, onChange }: BasicInfoTabProps) {
   return (
-    <div className="space-y-8">
-      {/* Attractions Section */}
-      <SimpleArrayEditor
-        title="Attractions"
-        items={formData.attractions}
-        onChange={onAttractionsChange}
-        fields={[
-          {
-            name: "label",
-            label: "Attraction Name",
-            type: "text",
-            placeholder: "Lagoon View",
-          },
-          {
-            name: "image",
-            label: "Attraction Image",
-            type: "image",
-            placeholder: "Upload attraction image",
-          },
-        ]}
-      />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Search className="w-4 h-4 text-primary" />
+            SEO Title
+          </label>
+          <input
+            type="text"
+            value={formData.seo?.title || ""}
+            onChange={(e) => onChange("seo.title", e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+            placeholder="Haile Resort Addis Ababa - Luxury Stay"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Title tag for search engines (50-60 characters recommended)
+          </p>
+        </div>
 
-      {/* Experiences Section */}
-      <div className="border-t pt-8">
-        <ExperiencesEditor
-          experiences={formData.experiences}
-          onChange={onExperiencesChange}
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Search className="w-4 h-4 text-primary" />
+            Meta Description
+          </label>
+          <textarea
+            value={formData.seo?.description || ""}
+            onChange={(e) => onChange("seo.description", e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium resize-none"
+            placeholder="Experience luxury at Haile Resort Addis Ababa..."
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Description for search results (150-160 characters recommended)
+          </p>
+        </div>
 
-      {/* Accommodations Section */}
-      <div className="border-t pt-8">
-        <SimpleArrayEditor
-          title="Accommodations"
-          items={formData.accommodations}
-          onChange={onAccommodationsChange}
-          fields={[
-            {
-              name: "title",
-              label: "Room Title",
-              type: "text",
-              placeholder: "DELUXE OCEAN-VIEW ROOM",
-            },
-            {
-              name: "description",
-              label: "Description",
-              type: "textarea",
-              placeholder: "Relax in our deluxe ocean-view room...",
-            },
-            {
-              name: "image",
-              label: "Room Image",
-              type: "image",
-              placeholder: "Upload room image",
-            },
-          ]}
-        />
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Search className="w-4 h-4 text-primary" />
+            Keywords (comma separated)
+          </label>
+          <input
+            type="text"
+            value={
+              Array.isArray(formData.seo?.keywords)
+                ? formData.seo.keywords.join(", ")
+                : ""
+            }
+            onChange={(e) =>
+              onChange(
+                "seo.keywords",
+                e.target.value.split(",").map((k) => k.trim())
+              )
+            }
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+            placeholder="luxury hotel, addis ababa, ethiopia, resort, vacation"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Separate keywords with commas
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ export interface Booking {
   status: string;
   guestName: string;
   guestEmail: string;
+  guestPhone?: string;
   checkIn: string;
   checkOut: string;
   adults: number;

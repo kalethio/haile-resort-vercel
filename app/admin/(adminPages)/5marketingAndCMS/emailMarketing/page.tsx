@@ -409,7 +409,7 @@ export default function EmailMarketingAdmin() {
                 placeholder="Enter email subject..."
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                className="w-full text-black border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               />
             </div>
 
@@ -422,7 +422,7 @@ export default function EmailMarketingAdmin() {
                 value={html}
                 onChange={(e) => setHtml(e.target.value)}
                 rows={8}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm"
+                className="w-full text-black border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm"
               />
               <div className="mt-2 text-xs text-gray-500">
                 Auto-saved locally every 30 seconds

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import ImageUpload from "@/app/components/ImageUpload";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, VideoIcon, TagIcon } from "lucide-react";
 
 interface AddBranchFormProps {
   onCancel: () => void;
@@ -13,6 +13,8 @@ interface FormData {
   branchName: string;
   description: string;
   heroImage: string;
+  heroVideoUrl: string;
+  heroTagline: string;
   directionsUrl: string;
   starRating: number;
   published: boolean;
@@ -40,6 +42,8 @@ export default function AddBranchForm({
     branchName: "",
     description: "",
     heroImage: "",
+    heroVideoUrl: "",
+    heroTagline: "",
     directionsUrl: "",
     starRating: 4,
     published: false,
@@ -141,7 +145,7 @@ export default function AddBranchForm({
   };
 
   return (
-    <div className="max-w-4xl  mx-auto p-1">
+    <div className="max-w-4xl mx-auto p-1">
       {errors.submit && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm font-medium">
           {errors.submit}
@@ -149,7 +153,6 @@ export default function AddBranchForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
             Basic Information
@@ -220,10 +223,65 @@ export default function AddBranchForm({
                 </p>
               )}
             </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <TagIcon className="w-4 h-4 text-primary" />
+                Hero Tagline
+              </label>
+              <input
+                type="text"
+                value={formData.heroTagline}
+                onChange={(e) => handleChange("heroTagline", e.target.value)}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="Turn Your Vacation Dream Into Reality"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Location */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+            Hero Media
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" />
+                Hero Image (Fallback)
+              </label>
+              <ImageUpload
+                value={formData.heroImage}
+                onChange={(url) => handleChange("heroImage", url)}
+                subfolder="branches"
+              />
+              {formData.heroImage && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Current image: {formData.heroImage}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <VideoIcon className="w-4 h-4 text-primary" />
+                Hero Video URL (YouTube ID)
+              </label>
+              <input
+                type="text"
+                value={formData.heroVideoUrl}
+                onChange={(e) => handleChange("heroVideoUrl", e.target.value)}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="iCS0YIJx3Ek"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                YouTube Video ID (e.g., iCS0YIJx3Ek from
+                youtube.com/watch?v=iCS0YIJx3Ek)
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
             Location Details
@@ -283,34 +341,64 @@ export default function AddBranchForm({
           </div>
         </div>
 
-        {/* Additional Fields */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+            SEO Settings
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                SEO Title
+              </label>
+              <input
+                type="text"
+                value={formData.seo.title}
+                onChange={(e) => handleChange("seo.title", e.target.value)}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="Haile Resort Addis Ababa - Luxury Stay"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                SEO Description
+              </label>
+              <textarea
+                value={formData.seo.description}
+                onChange={(e) =>
+                  handleChange("seo.description", e.target.value)
+                }
+                rows={2}
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 resize-none"
+                placeholder="Experience luxury at Haile Resort Addis Ababa..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                SEO Keywords (comma separated)
+              </label>
+              <input
+                type="text"
+                value={formData.seo.keywords.join(", ")}
+                onChange={(e) =>
+                  handleChange(
+                    "seo.keywords",
+                    e.target.value.split(",").map((k) => k.trim())
+                  )
+                }
+                className="w-full px-3 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500"
+                placeholder="luxury hotel, addis ababa, ethiopia, resort"
+              />
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
             Additional Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-primary" />
-                Hero Image
-              </label>
-              {/* ✅ Use URL directly */}
-              <ImageUpload
-                value={formData.heroImage}
-                onChange={(url) => handleChange("heroImage", url)}
-                subfolder="branches"
-              />
-              {formData.heroImage && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Current image: {formData.heroImage}
-                </p>
-              )}
-              {errors.heroImage && (
-                <p className="text-red-600 text-sm font-medium mt-2">
-                  {errors.heroImage}
-                </p>
-              )}
-            </div>
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Directions URL
@@ -361,7 +449,6 @@ export default function AddBranchForm({
           </div>
         </div>
 
-        {/* Form Actions */}
         <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
           <button
             type="button"

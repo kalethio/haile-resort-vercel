@@ -3,43 +3,48 @@ import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FiChevronRight } from "react-icons/fi";
 import Image from "next/image";
-import { Accommodation } from "../../data/branches";
 
-interface Props {
-  items: Accommodation[];
-}
-
-// Animation constants
-const cardAnimations = {
-  center: {
-    scale: 1.12,
-    opacity: 1,
-    filter: "blur(0px) brightness(100%)",
-    zIndex: 20,
+// ==================== HARDCODED DATA ====================
+export const SERVICES_DATA = [
+  {
+    id: 1,
+    title: "Restaurant",
+    description:
+      "Our resort has eight food and beverage outlets serving both local and international cuisine.",
+    image: "/uploads/accommodations/restaurant.jpg",
   },
-  side: {
-    scale: 0.88,
-    opacity: 1,
-    filter: "blur(2px) brightness(75%)",
-    zIndex: 5,
+  {
+    id: 2,
+    title: "Spa - Beauty & Health",
+    description: "Rejuvenate yourself after an exhausting work schedule.",
+    image: "/uploads/accommodations/beauty.jpg",
   },
-  hidden: {
-    scale: 0.8,
-    opacity: 0,
-    filter: "blur(4px) brightness(50%)",
-    zIndex: 1,
+  {
+    id: 3,
+    title: "Conference Room",
+    description:
+      "Halls facilities including sound system, stationery materials (notebook, pen, flip chart & stand) and LCD Projector.",
+    image: "/uploads/accommodations/conference.jpg",
   },
-};
+  {
+    id: 4,
+    title: "Swimming Pool",
+    description: "Make swimming a part of your lifestyle",
+    image: "/uploads/accommodations/swimming.jpg",
+  },
+  {
+    id: 5,
+    title: "Multi-purpose Halls",
+    description:
+      "multi-purpose halls that are outfitted with modern meeting equipment and supplies allowing variety of setups including meetings, workshops or weddings. Venue occupancy is based on the standard set up.",
 
-const transition = {
-  type: "spring" as const,
-  stiffness: 280,
-  damping: 35,
-  duration: 0.5,
-};
+    image: "/uploads/accommodations/halls.jpg",
+  },
+] as const;
 
-const AccommodationCarousel: React.FC<Props> = ({ items }) => {
-  const [cards, setCards] = useState(items);
+// ==================== COMPONENT ====================
+const AccommodationCarousel: React.FC = () => {
+  const [cards, setCards] = useState(SERVICES_DATA);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const centerIndex = Math.floor(cards.length / 2);
@@ -92,7 +97,7 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
         className="text-center text-primary mb-12 md:mb-16 px-4"
       >
         <span className="text-3xl md:text-4xl font-serif tracking-widest uppercase block">
-          Accommodations
+          Services
         </span>
       </motion.h2>
 
@@ -155,13 +160,6 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
                   {item.title}
                 </h3>
 
-                {/* Price if available */}
-                {item.price && isCenter && (
-                  <div className="mt-2 text-primary text-lg font-bold">
-                    {item.price}
-                  </div>
-                )}
-
                 {/* Description only for center card */}
                 {isCenter && (
                   <motion.div
@@ -185,22 +183,22 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
       <div className="flex justify-center items-center mt-8 gap-4">
         {/* Dot Indicators */}
         <div className="flex gap-2">
-          {items.map((_, index) => (
+          {SERVICES_DATA.map((_, index) => (
             <button
               key={index}
               onClick={() => {
                 const targetIndex = index;
                 const currentCenterTitle = cards[centerIndex]?.title;
-                if (items[targetIndex]?.title !== currentCenterTitle) {
+                if (SERVICES_DATA[targetIndex]?.title !== currentCenterTitle) {
                   rotateNext();
                 }
               }}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                cards[centerIndex]?.title === items[index]?.title
+                cards[centerIndex]?.title === SERVICES_DATA[index]?.title
                   ? "bg-primary w-4"
                   : "bg-gray-300"
               }`}
-              aria-label={`Go to accommodation ${index + 1}`}
+              aria-label={`Go to service ${index + 1}`}
             />
           ))}
         </div>
@@ -212,14 +210,14 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
           whileTap={{ scale: 0.95 }}
           disabled={isAnimating}
           className="w-8 h-8 cursor-pointer bg-primary/15 rounded-full flex items-center justify-center shadow hover:shadow-md hover:bg-primary/25 transition-all duration-300 border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/30"
-          aria-label="Next accommodation"
+          aria-label="Next service"
         >
           <FiChevronRight size={16} className="text-primary" />
         </motion.button>
       </div>
 
       {/* Loading Skeleton */}
-      {!items.length && (
+      {!SERVICES_DATA.length && (
         <div className="flex justify-center items-center gap-6 md:gap-8 py-8">
           {[1, 2, 3].map((i) => (
             <div
@@ -231,6 +229,35 @@ const AccommodationCarousel: React.FC<Props> = ({ items }) => {
       )}
     </motion.section>
   );
+};
+
+// Animation constants (unchanged)
+const cardAnimations = {
+  center: {
+    scale: 1.12,
+    opacity: 1,
+    filter: "blur(0px) brightness(100%)",
+    zIndex: 20,
+  },
+  side: {
+    scale: 0.88,
+    opacity: 1,
+    filter: "blur(2px) brightness(75%)",
+    zIndex: 5,
+  },
+  hidden: {
+    scale: 0.8,
+    opacity: 0,
+    filter: "blur(4px) brightness(50%)",
+    zIndex: 1,
+  },
+};
+
+const transition = {
+  type: "spring" as const,
+  stiffness: 280,
+  damping: 35,
+  duration: 0.5,
 };
 
 export default AccommodationCarousel;
