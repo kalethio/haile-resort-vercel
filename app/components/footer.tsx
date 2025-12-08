@@ -14,12 +14,25 @@ const footerData = {
     description:
       "Multi-branch resort brand offering unforgettable stays in Ethiopia's top destinations.",
     services: [
-      "Hospitality",
-      "Coffee Export",
-      "Event Planning",
-      "Tour Packages",
+      "Restaurant",
+      "Spa - Beauty & Health",
+      "Swimming Pool",
+      "Health and Fitness",
+      "Conference Room",
+      "Multi-purpose Halls ",
     ],
   },
+  sisterCompanies: [
+    {
+      name: "Ayelech Degefu Memorial School (ADMS)",
+      href: "https://hailealem.com/",
+    },
+    { name: "Alem Cinema", href: "https://hailealem.com/" },
+    { name: "Alem Fitness Center", href: "https://hailealem.com/" },
+    { name: "Haile Agriculture", href: "https://hailealem.com/" },
+    { name: "Haile Hospitality Group", href: "https://hailealem.com/" },
+    { name: "Haile Real Estate", href: "https://hailealem.com/" },
+  ],
   contact: {
     emails: ["book@haileresorts.com", "groupreservation@haileresorts.com"],
     phone: "+251 956 79 79 79",
@@ -67,7 +80,7 @@ export default function Footer() {
 
   return (
     <footer className="text-primary py-12 max-w-[80vw] mx-auto">
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-5 gap-8 text-sm">
+      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-6 gap-8 text-sm">
         {/* About Section */}
         <div className="md:col-span-2 text-center md:text-left mb-8 md:mb-0">
           <h3 className="mb-4">{footerData.company.name}</h3>
@@ -88,8 +101,27 @@ export default function Footer() {
           </ul>
         </div>
 
+        {/* Sister Companies */}
+        <div className="text-center md:text-left mb-8 md:mb-0">
+          <h4 className="mb-4">Sister Companies</h4>
+          <ul className="space-y-2">
+            {footerData.sisterCompanies.map((company) => (
+              <li key={company.name}>
+                <a
+                  href={company.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary/80 hover:underline"
+                >
+                  {company.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {/* Contact & Social */}
-        <div className="text-center md:text-left">
+        <div className="text-center md:text-left md:col-span-2">
           <h4 className="mb-4">Contact</h4>
           <div className="space-y-1 mb-4 text-xs">
             {footerData.contact.emails.map((email) => (

@@ -1,62 +1,87 @@
 // app/api/subscribers/route.ts
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { prisma } from "@/lib/prisma";
 import { Subscriber } from "@/app/data/subscriber";
 
-const filePath = path.join(process.cwd(), "app", "data", "usersProfile.json");
-
-async function readAll(): Promise<Subscriber[]> {
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw || "[]");
-  } catch (err) {
-    return [];
-  }
-}
-
-async function writeAll(items: Subscriber[]) {
-  await fs.writeFile(filePath, JSON.stringify(items, null, 2), "utf-8");
-}
-
 export async function GET() {
-  const list = await readAll();
-  return NextResponse.json(list);
+  try {
+    const subscribers = await prisma.subscriber.findMany({
+      where: { active: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Convert to your existing Subscriber type
+    const formatted: Subscriber[] = subscribers.map((s) => ({
+      id: String(s.id),
+      email: s.email,
+      name: s.name || undefined,
+      createdAt: s.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json(formatted);
+  } catch (err) {
+    console.error("GET /api/subscribers error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch subscribers" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { email, name } = body;
-    if (!email)
-      return NextResponse.json({ error: "Email required" }, { status: 400 });
 
-    const list = await readAll();
+    if (!email) {
+      return NextResponse.json({ error: "Email required" }, { status: 400 });
+    }
+
     const lc = String(email).toLowerCase();
-    const exists = list.find((s) => s.email.toLowerCase() === lc);
-    if (exists) {
+
+    // Check if exists
+    const existing = await prisma.subscriber.findUnique({
+      where: { email: lc },
+    });
+
+    if (existing) {
       return NextResponse.json(
         { message: "Already subscribed" },
         { status: 200 }
       );
     }
 
-    const newSub: Subscriber = {
-      id: String(Date.now()),
-      email: lc,
-      name: name ? String(name) : undefined,
-      createdAt: new Date().toISOString(),
+    // Create new subscriber
+    const newSub = await prisma.subscriber.create({
+      data: {
+        email: lc,
+        name: name ? String(name) : null,
+        active: true,
+      },
+    });
+
+    const formatted: Subscriber = {
+      id: String(newSub.id),
+      email: newSub.email,
+      name: newSub.name || undefined,
+      createdAt: newSub.createdAt.toISOString(),
     };
 
-    list.push(newSub);
-    await writeAll(list);
-
     return NextResponse.json(
-      { message: "Subscribed", subscriber: newSub },
+      { message: "Subscribed", subscriber: formatted },
       { status: 201 }
     );
   } catch (err) {
     console.error("POST /api/subscribers error:", err);
+
+    // Handle unique constraint violation
+    if (err instanceof Error && "code" in err && err.code === "P2002") {
+      return NextResponse.json(
+        { message: "Already subscribed" },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
   }
 }
