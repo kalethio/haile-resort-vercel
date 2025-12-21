@@ -532,11 +532,12 @@ model Campaign {
   subject     String
   content     String
   targetCount Int
+  sentCount   Int?      @default(0)  // Add this line
+  failedCount Int?      @default(0)  // This is also missing
   status      String
   sentAt      DateTime?
   createdAt   DateTime  @default(now())
 }
-
 model PromoCode {
   id            Int          @id @default(autoincrement())
   code          String       @unique
