@@ -33,9 +33,10 @@ export const ceoData = {
 export const statsData = [
   { label: "Locations", value: 10, suffix: "" },
   { label: "Upcoming Destinations", value: 3, suffix: "" },
-  { label: "Years of Experience", value: 13, suffix: "+" },
-  { label: "Conference Halls", value: 35, suffix: "+" },
-  { label: "Rooms", value: 650, suffix: "+" },
+  { label: "Years of Experience", value: 16, suffix: "+" },
+  { label: "Multipurpose event venues", value: 70, suffix: "+" },
+  { label: "Rooms", value: 850, suffix: "+" },
+  { label: "Diligent Associates", value: 3000, suffix: "+" },
 ];
 
 export const historyData = {

@@ -7,7 +7,6 @@ interface Branch {
   id: number;
   slug: string;
   branchName: string;
-  description?: string;
   roomCount: number;
   occupancyRate: number;
   totalRevenue: number;
@@ -94,7 +93,6 @@ function BranchCard({ branch }: { branch: Branch }) {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="font-semibold text-gray-900">{branch.branchName}</h3>
-            <p className="text-sm text-gray-600">{branch.description}</p>
           </div>
           <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
             Manage →

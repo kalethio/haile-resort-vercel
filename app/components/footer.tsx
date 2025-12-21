@@ -12,7 +12,7 @@ const footerData = {
   company: {
     name: "Haile Resorts",
     description:
-      "Multi-branch resort brand offering unforgettable stays in Ethiopia's top destinations.",
+      "Chains of hotels and resorts offering unforgettable stays in Ethiopia's top destinations.",
     services: [
       "Restaurant",
       "Spa - Beauty & Health",
@@ -22,17 +22,7 @@ const footerData = {
       "Multi-purpose Halls ",
     ],
   },
-  sisterCompanies: [
-    {
-      name: "Ayelech Degefu Memorial School (ADMS)",
-      href: "https://hailealem.com/",
-    },
-    { name: "Alem Cinema", href: "https://hailealem.com/" },
-    { name: "Alem Fitness Center", href: "https://hailealem.com/" },
-    { name: "Haile Agriculture", href: "https://hailealem.com/" },
-    { name: "Haile Hospitality Group", href: "https://hailealem.com/" },
-    { name: "Haile Real Estate", href: "https://hailealem.com/" },
-  ],
+
   contact: {
     emails: ["book@haileresorts.com", "groupreservation@haileresorts.com"],
     phone: "+251 956 79 79 79",
@@ -101,25 +91,6 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Sister Companies */}
-        <div className="text-center md:text-left mb-8 md:mb-0">
-          <h4 className="mb-4">Sister Companies</h4>
-          <ul className="space-y-2">
-            {footerData.sisterCompanies.map((company) => (
-              <li key={company.name}>
-                <a
-                  href={company.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary/80 hover:underline"
-                >
-                  {company.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
         {/* Contact & Social */}
         <div className="text-center md:text-left md:col-span-2">
           <h4 className="mb-4">Contact</h4>
@@ -133,7 +104,7 @@ export default function Footer() {
             <p>WhatsApp: {footerData.contact.whatsapp}</p>
           </div>
 
-          <h4 className="mb-4">Follow Us</h4>
+          <h4 className="mb-4 semi-bold">Socials</h4>
           <div className="flex gap-4 justify-center md:justify-start mb-4">
             {footerData.socialLinks.map((social) => {
               const IconComponent = social.icon;
