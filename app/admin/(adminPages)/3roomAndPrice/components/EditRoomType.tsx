@@ -53,9 +53,9 @@ export default function EditRoomType({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/admin/rooms-prices/room-types/${roomType.id}`,
+        `/api/admin/rooms-prices/room-types?branchSlug=${encodeURIComponent(branchSlug)}&roomTypeId=${roomType.id}`,
         {
-          method: "PATCH",
+          method: "PATCH", // or "PUT"
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             basePrice: formData.basePrice,
