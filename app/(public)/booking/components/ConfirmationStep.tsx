@@ -57,14 +57,97 @@ export default function ConfirmationStep({
   };
 
   const generatePDF = () => {
-    const content = `Booking Confirmation: ${bookingId}`;
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `booking-${bookingId}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to download receipt");
+      return;
+    }
+
+    printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Booking ${bookingId} - Haile Resort</title>
+        <style>
+          @media print {
+            @page { margin: 20mm; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #780b2d;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #780b2d;
+            margin-bottom: 10px;
+          }
+          .booking-id {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+          }
+          .info-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">HAILE RESORT</div>
+          <h1>Booking Confirmation</h1>
+          <p>Thank you for your reservation</p>
+        </div>
+
+        <div class="booking-id">Booking Reference: ${bookingId}</div>
+
+        <div class="info-section">
+          <h3>Important Information</h3>
+          <p>• Present this confirmation at check-in</p>
+          <p>• Check-in time: 3:00 PM</p>
+          <p>• Check-out time: 11:00 AM</p>
+        </div>
+
+        <div class="footer">
+          <p>For questions, contact: reservations@haileresort.com</p>
+          <p>Document generated on ${new Date().toLocaleDateString()}</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(() => window.close(), 1000);
+        </script>
+      </body>
+    </html>
+  `);
+
+    printWindow.document.close();
   };
 
   return (
