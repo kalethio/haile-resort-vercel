@@ -255,7 +255,7 @@ export default function SpotlightLargeCard() {
                   } lg:max-h-none`}
                 >
                   <div className="rounded-2xl border border-primary/20 bg-white/70 shadow-inner">
-                    <div className="p-3">
+                    <div className="p-3 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto">
                       <div className="flex flex-col gap-3">
                         {destinations.map((d, i) => {
                           const isActive = i === active;

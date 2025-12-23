@@ -58,7 +58,7 @@ export default function ConfirmationStep({
 
   const generatePDF = () => {
     const content = `Booking Confirmation: ${bookingId}`;
-    const blob = new Blob([content], { type: "application/pdf" });
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

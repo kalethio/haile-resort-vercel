@@ -121,8 +121,8 @@ export default function CheckBookingLuxuryBar() {
     }
 
     const totalGuests = adults + children;
-    if (isNaN(totalGuests) || totalGuests > 3) {
-      setPopupMessage(`Max 3 guests allowed (you have ${totalGuests}).`);
+    if (isNaN(totalGuests) || totalGuests > 6) {
+      setPopupMessage(`Max 6 guests allowed (you have ${totalGuests}).`);
       setShowPopup(true);
       return;
     }
