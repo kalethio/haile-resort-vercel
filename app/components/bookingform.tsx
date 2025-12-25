@@ -129,7 +129,7 @@ export default function BookingForm() {
         onSubmit={handleSubmit}
       >
         {/* Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 md:gap-2 items-start">
           {/* Destination */}
           <div className="lg:col-span-1">
             <label className="block font-medium mb-2 text-sm">
@@ -159,7 +159,7 @@ export default function BookingForm() {
           {/* Dates */}
           <div className="md:col-span-2 lg:col-span-2">
             <label className="block font-medium mb-2 text-sm">Dates</label>
-            <div className="w-full rounded-xl bg-white/5 border border-primary/30 overflow-hidden scale-90 md:scale-100 origin-left">
+            <div className="rounded-xl bg-white/5 border border-primary/30 overflow-hidden w-fit scale-75 origin-left md:scale-90">
               <DateRange
                 ranges={[selectionRange]}
                 onChange={(ranges: RangeKeyDict) => {
@@ -185,57 +185,41 @@ export default function BookingForm() {
           <div className="lg:col-span-1">
             <label className="block font-medium mb-2 text-xs">Guests</label>
             <div className="space-y-4 bg-white/5 border border-primary/30 rounded-xl p-4">
-              {/* Adults */}
+              {/* Adults Dropdown */}
               <div className="flex items-center justify-between">
                 <div className="text-xs font-medium text-gray-300">Adults</div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => changeAdults(-1)}
-                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-                  >
-                    -
-                  </button>
-                  <span className="text-sm font-medium min-w-6 text-center">
-                    {adults}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => changeAdults(1)}
-                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-                  >
-                    +
-                  </button>
-                </div>
+                <select
+                  value={adults}
+                  onChange={(e) => setAdults(Number(e.target.value))}
+                  className="bg-white/5 border border-primary/30 rounded-lg px-3 py-1 text-sm focus:ring-1 focus:ring-primary outline-none"
+                >
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Children */}
+              {/* Children Dropdown */}
               <div className="flex items-center justify-between">
                 <div className="text-xs font-medium text-gray-300">
                   Children (0–12)
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => changeChildren(-1)}
-                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-                  >
-                    -
-                  </button>
-                  <span className="text-sm font-medium min-w-6 text-center">
-                    {children}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => changeChildren(1)}
-                    className="w-8 h-8 flex items-center justify-center bg-white/5 border border-primary/30 rounded-full text-primary hover:bg-primary hover:text-white transition text-sm"
-                  >
-                    +
-                  </button>
-                </div>
+                <select
+                  value={children}
+                  onChange={(e) => setChildren(Number(e.target.value))}
+                  className="bg-white/5 border border-primary/30 rounded-lg px-3 py-1 text-sm focus:ring-1 focus:ring-primary outline-none"
+                >
+                  {Array.from({ length: 13 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Children Ages */}
+              {/* Children Ages Dropdowns */}
               {children > 0 && (
                 <div className="space-y-2 pt-3 border-t border-primary/20">
                   <div className="text-xs font-medium text-gray-300">
@@ -244,25 +228,23 @@ export default function BookingForm() {
                   <div className="grid grid-cols-2 gap-3">
                     {Array.from({ length: children }).map((_, i) => (
                       <div key={i} className="flex flex-col">
-                        <input
-                          type="number"
-                          min={0}
-                          max={12}
+                        <label className="text-xs text-gray-400 mb-1">
+                          Child {i + 1}
+                        </label>
+                        <select
                           value={childrenAges[i] ?? ""}
                           onChange={(e) =>
-                            setChildAge(
-                              i,
-                              e.target.value === ""
-                                ? null
-                                : Math.max(
-                                    0,
-                                    Math.min(12, Number(e.target.value))
-                                  )
-                            )
+                            setChildAge(i, Number(e.target.value))
                           }
-                          placeholder="Age"
-                          className="w-full px-2 py-1 text-sm rounded-xl bg-white/5 border border-primary/30 placeholder-primary/50 focus:ring-1 focus:ring-primary outline-none"
-                        />
+                          className="bg-white/5 border border-primary/30 rounded-lg px-3 py-1 text-sm focus:ring-1 focus:ring-primary outline-none"
+                        >
+                          <option value="">Age</option>
+                          {Array.from({ length: 13 }, (_, age) => (
+                            <option key={age} value={age}>
+                              {age}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     ))}
                   </div>
