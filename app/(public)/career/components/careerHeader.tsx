@@ -31,7 +31,7 @@ export default function CareerHeader({
 
           {/* Branch filter */}
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600">Branch</label>
+            <label className="text-sm text-gray-600">Branches</label>
             <select
               value={branchFilter}
               onChange={(e) => onBranchFilterChange(e.target.value)}
