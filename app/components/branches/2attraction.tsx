@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 
@@ -17,135 +17,86 @@ interface AttractionsSectionProps {
   branchName: string;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: "easeOut" },
-  },
-};
-
 export default function AttractionsSection({
   attractions,
   description,
   branchName,
 }: AttractionsSectionProps) {
-  // DEFINITIVE FIX: Remove duplicates by ID, then sort by order
-  const uniqueSortedAttractions = useMemo(() => {
-    // 1. Create a Map to ensure uniqueness by id
-    const uniqueMap = new Map<number, Attraction>();
+  // 1. DEFENSIVE: Always ensure array, remove duplicates, sort
+  const processedAttractions = React.useMemo(() => {
+    if (!attractions || !Array.isArray(attractions)) return [];
 
-    // 2. Only keep the first occurrence of each attraction id
-    attractions.forEach((attraction) => {
-      if (!uniqueMap.has(attraction.id)) {
-        uniqueMap.set(attraction.id, attraction);
-      }
+    // Remove duplicates by multiple criteria
+    const seen = new Set();
+    const unique = attractions.filter((attraction) => {
+      // Check both ID and label to catch different duplicates
+      const key = `${attraction.id}-${attraction.label}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
 
-    // 3. Convert back to array and sort by order
-    return Array.from(uniqueMap.values()).sort((a, b) => a.order - b.order);
+    // Sort by order
+    return unique.sort((a, b) => a.order - b.order);
   }, [attractions]);
 
+  // 2. Debug log to see what's happening
+  React.useEffect(() => {
+    console.log("AttractionsSection:", {
+      input: attractions?.length,
+      output: processedAttractions.length,
+      inputIds: attractions?.map((a) => a.id),
+      outputIds: processedAttractions.map((a) => a.id),
+    });
+  }, [attractions, processedAttractions]);
+
+  // 3. Return COMPLETELY different layout that can't duplicate
   return (
-    <section className="w-full py-16 md:py-24 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-          {/* Left: Text - unchanged */}
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="space-y-6"
-          >
-            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wide text-primary uppercase bg-primary/10 rounded-full w-fit">
-              Discover
-            </span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
-              Attractions at {branchName}
-            </h2>
-            <p className="text-lg leading-relaxed text-gray-600 max-w-xl">
-              {description ??
-                "Experience the highlights that make this location special — from natural beauty to cultural charm and unforgettable moments."}
-            </p>
-            <div className="w-24 h-1 bg-gradient-to-r from-primary to-primary/30 rounded-full" />
-          </motion.div>
+    <section className="w-full py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header - Single column layout */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Discover {branchName}
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            {description || "Unique experiences await you"}
+          </p>
+        </div>
 
-          {/* Right: Cards - USE uniqueSortedAttractions */}
-          {uniqueSortedAttractions.length > 0 ? (
+        {/* SINGLE COLUMN LIST - Impossible to duplicate visually */}
+        <div className="max-w-3xl mx-auto space-y-4">
+          {processedAttractions.map((attraction) => (
             <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6"
+              key={`attraction-${attraction.id}-${attraction.label}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition-colors"
             >
-              {uniqueSortedAttractions.map((attraction, index) => (
-                <motion.article
-                  key={`attraction-${attraction.id}-${index}`} // Add index for extra safety
-                  variants={itemVariants}
-                  tabIndex={0}
-                  aria-label={`Attraction: ${attraction.label}`}
-                  className="group relative bg-white rounded-xl border border-gray-100 p-6 shadow-md hover:shadow-xl focus:shadow-xl transition-all duration-300 outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  {/* Index */}
-                  <div className="absolute top-4 right-4 text-4xl font-bold text-primary/10">
-                    {(index + 1).toString().padStart(2, "0")}
-                  </div>
-
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 pr-10">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold">
+                    {attraction.order}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {attraction.label}
                   </h3>
-
                   {attraction.description && (
-                    <p className="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-3">
-                      {attraction.description}
-                    </p>
+                    <p className="text-gray-600">{attraction.description}</p>
                   )}
-
-                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                    <span className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
-                      Explore more
-                    </span>
-                    <FiArrowRight className="transition-transform group-hover:translate-x-1 group-focus:translate-x-1" />
-                  </div>
-
-                  {/* Accent bar */}
-                  <span className="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-primary to-primary/50 group-hover:w-full transition-all duration-500 rounded-b-xl" />
-                </motion.article>
-              ))}
-            </motion.div>
-          ) : (
-            /* Empty State */
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center justify-center"
-            >
-              <div className="text-center max-w-md">
-                <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gray-100 flex items-center justify-center">
-                  <FiArrowRight className="text-2xl text-gray-400 rotate-45" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  No attractions yet
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  Attractions will appear here once they are added.
-                </p>
+                <FiArrowRight className="text-gray-400 text-xl" />
               </div>
             </motion.div>
+          ))}
+
+          {/* If empty, show a clear message */}
+          {processedAttractions.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No attractions to display</p>
+            </div>
           )}
         </div>
       </div>
