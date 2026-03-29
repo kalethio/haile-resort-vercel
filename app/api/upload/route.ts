@@ -1,47 +1,62 @@
-// import { NextResponse } from "next/server";
+// app/api/upload/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { fileUploader } from "@/lib/upload";
 
-// export async function POST(request: Request) {
-//   try {
-//     const formData = await request.formData();
-//     const file = formData.get("file") as File;
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+    const subfolder = (formData.get("subfolder") as string) || "general";
 
-//     if (!file) {
-//       return NextResponse.json({ error: "No file provided" }, { status: 400 });
-//     }
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: "No file provided" },
+        { status: 400 }
+      );
+    }
 
-//     const blob = await put(file.name, file, {
-//       access: "public",
-//     });
+    const result = await fileUploader.uploadFile(file, subfolder);
 
-//     return NextResponse.json({
-//       success: true,
-//       url: blob.url,
-//     });
-//   } catch (error) {
-//     console.error("Upload error:", error);
-//     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
-//   }
-// }
+    if (result.success) {
+      return NextResponse.json(result);
+    } else {
+      return NextResponse.json(result, { status: 400 });
+    }
+  } catch (error) {
+    console.error("Upload API error:", error);
+    return NextResponse.json(
+      { success: false, error: "Upload failed" },
+      { status: 500 }
+    );
+  }
+}
 
-// export async function DELETE(request: Request) {
-//   try {
-//     const { url } = await request.json();
+export async function DELETE(request: NextRequest) {
+  try {
+    const { url } = await request.json();
 
-//     if (!url) {
-//       return NextResponse.json({ error: "URL is required" }, { status: 400 });
-//     }
+    if (!url) {
+      return NextResponse.json(
+        { success: false, error: "No URL provided" },
+        { status: 400 }
+      );
+    }
 
-//     await del(url);
+    const success = await fileUploader.deleteFile(url);
 
-//     return NextResponse.json({
-//       success: true,
-//       message: "File deleted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Delete error:", error);
-//     return NextResponse.json(
-//       { error: "Failed to delete file" },
-//       { status: 500 }
-//     );
-//   }
-// }
+    if (success) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json(
+        { success: false, error: "Delete failed" },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    console.error("Delete API error:", error);
+    return NextResponse.json(
+      { success: false, error: "Delete failed" },
+      { status: 500 }
+    );
+  }
+}

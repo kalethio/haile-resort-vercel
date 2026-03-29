@@ -18,48 +18,45 @@ interface DashboardStats {
   monthlyTrends: MonthlyTrend[];
 }
 
-// ─────────────────────────────────────────────
-// Vertical Bar Chart (Refined Premium Look)
-// ─────────────────────────────────────────────
 function VerticalBarChart({ branches }: { branches: BranchPerformance[] }) {
   const maxOccupancy = Math.max(...branches.map((b) => b.occupancy), 1);
 
   return (
-    <div className="flex justify-between items-end gap-6 h-56">
-      {branches.map((branch) => (
-        <div key={branch.name} className="flex flex-col items-center  flex-1">
-          <div className="text-sm font-medium text-gray-800 mb-2 text-center">
-            {branch.name}
-          </div>
+    <div className="overflow-x-auto">
+      <div className="flex justify-between items-end gap-2 sm:gap-6 min-w-max">
+        {branches.map((branch) => (
+          <div key={branch.name} className="flex flex-col items-center w-12">
+            <div className="text-xs sm:text-sm font-medium text-gray-800 mb-2 text-center truncate w-full">
+              {branch.name}
+            </div>
 
-          <div className="relative w-full bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg h-40 flex items-end justify-center overflow-hidden shadow-inner">
-            <div
-              className={`rounded-t-md transition-all duration-700 ease-in-out shadow-sm ${
-                branch.occupancy >= 80
-                  ? "bg-gradient-to-t from-green-500 to-emerald-400"
-                  : branch.occupancy >= 60
-                    ? "bg-gradient-to-t from-blue-500 to-sky-400"
-                    : "bg-gradient-to-t from-amber-500 to-yellow-400"
-              }`}
-              style={{
-                height: `${(branch.occupancy / maxOccupancy) * 100}%`,
-                width: "28%",
-              }}
-            ></div>
-          </div>
+            <div className="relative w-full bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg h-32 sm:h-40 flex items-end justify-center overflow-hidden shadow-inner">
+              <div
+                className={`rounded-t-md transition-all duration-700 ease-in-out shadow-sm ${
+                  branch.occupancy >= 80
+                    ? "bg-gradient-to-t from-green-500 to-emerald-400"
+                    : branch.occupancy >= 60
+                      ? "bg-gradient-to-t from-blue-500 to-sky-400"
+                      : "bg-gradient-to-t from-amber-500 to-yellow-400"
+                }`}
+                style={{
+                  height: `${(branch.occupancy / maxOccupancy) * 100}%`,
+                  width: "100%",
+                  maxWidth: "48px",
+                }}
+              />
+            </div>
 
-          <div className="text-sm font-semibold text-gray-900 mt-2">
-            {branch.occupancy}%
+            <div className="text-xs sm:text-sm font-semibold text-gray-900 mt-2">
+              {branch.occupancy}%
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// Line Graph Chart (Cleaner Layout)
-// ─────────────────────────────────────────────
 function LineGraphChart({ trends }: { trends: MonthlyTrend[] }) {
   const months = [
     "Jan",
@@ -86,7 +83,6 @@ function LineGraphChart({ trends }: { trends: MonthlyTrend[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Trend Lines */}
       <div className="space-y-6">
         {trends.map((branchTrend, index) => {
           const data = branchTrend.months.map((m) => m.occupancy);
@@ -95,23 +91,25 @@ function LineGraphChart({ trends }: { trends: MonthlyTrend[] }) {
           const range = max - min || 1;
 
           return (
-            <div key={branchTrend.branch} className="flex items-center gap-4">
-              <div className="w-24 text-sm font-medium text-gray-900">
+            <div
+              key={branchTrend.branch}
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4"
+            >
+              <div className="w-full sm:w-24 text-sm font-medium text-gray-900 truncate">
                 {branchTrend.branch}
               </div>
 
-              <div className="flex-1 relative h-16">
-                {/* Subtle Grid Lines */}
+              <div className="flex-1 relative h-16 w-full">
                 <div className="absolute inset-0 flex justify-between">
                   {months.map((_, i) => (
                     <div key={i} className="w-px bg-gray-100" />
                   ))}
                 </div>
 
-                {/* Line Graph */}
                 <svg
                   className="w-full h-full"
                   viewBox={`0 0 ${months.length * 25} 50`}
+                  preserveAspectRatio="none"
                 >
                   <polyline
                     fill="none"
@@ -145,19 +143,17 @@ function LineGraphChart({ trends }: { trends: MonthlyTrend[] }) {
         })}
       </div>
 
-      {/* Single Month Labels */}
-      <div className="flex justify-between text-xs text-gray-400 mt-3 px-[6rem] tracking-wide">
+      <div className="flex justify-between text-xs text-gray-400 mt-3 px-2 sm:px-4 md:px-6 lg:px-8 tracking-wide overflow-x-auto">
         {months.map((month) => (
-          <span key={month}>{month}</span>
+          <span key={month} className="flex-shrink-0">
+            {month}
+          </span>
         ))}
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// KPI Section (Main Component)
-// ─────────────────────────────────────────────
 export default function KPISection() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -200,18 +196,17 @@ export default function KPISection() {
   }
 
   return (
-    <section className="space-y-8">
-      {/* Charts Only - No Summary Cards */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="flex justify-center border flex-col border-gray-100 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+    <section className="space-y-8 px-4 sm:px-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">
             This Month Occupancy
           </h3>
           <VerticalBarChart branches={stats.branchPerformance} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        <div className="border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm overflow-x-auto">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">
             Monthly Trends (Jan–Dec)
           </h3>
           <LineGraphChart trends={stats.monthlyTrends} />
