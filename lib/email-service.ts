@@ -1,9 +1,21 @@
-// /lib/email-service.ts - FIXED
-import { Booking, Guest, Branch, RoomType } from "@prisma/client";
+// /lib/email-service.ts
+import {
+  Booking,
+  Guest,
+  Branch,
+  RoomType,
+  Location,
+  Contact,
+} from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import nodemailer from "nodemailer";
 
 interface BookingConfirmationData {
   booking: Booking & {
-    branch: Branch;
+    branch: Branch & {
+      location?: Location | null;
+      contact?: Contact | null;
+    };
     roomBookings: {
       room: {
         roomType: RoomType;
@@ -18,151 +30,153 @@ interface BookingConfirmationData {
 
 export async function sendBookingConfirmation(data: BookingConfirmationData) {
   try {
-    // Find or create booking confirmation template
-    let template = await findOrCreateBookingTemplate();
+    const template = await findOrCreateBookingTemplate();
 
-    // Replace template variables with actual booking data
-    const emailContent = generateBookingEmail(template.content, data);
-    const emailSubject = generateBookingEmail(template.subject, data);
-
-    // FIX: Use absolute URL for server-side calls
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/subscribers/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subject: emailSubject,
-        html: emailContent,
-        targetIds: [data.guest.email], // Send to guest directly
-        isTransactional: true,
-      }),
+    // We fetch the full branch details to get Location and Contact info
+    const fullBranch = await prisma.branch.findUnique({
+      where: { id: data.booking.branchId },
+      include: { location: true, contact: true },
     });
 
-    if (response.ok) {
-      console.log(`✅ Booking confirmation sent to ${data.guest.email}`);
-      return true;
-    }
+    const emailContent = generateBookingEmail(template.content, {
+      ...data,
+      branchDetails: fullBranch,
+    });
+    const emailSubject = generateBookingEmail(template.subject, {
+      ...data,
+      branchDetails: fullBranch,
+    });
 
-    const errorData = await response.json();
-    console.error("Email send failed:", errorData);
-    return false;
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"${fullBranch?.branchName || "Haile Resorts"}" <${process.env.SMTP_USER}>`,
+      to: data.guest.email,
+      subject: emailSubject,
+      html: emailContent,
+    });
+
+    return true;
   } catch (error) {
-    console.error("Failed to send booking confirmation:", error);
+    console.error("❌ Email failed:", error);
     return false;
   }
 }
 
-function generateBookingEmail(
-  template: string,
-  data: BookingConfirmationData
-): string {
-  const { booking, guest } = data;
+function generateBookingEmail(template: string, data: any): string {
+  const { booking, guest, branchDetails } = data;
   const room = booking.roomBookings[0];
 
   const variables = {
     "{{guest_name}}": `${guest.firstName} ${guest.lastName}`,
-    "{{booking_id}}": booking.id,
-    "{{check_in}}": new Date(booking.checkIn).toLocaleDateString(),
-    "{{check_out}}": new Date(booking.checkOut).toLocaleDateString(),
-    "{{room_type}}": room?.room.roomType.name || "N/A",
-    "{{room_number}}": room?.room.roomNumber || "N/A",
-    "{{nights}}": room?.totalNights.toString() || "0",
-    "{{total_amount}}": `$${booking.totalAmount}`,
-    "{{branch_name}}": booking.branch.branchName,
-    "{{branch_phone}}": booking.branch.phone || "+251 11 123 4567",
-    "{{branch_email}}": booking.branch.email || "bookings@haileresorts.com",
+    "{{company}}": guest.company || "N/A",
+    "{{booking_id}}": booking.id.slice(0, 8).toUpperCase(),
+    "{{check_in}}": new Date(booking.checkIn).toLocaleDateString("en-GB"),
+    "{{check_out}}": new Date(booking.checkOut).toLocaleDateString("en-GB"),
+    "{{room_type}}": room?.room.roomType.name || "Standard Room",
+    "{{nights}}": room?.totalNights.toString() || "1",
+    "{{total_amount}}": `${booking.totalAmount} ${booking.currency}`,
+    "{{branch_name}}": branchDetails?.branchName || "Haile Resorts",
+    "{{branch_city}}": branchDetails?.location?.city || "Ethiopia",
+    "{{branch_address}}":
+      branchDetails?.contact?.address || "Haile Resorts Square",
+    "{{branch_phone}}":
+      branchDetails?.phone ||
+      branchDetails?.contact?.phone ||
+      "+251 116 67 0000",
+    "{{branch_email}}":
+      branchDetails?.email ||
+      branchDetails?.contact?.email ||
+      "reservation@haileresorts.com",
   };
 
   let content = template;
   Object.entries(variables).forEach(([key, value]) => {
     content = content.replace(new RegExp(key, "g"), value);
   });
-
   return content;
 }
 
-async function findOrCreateBookingTemplate(): Promise<{
-  subject: string;
-  content: string;
-}> {
-  try {
-    // FIX: Use absolute URL for server-side calls
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+async function findOrCreateBookingTemplate() {
+  const haileHtmlTemplate = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; color: #333; border: 1px solid #eee; padding: 20px;">
+      <div style="text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: #8b0000; letter-spacing: 4px; text-transform: uppercase;">HAILE</h1>
+        <p style="margin: 0; font-weight: bold; font-size: 14px; text-transform: uppercase;">{{branch_name}}</p>
+      </div>
 
-    // Try to find existing booking confirmation template
-    const response = await fetch(`${baseUrl}/api/email-templates`);
+      <p>Dear {{guest_name}},</p>
+      <p>Thank you for choosing <strong>{{branch_name}}</strong>. It is our pleasure to confirm your reservation as follows:</p>
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background-color: #8b0000; color: #fff;">
+          <th colspan="2" style="padding: 10px; text-align: left;">Reservation Details</th>
+          <th colspan="2" style="padding: 10px; text-align: left;">Stay Summary</th>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Guest Name</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{guest_name}}</td>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Booking No.</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{booking_id}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Company</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{company}}</td>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Nights</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{nights}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Room Type</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{room_type}}</td>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Status</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; color: green; font-weight: bold;">: Confirmed</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Check-in</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{check_in}}</td>
+          <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Check-out</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">: {{check_out}}</td>
+        </tr>
+      </table>
 
-    const templates = await response.json();
+      <div style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-top: 10px;">
+        <p style="margin: 0;"><strong>Total Amount:</strong> {{total_amount}}</p>
+      </div>
 
-    const bookingTemplate = templates.find(
-      (t: any) =>
-        t.name.toLowerCase().includes("booking") ||
-        t.name.toLowerCase().includes("confirmation")
-    );
+      <h4 style="border-bottom: 1px solid #8b0000; padding-bottom: 5px;">Remarks</h4>
+      <ul style="font-size: 12px; color: #555;">
+        <li>Complementary services: Breakfast, Gym, Pool, Steam & Sauna, and Airport shuttle.</li>
+        <li>Check-in: 14:00Hrs | Check-out: 12:00PM.</li>
+        <li>Cancellations must be made 24Hrs before arrival to avoid a one-night No Show charge.</li>
+      </ul>
 
-    if (bookingTemplate) {
-      return {
-        subject: bookingTemplate.subject,
-        content: bookingTemplate.content,
-      };
-    }
+      <div style="margin-top: 40px; font-size: 11px; text-align: center; color: #888; border-top: 1px solid #eee; padding-top: 15px;">
+        <p><strong>{{branch_name}}</strong><br>
+        {{branch_address}}, {{branch_city}}<br>
+        Tel: {{branch_phone}} | Email: {{branch_email}}</p>
+      </div>
+    </div>
+  `;
 
-    // Create default template if none exists
-    const defaultTemplate = {
-      name: "Booking Confirmation",
-      subject: "Booking Confirmation - {{booking_id}}",
-      content: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Booking Confirmed! 🎉</h2>
-          
-          <p>Dear {{guest_name}},</p>
-          
-          <p>Your booking has been confirmed. Here are your reservation details:</p>
-          
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Reservation Details</h3>
-            <p><strong>Booking ID:</strong> {{booking_id}}</p>
-            <p><strong>Dates:</strong> {{check_in}} to {{check_out}} ({{nights}} nights)</p>
-            <p><strong>Room:</strong> {{room_type}} - Room {{room_number}}</p>
-            <p><strong>Total Amount:</strong> {{total_amount}}</p>
-            <p><strong>Location:</strong> {{branch_name}}</p>
-          </div>
-          
-          <p>We look forward to hosting you! If you have any questions, please contact us:</p>
-          <p>📞 {{branch_phone}}<br>
-          ✉️ {{branch_email}}</p>
-          
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            <a href="[unsubscribe_url]" style="color: #666;">Unsubscribe</a> from these emails
-          </p>
-        </div>
-      `,
-    };
-
-    // Save the template with absolute URL
-    await fetch(`${baseUrl}/api/email-templates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(defaultTemplate),
+  let template = await prisma.emailTemplate.findFirst({
+    where: { name: "Booking Confirmation" },
+  });
+  if (!template) {
+    template = await prisma.emailTemplate.create({
+      data: {
+        name: "Booking Confirmation",
+        subject: "Reservation Confirmation - {{booking_id}}",
+        content: haileHtmlTemplate,
+      },
     });
-
-    return {
-      subject: defaultTemplate.subject,
-      content: defaultTemplate.content,
-    };
-  } catch (error) {
-    console.error("Failed to create booking template:", error);
-    // Return fallback template
-    return {
-      subject: "Booking Confirmation - {{booking_id}}",
-      content:
-        "<p>Your booking has been confirmed. Booking ID: {{booking_id}}</p>",
-    };
   }
+  return template;
 }
-
-// REMOVE ANY DUPLICATE sendBookingConfirmation FUNCTION BELOW THIS LINE
