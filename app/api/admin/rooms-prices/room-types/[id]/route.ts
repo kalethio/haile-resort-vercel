@@ -3,15 +3,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET - Get single room type by ID
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    const roomTypeId = parseInt(params.id);
+    // Await the params Promise
+    const { id } = await params;
+    const roomTypeId = parseInt(id);
 
     if (isNaN(roomTypeId)) {
       return NextResponse.json(
@@ -68,7 +70,9 @@ export async function GET(request: Request, { params }: RouteParams) {
 // PATCH - Update room type price only
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    const roomTypeId = parseInt(params.id);
+    // Await the params Promise
+    const { id } = await params;
+    const roomTypeId = parseInt(id);
 
     if (isNaN(roomTypeId)) {
       return NextResponse.json(
@@ -119,7 +123,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // PUT - Update full room type
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
-    const roomTypeId = parseInt(params.id);
+    // Await the params Promise
+    const { id } = await params;
+    const roomTypeId = parseInt(id);
 
     if (isNaN(roomTypeId)) {
       return NextResponse.json(
@@ -215,7 +221,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
 // DELETE - Delete room type
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
-    const roomTypeId = parseInt(params.id);
+    // Await the params Promise
+    const { id } = await params;
+    const roomTypeId = parseInt(id);
 
     if (isNaN(roomTypeId)) {
       return NextResponse.json(
