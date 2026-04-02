@@ -35,6 +35,29 @@ const COMMON_AMENITIES = [
   "Telephone with External line",
   "Hair Dryer",
   "Coffee Maker",
+  "High-speed Wi-Fi",
+  "Air Conditioning / Central Cooling & Heating",
+  "Flat-screen TV (42–43 inch)",
+  "Private Bathroom with Shower",
+  "Mini Bar / Mini Refrigerator",
+  "Tea & Coffee Maker",
+  "Hair Dryer",
+  "Iron & Ironing Board",
+  "Digital Safe Box",
+  "Private Balcony",
+  "Wake-up / Room Service",
+  "Smoke Detector",
+  "Wireless Charger",
+  "Gym Access",
+  "Outdoor Swimming Pool",
+  "Car Parking",
+  "24-hour Doctor on Call",
+  "Round-trip Airport Transfer",
+  "Buffet Breakfast",
+  "Steam & Sauna Facilities",
+  "Children Playground",
+  "Football Field",
+  "Running Track",
 ];
 
 export default function AddRoomType({
@@ -298,7 +321,6 @@ export default function AddRoomType({
       }));
     }
     setNewAmenity("");
-    setShowCommonAmenities(false);
   };
 
   const removeAmenity = (amenity: string) => {
@@ -306,6 +328,14 @@ export default function AddRoomType({
       ...prev,
       amenities: prev.amenities.filter((a) => a !== amenity),
     }));
+  };
+
+  const toggleAmenity = (amenity: string) => {
+    if (formData.amenities.includes(amenity)) {
+      removeAmenity(amenity);
+    } else {
+      addAmenity(amenity);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -629,6 +659,7 @@ export default function AddRoomType({
             onNewAmenityChange={setNewAmenity}
             onAddAmenity={addAmenity}
             onRemoveAmenity={removeAmenity}
+            onToggleAmenity={toggleAmenity}
             showCommonAmenities={showCommonAmenities}
             onToggleCommonAmenities={() =>
               setShowCommonAmenities(!showCommonAmenities)
@@ -767,6 +798,7 @@ function AmenitiesManager({
   onNewAmenityChange,
   onAddAmenity,
   onRemoveAmenity,
+  onToggleAmenity,
   showCommonAmenities,
   onToggleCommonAmenities,
   commonAmenities,
@@ -776,6 +808,7 @@ function AmenitiesManager({
   onNewAmenityChange: (value: string) => void;
   onAddAmenity: (amenity: string) => void;
   onRemoveAmenity: (amenity: string) => void;
+  onToggleAmenity: (amenity: string) => void;
   showCommonAmenities: boolean;
   onToggleCommonAmenities: () => void;
   commonAmenities: string[];
@@ -817,17 +850,26 @@ function AmenitiesManager({
         {showCommonAmenities && (
           <div className="border border-gray-200 rounded-lg p-3">
             <div className="text-sm font-medium text-gray-700 mb-2">
-              Common Amenities:
+              Common Amenities (click to select):
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {commonAmenities.map((amenity) => (
                 <button
                   key={amenity}
                   type="button"
-                  onClick={() => onAddAmenity(amenity)}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200"
+                  onClick={() => onToggleAmenity(amenity)}
+                  className={`px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                    amenities.includes(amenity)
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
                 >
-                  + {amenity}
+                  <div className="flex items-center gap-2">
+                    <span className="flex-shrink-0">
+                      {amenities.includes(amenity) ? "✓" : "□"}
+                    </span>
+                    <span>{amenity}</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -837,7 +879,7 @@ function AmenitiesManager({
         {amenities.length > 0 && (
           <div className="border border-gray-200 rounded-lg p-3">
             <div className="text-sm font-medium text-gray-700 mb-2">
-              Added Amenities:
+              Selected Amenities:
             </div>
             <div className="flex flex-wrap gap-2">
               {amenities.map((amenity, index) => (
@@ -845,7 +887,7 @@ function AmenitiesManager({
                   key={index}
                   className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                 >
-                  <span>{amenity}</span>
+                  <span>✓ {amenity}</span>
                   <button
                     type="button"
                     onClick={() => onRemoveAmenity(amenity)}
