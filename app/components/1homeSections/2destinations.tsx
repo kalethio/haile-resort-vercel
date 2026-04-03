@@ -211,19 +211,6 @@ export default function SpotlightLargeCard() {
                 )}
                 <div className="absolute inset-0 bg-black/30" />
               </div>
-
-              {/* Branch info overlay */}
-              <div className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 md:left-10 md:bottom-10 bg-black/50 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-primary/30">
-                <h3 className="text-lg sm:text-xl md:text-3xl font-serif text-white leading-snug drop-shadow-md">
-                  {destinations[active].branchName}
-                </h3>
-                <div className="mt-2 flex items-center">
-                  {renderStars(destinations[active].starRating || 4)}
-                </div>
-                <p className="mt-2 text-xs sm:text-sm text-primary/80 italic">
-                  Click any branch below to visit
-                </p>
-              </div>
             </div>
 
             {/* RIGHT: Branch list */}
@@ -287,12 +274,6 @@ export default function SpotlightLargeCard() {
                                   : "bg-white hover:bg-gray-50 border-gray-100 hover:border-primary/30"
                               }`}
                             >
-                              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-300 flex items-center justify-center">
-                                <span className="text-primary font-medium text-sm bg-white/90 px-3 py-1 rounded-lg shadow-sm">
-                                  Click to visit →
-                                </span>
-                              </div>
-
                               <div className="flex flex-col relative z-10">
                                 <span
                                   className={`text-sm sm:text-base font-semibold tracking-tight ${

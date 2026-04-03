@@ -1,4 +1,3 @@
-// app/api/admin/rooms-prices/room-types/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -232,13 +231,74 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
+    // First, check if the room type exists and get all related data
+    const existingRoomType = await prisma.roomType.findUnique({
+      where: { id: roomTypeId },
+      include: {
+        rooms: {
+          include: {
+            roomBookings: true, // Changed from 'bookings' to 'roomBookings'
+          },
+        },
+        roomTypeMedia: true,
+      },
+    });
+
+    if (!existingRoomType) {
+      return NextResponse.json(
+        { error: "Room type not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if there are any active bookings
+    const hasBookings = existingRoomType.rooms.some(
+      (room) => room.roomBookings && room.roomBookings.length > 0
+    );
+
+    if (hasBookings) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete room type with existing bookings. Please cancel or complete all bookings first.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Delete in correct order to handle foreign key constraints
+    // 1. Delete room type media associations
+    if (existingRoomType.roomTypeMedia.length > 0) {
+      await prisma.roomTypeMedia.deleteMany({
+        where: { roomTypeId: roomTypeId },
+      });
+    }
+
+    // 2. Delete rooms associated with this room type
+    if (existingRoomType.rooms.length > 0) {
+      const roomIds = existingRoomType.rooms.map((room) => room.id);
+
+      // Delete any booking records first
+      await prisma.roomBooking.deleteMany({
+        where: {
+          roomId: { in: roomIds },
+        },
+      });
+
+      // Then delete the rooms
+      await prisma.room.deleteMany({
+        where: { roomTypeId: roomTypeId },
+      });
+    }
+
+    // 3. Finally, delete the room type
     await prisma.roomType.delete({
       where: { id: roomTypeId },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Room type deleted successfully",
+      message: "Room type and all associated data deleted successfully",
     });
   } catch (error) {
     console.error("Room type delete error:", error);
@@ -251,7 +311,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     return NextResponse.json(
-      { error: "Failed to delete room type" },
+      {
+        error:
+          "Failed to delete room type. Please ensure no active bookings exist.",
+      },
       { status: 500 }
     );
   }
