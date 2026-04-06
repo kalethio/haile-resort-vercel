@@ -21,14 +21,6 @@ interface EditRoomTypeProps {
   onDelete?: () => void;
 }
 
-interface UploadProgress {
-  file: File;
-  progress: number;
-  status: "uploading" | "completed" | "error";
-  error?: string;
-  url?: string; // Store the uploaded URL
-}
-
 const COMMON_AMENITIES = [
   "WiFi",
   "Air Conditioning",
@@ -79,147 +71,66 @@ export default function EditRoomType({
   const [newAmenity, setNewAmenity] = useState("");
   const [showCommonAmenities, setShowCommonAmenities] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [existingImages, setExistingImages] = useState<string[]>(
     roomType.images
   );
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     setFormData(roomType);
     setExistingImages(roomType.images);
   }, [roomType]);
 
-  // Clean up object URLs on unmount
-  useEffect(() => {
-    return () => {
-      uploadProgress.forEach((item) => {
-        if (item.file) {
-          URL.revokeObjectURL(URL.createObjectURL(item.file));
-        }
-      });
-    };
-  }, [uploadProgress]);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
 
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    const uploadedUrls: string[] = [];
+    const files = Array.from(e.target.files);
+    const totalImages =
+      existingImages.length + newImageUrls.length + files.length;
 
-    const progressItems: UploadProgress[] = files.map((file) => ({
-      file,
-      progress: 0,
-      status: "uploading",
-    }));
-    setUploadProgress((prev) => [...prev, ...progressItems]);
+    if (totalImages > 10) {
+      alert("Maximum 10 images allowed");
+      return;
+    }
 
-    const uploadPromises = files.map(async (file, index) => {
+    setUploading(true);
+
+    for (const file of files) {
       if (!file.type.startsWith("image/")) {
-        return null;
+        alert("Only image files are allowed");
+        continue;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        return null;
+        alert("File size must be less than 5MB");
+        continue;
       }
 
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", file);
-      uploadFormData.append("subfolder", "rooms");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("subfolder", "rooms");
 
       try {
-        const xhr = new XMLHttpRequest();
-
-        const promise = new Promise<string>((resolve, reject) => {
-          xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) {
-              const progress = (e.loaded / e.total) * 100;
-              setUploadProgress((prev) =>
-                prev.map((item, i) =>
-                  i === index + (uploadProgress.length - files.length + index)
-                    ? { ...item, progress }
-                    : item
-                )
-              );
-            }
-          });
-
-          xhr.addEventListener("load", () => {
-            if (xhr.status === 200) {
-              try {
-                const data = JSON.parse(xhr.responseText);
-                const url =
-                  data.url ||
-                  (data.success && data.url) ||
-                  (data.data && data.data.url);
-                if (url) {
-                  resolve(url);
-                } else {
-                  reject(new Error("No URL returned"));
-                }
-              } catch (parseError) {
-                reject(new Error("Invalid response"));
-              }
-            } else {
-              reject(new Error(`Upload failed`));
-            }
-          });
-
-          xhr.addEventListener("error", () =>
-            reject(new Error("Network error"))
-          );
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
         });
-
-        xhr.open("POST", "/api/upload");
-        xhr.send(uploadFormData);
-
-        const url = await promise;
-        setUploadProgress((prev) =>
-          prev.map((item, i) =>
-            i === index + (uploadProgress.length - files.length + index)
-              ? { ...item, status: "completed", progress: 100, url }
-              : item
-          )
-        );
-        return url;
+        const result = await response.json();
+        if (result.success && result.url) {
+          setNewImageUrls((prev) => [...prev, result.url]);
+        } else {
+          alert("Upload failed: " + (result.error || "Unknown error"));
+        }
       } catch (error) {
-        setUploadProgress((prev) =>
-          prev.map((item, i) =>
-            i === index + (uploadProgress.length - files.length + index)
-              ? { ...item, status: "error", error: "Upload failed" }
-              : item
-          )
-        );
-        return null;
+        console.error("Upload error:", error);
+        alert("Upload failed");
       }
-    });
-
-    const results = await Promise.all(uploadPromises);
-    const successfulUploads = results.filter(
-      (url): url is string => url !== null
-    );
-    return successfulUploads;
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newImages = Array.from(e.target.files);
-      const totalImages =
-        existingImages.length + uploadProgress.length + newImages.length;
-
-      if (totalImages > 10) {
-        alert("Maximum 10 images allowed");
-        return;
-      }
-
-      const totalSize = [...uploadProgress, ...newImages].reduce(
-        (acc, file) => acc + (file instanceof File ? file.size : 0),
-        0
-      );
-      if (totalSize > 50 * 1024 * 1024) {
-        alert("Total file size exceeds 50MB limit");
-        return;
-      }
-
-      uploadImages(newImages);
     }
+
+    setUploading(false);
+    e.target.value = "";
   };
 
   const removeExistingImage = (imageUrl: string) => {
@@ -228,12 +139,48 @@ export default function EditRoomType({
   };
 
   const removeNewImage = (index: number) => {
-    setUploadProgress((prev) => prev.filter((_, i) => i !== index));
+    setNewImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const retryUpload = (index: number) => {
-    const file = uploadProgress[index].file;
-    uploadImages([file]);
+  const handleFullUpdate = async () => {
+    setLoading(true);
+    try {
+      const allImages = [...existingImages, ...newImageUrls];
+
+      const response = await fetch(
+        `/api/admin/rooms-prices/room-types/${roomType.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Only send what the API expects
+            name: formData.name,
+            description: formData.description,
+            adultCapacity: formData.adultCapacity,
+            childCapacity: formData.childCapacity,
+            basePrice: formData.basePrice,
+            totalRooms: formData.totalRooms,
+            amenities: formData.amenities,
+            images: allImages,
+            imagesToDelete: imagesToDelete,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update room type");
+      }
+    } catch (error) {
+      console.error("Error updating room type:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to update room type"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePriceUpdate = async () => {
@@ -259,46 +206,6 @@ export default function EditRoomType({
     } catch (error) {
       console.error("Error updating price:", error);
       alert(error instanceof Error ? error.message : "Failed to update price");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFullUpdate = async () => {
-    setLoading(true);
-    try {
-      // Get URLs of newly uploaded images
-      const newImageUrls = uploadProgress
-        .filter((item) => item.status === "completed" && item.url)
-        .map((item) => item.url!);
-
-      const allImages = [...existingImages, ...newImageUrls];
-
-      const response = await fetch(
-        `/api/admin/rooms-prices/room-types/${roomType.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            branchSlug,
-            images: allImages,
-            imagesToDelete: imagesToDelete,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        onSuccess();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update room type");
-      }
-    } catch (error) {
-      console.error("Error updating room type:", error);
-      alert(
-        error instanceof Error ? error.message : "Failed to update room type"
-      );
     } finally {
       setLoading(false);
     }
@@ -335,7 +242,6 @@ export default function EditRoomType({
     }
   };
 
-  // Amenities functions (matching Add Room page)
   const addAmenity = (amenity: string) => {
     if (amenity.trim() && !formData.amenities.includes(amenity.trim())) {
       setFormData((prev) => ({
@@ -365,7 +271,7 @@ export default function EditRoomType({
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-          {/* Header with Close Button */}
+          {/* Header */}
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -394,7 +300,7 @@ export default function EditRoomType({
             </div>
           </div>
 
-          {/* Tab Navigation */}
+          {/* Tabs */}
           <div className="border-b border-gray-200">
             <div className="flex">
               <button
@@ -482,11 +388,7 @@ export default function EditRoomType({
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *{" "}
-                    <span className="text-gray-500 font-normal">
-                      (Include special features, views, room experience) -{" "}
-                      {formData.description.length}/500
-                    </span>
+                    Description * ({formData.description.length}/500)
                   </label>
                   <textarea
                     required
@@ -500,41 +402,6 @@ export default function EditRoomType({
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
                   />
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quick Templates:
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "Classic room with a Queen sized bed, free transfer & free WIFI 29.5 sqm",
-                        "Classic Room with Twin Beds, Free Transfer, Free Parking 30.2 sqm",
-                        "Premium Room with King Sized Bed, Free Transfer, Free WIFI 39.5 sqm",
-                        "Premium Suite with King Sized Bed, Free Transfer, Free WIFI 58.9 sqm",
-                        "Premium Suite with King Sized Beds, Free Transfer, Free WIFI 95.9 sqm",
-                        "Family Suite with King Sized Beds, Free Transfer, Free WIFI 89 sqm",
-                        "Presidential Suite with a King sized bed, free transfer 149 sqm",
-                      ].map((template, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              description: template,
-                            }))
-                          }
-                          className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 text-left"
-                        >
-                          <div className="font-medium">
-                            Template {index + 1}
-                          </div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {template.substring(0, 40)}...
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Capacity */}
@@ -626,133 +493,99 @@ export default function EditRoomType({
                   </div>
                 </div>
 
-                {/* Image Upload Section */}
+                {/* Image Upload Section - Like Accommodations */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Room Photos{" "}
-                    <span className="text-gray-500 font-normal">
-                      ({existingImages.length + uploadProgress.length}/10)
-                    </span>
+                    Room Photos ({existingImages.length + newImageUrls.length}
+                    /10)
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="edit-room-images"
-                    />
-                    <label
-                      htmlFor="edit-room-images"
-                      className="cursor-pointer block text-center"
-                    >
-                      <div className="text-4xl mb-2">📷</div>
-                      <div className="text-gray-600">
-                        Click to upload room photos
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        PNG, JPG, JPEG up to 5MB each (max 10 images, 50MB
-                        total)
-                      </div>
+
+                  {/* Upload Button */}
+                  <div className="mb-4">
+                    <label className="bg-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors cursor-pointer inline-block">
+                      {uploading ? "Uploading..." : "+ Add Images"}
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        className="hidden"
+                      />
                     </label>
-
-                    {/* Existing Images */}
-                    {existingImages.length > 0 && (
-                      <div className="mt-4">
-                        <div className="text-sm font-medium text-gray-700 mb-2">
-                          Current Photos ({existingImages.length})
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {existingImages.map((imageUrl, index) => (
-                            <div
-                              key={index}
-                              className="relative border rounded-lg p-2"
-                            >
-                              <img
-                                src={imageUrl}
-                                alt={`Existing ${index + 1}`}
-                                className="w-full h-20 object-cover rounded"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeExistingImage(imageUrl)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* New Uploads Progress */}
-                    {uploadProgress.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        <div className="text-sm font-medium text-gray-700">
-                          New Photos (
-                          {
-                            uploadProgress.filter(
-                              (item) => item.status === "completed"
-                            ).length
-                          }
-                          /{uploadProgress.length})
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {uploadProgress.map((item, index) => (
-                            <div
-                              key={index}
-                              className="relative border rounded-lg p-2"
-                            >
-                              <img
-                                src={URL.createObjectURL(item.file)}
-                                alt={`Upload ${index + 1}`}
-                                className="w-full h-20 object-cover rounded"
-                              />
-                              <div className="mt-2">
-                                {item.status === "uploading" && (
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-blue-600 h-2 rounded-full transition-all"
-                                      style={{ width: `${item.progress}%` }}
-                                    ></div>
-                                  </div>
-                                )}
-                                {item.status === "error" && (
-                                  <div className="text-xs text-red-600">
-                                    {item.error}
-                                    <button
-                                      type="button"
-                                      onClick={() => retryUpload(index)}
-                                      className="ml-1 text-blue-600 hover:text-blue-800"
-                                    >
-                                      Retry
-                                    </button>
-                                  </div>
-                                )}
-                                {item.status === "completed" && (
-                                  <div className="text-xs text-green-600">
-                                    ✓ Uploaded
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeNewImage(index)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      PNG, JPG, JPEG up to 5MB each (max 10 images)
+                    </p>
                   </div>
+
+                  {/* Images Grid */}
+                  {(existingImages.length > 0 || newImageUrls.length > 0) && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {/* Existing Images */}
+                      {existingImages.map((imageUrl, index) => (
+                        <div
+                          key={`existing-${index}`}
+                          className="relative border-2 border-gray-200 rounded-xl overflow-hidden bg-white hover:shadow-lg transition-shadow"
+                        >
+                          <div className="relative w-full h-40 bg-gray-100">
+                            <img
+                              src={imageUrl}
+                              alt={`Room ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="p-2">
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(imageUrl)}
+                              className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* New Images */}
+                      {newImageUrls.map((imageUrl, index) => (
+                        <div
+                          key={`new-${index}`}
+                          className="relative border-2 border-green-300 rounded-xl overflow-hidden bg-white hover:shadow-lg transition-shadow"
+                        >
+                          <div className="relative w-full h-40 bg-gray-100">
+                            <img
+                              src={imageUrl}
+                              alt={`New ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="p-2">
+                            <button
+                              type="button"
+                              onClick={() => removeNewImage(index)}
+                              className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {existingImages.length === 0 && newImageUrls.length === 0 && (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                      <div className="text-3xl mb-3">🖼️</div>
+                      <p className="font-medium">No images added yet</p>
+                      <p className="text-sm mt-1">
+                        Click "Add Images" to upload
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Amenities Section - Matching Add Room */}
+                {/* Amenities Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Amenities
@@ -806,7 +639,7 @@ export default function EditRoomType({
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <span className="flex-shrink-0">
+                                <span>
                                   {formData.amenities.includes(amenity)
                                     ? "✓"
                                     : "□"}
@@ -857,7 +690,7 @@ export default function EditRoomType({
                   </button>
                   <button
                     onClick={handleFullUpdate}
-                    disabled={loading}
+                    disabled={loading || uploading}
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium disabled:opacity-50"
                   >
                     {loading ? "Updating..." : "Update Room Type"}
@@ -877,7 +710,7 @@ export default function EditRoomType({
               Delete Room Type
             </h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to delete `{roomType.name}`? This action
+              Are you sure you want to delete "{roomType.name}"? This action
               cannot be undone and will also delete all associated rooms and
               bookings.
             </p>

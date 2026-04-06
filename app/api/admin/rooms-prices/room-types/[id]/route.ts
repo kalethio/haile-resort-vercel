@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import fs from "fs/promises";
+import path from "path";
 
 interface RouteParams {
   params: Promise<{
@@ -10,7 +12,6 @@ interface RouteParams {
 // GET - Get single room type by ID
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    // Await the params Promise
     const { id } = await params;
     const roomTypeId = parseInt(id);
 
@@ -43,7 +44,6 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Format response to match what the frontend expects
     const formattedRoomType = {
       id: roomType.id,
       name: roomType.name,
@@ -69,7 +69,6 @@ export async function GET(request: Request, { params }: RouteParams) {
 // PATCH - Update room type price only
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    // Await the params Promise
     const { id } = await params;
     const roomTypeId = parseInt(id);
 
@@ -119,10 +118,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-// PUT - Update full room type
+// PUT - Update full room type with images
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
-    // Await the params Promise
     const { id } = await params;
     const roomTypeId = parseInt(id);
 
@@ -142,9 +140,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
       basePrice,
       totalRooms,
       amenities,
+      images,
+      imagesToDelete,
     } = body;
 
-    // Validate required fields
     if (!name) {
       return NextResponse.json(
         { error: "Room type name is required" },
@@ -152,10 +151,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Check if room type exists and belongs to the same branch
     const existingRoomType = await prisma.roomType.findUnique({
       where: { id: roomTypeId },
-      include: { branch: true },
+      include: {
+        branch: true,
+        roomTypeMedia: {
+          include: { media: true },
+        },
+      },
     });
 
     if (!existingRoomType) {
@@ -165,7 +168,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Check for duplicate name in the same branch (excluding current room type)
     const duplicateRoomType = await prisma.roomType.findFirst({
       where: {
         branchId: existingRoomType.branchId,
@@ -181,7 +183,64 @@ export async function PUT(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Update room type
+    // Handle image deletion
+    if (imagesToDelete && imagesToDelete.length > 0) {
+      const mediaToDelete = existingRoomType.roomTypeMedia.filter((rtm) =>
+        imagesToDelete.includes(rtm.media.url)
+      );
+
+      for (const media of mediaToDelete) {
+        // Delete physical file if exists
+        try {
+          const filePath = path.join(process.cwd(), "public", media.media.url);
+          await fs.unlink(filePath).catch(() => {});
+        } catch (error) {
+          console.error("Error deleting file:", error);
+        }
+
+        // Delete database records
+        await prisma.roomTypeMedia.delete({
+          where: { id: media.id },
+        });
+
+        await prisma.mediaAsset.delete({
+          where: { id: media.mediaId },
+        });
+      }
+    }
+
+    // Handle images to keep
+    const currentImageUrls = existingRoomType.roomTypeMedia.map(
+      (rtm) => rtm.media.url
+    );
+
+    const newImageUrls =
+      images?.filter((url: string) => !currentImageUrls.includes(url)) || [];
+
+    let orderCounter = existingRoomType.roomTypeMedia.length;
+
+    for (const imageUrl of newImageUrls) {
+      const filename = imageUrl.split("/").pop() || "unknown";
+
+      const mediaAsset = await prisma.mediaAsset.create({
+        data: {
+          url: imageUrl,
+          filename: filename,
+          type: "image",
+          branchId: existingRoomType.branchId,
+        },
+      });
+
+      await prisma.roomTypeMedia.create({
+        data: {
+          roomTypeId: roomTypeId,
+          mediaId: mediaAsset.id,
+          order: orderCounter++,
+        },
+      });
+    }
+
+    // Update room type basic info
     const roomType = await prisma.roomType.update({
       where: { id: roomTypeId },
       data: {
@@ -220,7 +279,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
 // DELETE - Delete room type
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
-    // Await the params Promise
     const { id } = await params;
     const roomTypeId = parseInt(id);
 
@@ -231,16 +289,17 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    // First, check if the room type exists and get all related data
     const existingRoomType = await prisma.roomType.findUnique({
       where: { id: roomTypeId },
       include: {
         rooms: {
           include: {
-            roomBookings: true, // Changed from 'bookings' to 'roomBookings'
+            roomBookings: true,
           },
         },
-        roomTypeMedia: true,
+        roomTypeMedia: {
+          include: { media: true },
+        },
       },
     });
 
@@ -251,7 +310,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Check if there are any active bookings
     const hasBookings = existingRoomType.rooms.some(
       (room) => room.roomBookings && room.roomBookings.length > 0
     );
@@ -266,32 +324,45 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Delete in correct order to handle foreign key constraints
-    // 1. Delete room type media associations
+    // Delete image files from disk
+    for (const media of existingRoomType.roomTypeMedia) {
+      try {
+        const filePath = path.join(process.cwd(), "public", media.media.url);
+        await fs.unlink(filePath).catch(() => {});
+      } catch (error) {
+        console.error("Error deleting file:", error);
+      }
+    }
+
+    // Delete room type media associations
     if (existingRoomType.roomTypeMedia.length > 0) {
       await prisma.roomTypeMedia.deleteMany({
         where: { roomTypeId: roomTypeId },
       });
+
+      // Delete media assets
+      const mediaIds = existingRoomType.roomTypeMedia.map((m) => m.mediaId);
+      await prisma.mediaAsset.deleteMany({
+        where: { id: { in: mediaIds } },
+      });
     }
 
-    // 2. Delete rooms associated with this room type
+    // Delete rooms
     if (existingRoomType.rooms.length > 0) {
       const roomIds = existingRoomType.rooms.map((room) => room.id);
 
-      // Delete any booking records first
       await prisma.roomBooking.deleteMany({
         where: {
           roomId: { in: roomIds },
         },
       });
 
-      // Then delete the rooms
       await prisma.room.deleteMany({
         where: { roomTypeId: roomTypeId },
       });
     }
 
-    // 3. Finally, delete the room type
+    // Delete the room type
     await prisma.roomType.delete({
       where: { id: roomTypeId },
     });
