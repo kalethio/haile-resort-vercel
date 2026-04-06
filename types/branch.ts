@@ -5,12 +5,12 @@ export interface Attraction {
   externalId?: string;
   label: string;
   image?: string;
-  description?: string; // NEW: For detailed attraction info
-  order?: number; // NEW: For ordering attractions
+  description?: string;
+  order?: number;
 }
 
 export interface Accommodation {
-  id: number;
+  id?: number;
   title: string;
   description?: string;
   image?: string;
@@ -63,7 +63,6 @@ export interface Seo {
 }
 
 export interface BranchType {
-  // Core branch fields
   id: number;
   slug: string;
   branchName: string;
@@ -74,12 +73,8 @@ export interface BranchType {
   published: boolean;
   createdAt: string;
   updatedAt: string;
-
-  // NEW FIELDS for hero section
   heroVideoUrl?: string;
   heroTagline?: string;
-
-  // Relations
   location?: Location;
   contact?: Contact;
   seo?: Seo;
@@ -98,11 +93,8 @@ export interface CreateBranchData {
   directionsUrl?: string;
   starRating?: number;
   published?: boolean;
-
-  // NEW FIELDS
   heroVideoUrl?: string;
   heroTagline?: string;
-
   location?: {
     city: string;
     region?: string;
@@ -122,78 +114,37 @@ export interface UpdateBranchData {
   directionsUrl?: string;
   starRating?: number;
   published?: boolean;
-
-  // NEW FIELDS
   heroVideoUrl?: string;
   heroTagline?: string;
 }
 
-// In your types/branch.ts file, make sure you have:
 export interface BranchFormData {
-  // Basic Info
   slug: string;
   branchName: string;
   description: string;
   starRating: number;
   published: boolean;
-
-  // NEW FIELDS
   heroVideoUrl?: string;
   heroTagline?: string;
-
-  // Location
+  heroImage: string;
+  directionsUrl: string;
   location: {
     city: string;
     region: string;
     country: string;
   };
-
-  // Media
-  heroImage: string;
-  directionsUrl: string;
-
-  // Contact
   contact: {
     phone: string;
     email: string;
     address: string;
   };
-
-  // Content
-  attractions: Array<{
-    label: string;
-    image: string;
-    description?: string; // NEW
-    order?: number; // NEW
-  }>;
-
-  accommodations: Array<{
+  attractions: Attraction[];
+  accommodations: Accommodation[];
+  seo: {
     title: string;
     description: string;
-    image: string;
-  }>;
-
-  experiences: Array<{
-    id?: number;
-    externalId?: string;
-    title: string;
-    description?: string;
-    highlightImage?: string;
-    packages: Array<{
-      id?: number;
-      externalId?: string;
-      title: string;
-      subtitle?: string;
-      description?: string;
-      image?: string;
-      price?: number;
-      duration?: string;
-      inclusions?: any;
-      category: string;
-      available: boolean;
-      ctaLabel?: string;
-    }>;
-  }>;
+    keywords: string[];
+  };
 }
 
 // ==================== API RESPONSE TYPES ====================
@@ -221,11 +172,8 @@ export interface BranchTemplateProps {
     description?: string;
     shortDescription?: string;
     directionsUrl?: string;
-
-    // NEW FIELDS
     heroVideoUrl?: string;
     heroTagline?: string;
-
     location?: { mapsUrl?: string };
     contact?: {
       phone?: string;
@@ -264,7 +212,6 @@ export interface ExperienceProps {
   serviceDescription: string[];
 }
 
-// NEW COMPONENT PROP TYPES
 export interface HeroSectionProps {
   branch: {
     branchName: string;
@@ -299,7 +246,7 @@ export interface EditBranchFormProps {
 
 // ==================== UTILITY TYPES ====================
 
-export type TabType = "basic" | "contact" | "content";
+export type TabType = "basic" | "contact" | "content" | "seo";
 
 export interface ImageUploadResult {
   success: boolean;

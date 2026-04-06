@@ -26,14 +26,14 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; object-src 'none'; connect-src 'self' https://*.haileresorts.com;",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; object-src 'none'; connect-src 'self' https://*.haileresorts.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com;",
   },
 ];
 
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["hotel.amdeconsult.com"],
+    domains: ["cloud.haileresorts.com"],
     unoptimized: true,
   },
   typescript: {

@@ -22,7 +22,9 @@ import {
   TabType,
   BranchFormData,
   Attraction,
+  Accommodation,
 } from "@/types";
+import AccommodationsEditor from "./AccommodationsEditor";
 
 export default function EditBranchForm({
   branch,
@@ -47,12 +49,18 @@ export default function EditBranchForm({
           `/api/admin/branches/${branch.slug}/contact`
         );
         const seoRes = await fetch(`/api/admin/branches/${branch.slug}/seo`);
+        const accommodationsRes = await fetch(
+          `/api/admin/branches/${branch.slug}/accommodations`
+        );
 
         const attractions = attractionsRes.ok
           ? await attractionsRes.json()
           : [];
         const contact = contactRes.ok ? await contactRes.json() : {};
         const seo = seoRes.ok ? await seoRes.json() : {};
+        const accommodations = accommodationsRes.ok
+          ? await accommodationsRes.json()
+          : [];
 
         setFormData({
           slug: branch.slug || "",
@@ -75,6 +83,7 @@ export default function EditBranchForm({
             address: contact.address || branch.contact?.address || "",
           },
           attractions: Array.isArray(attractions) ? attractions : [],
+          accommodations: Array.isArray(accommodations) ? accommodations : [],
           seo: {
             title: seo.title || branch.seo?.title || "",
             description: seo.description || branch.seo?.description || "",
@@ -104,6 +113,7 @@ export default function EditBranchForm({
             address: branch.contact?.address || "",
           },
           attractions: branch.attractions || [],
+          accommodations: branch.accommodations || [],
           seo: {
             title: branch.seo?.title || "",
             description: branch.seo?.description || "",
@@ -146,6 +156,13 @@ export default function EditBranchForm({
     });
   };
 
+  const handleAccommodationsChange = (items: Accommodation[]) => {
+    setFormData((prev) => {
+      if (!prev) return prev;
+      return { ...prev, accommodations: items };
+    });
+  };
+
   const saveAllBranchData = async (formData: BranchFormData) => {
     try {
       const coreResponse = await fetch(`/api/admin/branches/${branch.slug}`, {
@@ -185,6 +202,17 @@ export default function EditBranchForm({
       );
       if (!attractionsResponse.ok)
         throw new Error("Failed to save attractions");
+
+      const accommodationsResponse = await fetch(
+        `/api/admin/branches/${branch.slug}/accommodations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accommodations: formData.accommodations }),
+        }
+      );
+      if (!accommodationsResponse.ok)
+        throw new Error("Failed to save accommodations");
 
       const seoResponse = await fetch(
         `/api/admin/branches/${branch.slug}/seo`,
@@ -274,6 +302,7 @@ export default function EditBranchForm({
           <ContentTab
             formData={formData}
             onAttractionsChange={handleArrayChange}
+            onAccommodationsChange={handleAccommodationsChange}
           />
         )}
         {activeTab === "seo" && (
@@ -675,37 +704,40 @@ function SimpleArrayEditor({
 interface ContentTabProps {
   formData: BranchFormData;
   onAttractionsChange: (items: Attraction[]) => void;
+  onAccommodationsChange: (items: Accommodation[]) => void;
 }
 
-function ContentTab({ formData, onAttractionsChange }: ContentTabProps) {
+function ContentTab({
+  formData,
+  onAttractionsChange,
+  onAccommodationsChange,
+}: ContentTabProps) {
   return (
-    <div className="space-y-6">
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Attractions Management
-        </h3>
-        <p className="text-gray-600 text-sm">
-          Add and manage attractions that will appear in the attractions section
-          of your branch page. These will be displayed in a clean grid layout.
-        </p>
-      </div>
-
-      <SimpleArrayEditor
-        items={formData.attractions}
-        onChange={onAttractionsChange}
-      />
-
-      <div className="border-t pt-6">
-        <div className="text-sm text-gray-500">
-          <p>
-            <strong>Note:</strong> Attractions appear as small boxes in a grid
-            layout on the branch page.
-          </p>
-          <p className="mt-1">
-            Services section (Restaurant, Spa, etc.) is hardcoded and same for
-            all branches.
+    <div className="space-y-10">
+      {/* Attractions Section */}
+      <div>
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            Attractions Management
+          </h3>
+          <p className="text-gray-600 text-sm">
+            Add and manage attractions that will appear in the attractions
+            section of your branch page. These will be displayed in a clean grid
+            layout.
           </p>
         </div>
+        <SimpleArrayEditor
+          items={formData.attractions}
+          onChange={onAttractionsChange}
+        />
+      </div>
+
+      {/* Accommodations Section */}
+      <div className="border-t pt-6">
+        <AccommodationsEditor
+          items={formData.accommodations || []}
+          onChange={onAccommodationsChange}
+        />
       </div>
     </div>
   );

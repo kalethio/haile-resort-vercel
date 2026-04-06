@@ -1,4 +1,4 @@
-//app/api/admin/branches/[slug]/attractions/route.ts
+// app/api/admin/branches/[slug]/attractions/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +21,12 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Branch not found" }, { status: 404 });
     }
 
+    // ✅ DELETE all existing attractions first
+    await prisma.attraction.deleteMany({
+      where: { branchId: branch.id },
+    });
+
+    // ✅ THEN create new ones
     const createdAttractions = await Promise.all(
       attractions.map((attraction: any) =>
         prisma.attraction.create({
@@ -69,7 +75,7 @@ export async function GET(req: Request, { params }: Params) {
         externalId: true,
         order: true,
       },
-      orderBy: { order: "asc" }, // NEW: Added ordering
+      orderBy: { order: "asc" },
     });
 
     return NextResponse.json(attractions);

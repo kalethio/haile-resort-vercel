@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
+import Image from "next/image";
 import BookingForm from "../bookingform";
 
 interface Branch {
   branchName: string;
-  heroVideoUrl?: string; // YouTube video ID
+  heroVideoUrl?: string;
   heroTagline?: string;
+  heroImage?: string;
   contact?: {
     phone?: string;
     email?: string;
@@ -23,53 +25,73 @@ interface HeroSectionProps {
 
 export default function HeroSection({ branch }: HeroSectionProps) {
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Debug log
+  useEffect(() => {
+    console.log("HeroSection received:", {
+      videoUrl: branch.heroVideoUrl,
+      imageUrl: branch.heroImage,
+    });
+  }, [branch]);
 
   const tagline = branch.heroTagline || "Turn Your Vacation Dream Into Reality";
   const contact = branch.contact || {};
 
-  // Clean YouTube embed URL (no-cookie domain, no controls, loop)
   const getVideoUrl = (videoId: string) => {
-    return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&loop=1&playlist=${videoId}&background=1`;
+    // Try different embed URL format
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&showinfo=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&loop=1&playlist=${videoId}`;
   };
+
+  const showVideo = branch.heroVideoUrl && !videoError;
 
   return (
     <section className="relative w-full h-screen max-h-screen overflow-hidden">
-      {/* YouTube Background Video */}
       <div className="absolute inset-0">
-        {branch.heroVideoUrl ? (
+        {showVideo ? (
           <iframe
             key={branch.heroVideoUrl}
-            className="w-full h-full object-cover pointer-events-none"
+            className="w-full h-full"
             src={getVideoUrl(branch.heroVideoUrl)}
             title={`Welcome to ${branch.branchName}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
+            onError={(e) => {
+              console.error("Iframe error:", e);
+              setVideoError(true);
+            }}
             style={{
               border: "none",
-              overflow: "hidden",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
               objectFit: "cover",
+              pointerEvents: "none",
+            }}
+          />
+        ) : branch.heroImage && !imageError ? (
+          <img
+            src={branch.heroImage}
+            alt={branch.branchName}
+            className="w-full h-full object-cover"
+            onError={() => {
+              console.error("Image failed to load:", branch.heroImage);
+              setImageError(true);
             }}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#f6efe9] via-[#e8d9d2] to-[#d7c2bb]" />
         )}
-        {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
-      {/* Hero Content Container */}
+      {/* Rest of your content remains the same */}
       <div className="relative h-full flex items-center">
-        {/* Left gradient overlay for readability */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "",
-          }}
-        />
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="max-w-md lg:-translate-x-10">
-            {/* Welcome Heading */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -82,13 +104,11 @@ export default function HeroSection({ branch }: HeroSectionProps) {
                   {branch.branchName}
                 </span>
               </h1>
-
               <p className="text-lg md:text-xl text-gray-200 font-light">
                 {tagline}
               </p>
             </motion.div>
 
-            {/* Contact Info */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -106,7 +126,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
                   <span className="text-lg font-medium">{contact.phone}</span>
                 </a>
               )}
-
               {contact.email && (
                 <a
                   href={`mailto:${contact.email}`}
@@ -116,7 +135,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
                   <span className="text-lg font-medium">{contact.email}</span>
                 </a>
               )}
-
               {branch.directionsUrl && (
                 <a
                   href={branch.directionsUrl}
@@ -129,7 +147,7 @@ export default function HeroSection({ branch }: HeroSectionProps) {
                 </a>
               )}
             </motion.div>
-            {/* Book Now Button */}
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -147,7 +165,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Booking Form Modal */}
       {showBookingForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">

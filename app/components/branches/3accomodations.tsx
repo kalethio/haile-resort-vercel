@@ -4,48 +4,30 @@ import { motion } from "framer-motion";
 import { FiChevronRight } from "react-icons/fi";
 import Image from "next/image";
 
-// ==================== HARDCODED DATA ====================
-export const SERVICES_DATA = [
-  {
-    id: 1,
-    title: "Restaurant",
-    description:
-      "Our resort has eight food and beverage outlets serving both local and international cuisine.",
-    image: "/uploads/accommodations/restaurant.jpg",
-  },
-  {
-    id: 2,
-    title: "Spa - Beauty & Health",
-    description: "Rejuvenate yourself after an exhausting work schedule.",
-    image: "/uploads/accommodations/beauty.jpg",
-  },
-  {
-    id: 3,
-    title: "Conference Room",
-    description:
-      "Halls facilities including sound system, stationery materials (notebook, pen, flip chart & stand) and LCD Projector.",
-    image: "/uploads/accommodations/conference.jpg",
-  },
-  {
-    id: 4,
-    title: "Swimming Pool",
-    description: "Make swimming a part of your lifestyle",
-    image: "/uploads/accommodations/swimming.jpg",
-  },
-  {
-    id: 5,
-    title: "Multi-purpose Halls",
-    description:
-      "multi-purpose halls that are outfitted with modern meeting equipment and supplies allowing variety of setups including meetings, workshops or weddings. Venue occupancy is based on the standard set up.",
+interface Accommodation {
+  id?: number;
+  title: string;
+  description?: string;
+  image?: string;
+}
 
-    image: "/uploads/accommodations/halls.jpg",
-  },
-] as const;
+interface AccommodationsProps {
+  items: Accommodation[];
+}
 
-// ==================== COMPONENT ====================
-const AccommodationCarousel: React.FC = () => {
-  const [cards, setCards] = useState(SERVICES_DATA);
+const Accommodations: React.FC<AccommodationsProps> = ({ items }) => {
+  const [cards, setCards] = useState(items);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Update cards when items prop changes
+  useState(() => {
+    setCards(items);
+  }, [items]);
+
+  // Don't render if no items
+  if (!items || items.length === 0) {
+    return null;
+  }
 
   const centerIndex = Math.floor(cards.length / 2);
 
@@ -88,7 +70,6 @@ const AccommodationCarousel: React.FC = () => {
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6 }}
     >
-      {/* Section Title */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -101,7 +82,6 @@ const AccommodationCarousel: React.FC = () => {
         </span>
       </motion.h2>
 
-      {/* Carousel Cards */}
       <div className="relative flex justify-center items-center gap-6 md:gap-8 lg:gap-10 overflow-hidden py-6 md:py-8 px-4">
         {cards.map((item, index) => {
           const distanceFromCenter = Math.abs(index - centerIndex);
@@ -114,7 +94,7 @@ const AccommodationCarousel: React.FC = () => {
 
           return (
             <motion.div
-              key={`${item.title}-${index}`}
+              key={item.id || index}
               className="flex-shrink-0 cursor-pointer"
               animate={animationState}
               whileHover={{
@@ -126,7 +106,6 @@ const AccommodationCarousel: React.FC = () => {
               onClick={() => handleCardClick(index)}
             >
               <div className="flex flex-col items-center">
-                {/* Image with gradient overlay */}
                 <div
                   className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${
                     isCenter
@@ -135,21 +114,23 @@ const AccommodationCarousel: React.FC = () => {
                   } w-60 md:w-72 lg:w-80`}
                 >
                   <div className="relative w-full h-52 md:h-60 lg:h-64">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 240px, (max-width: 1024px) 288px, 320px"
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                    />
-                    {/* Gradient overlay */}
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 240px, (max-width: 1024px) 288px, 320px"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                        No image
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
                 </div>
 
-                {/* Title */}
                 <h3
                   className={`mt-4 font-serif uppercase text-center font-medium ${
                     isCenter
@@ -160,8 +141,7 @@ const AccommodationCarousel: React.FC = () => {
                   {item.title}
                 </h3>
 
-                {/* Description only for center card */}
-                {isCenter && (
+                {isCenter && item.description && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -179,22 +159,19 @@ const AccommodationCarousel: React.FC = () => {
         })}
       </div>
 
-      {/* Dot Indicators with Next Button */}
       <div className="flex justify-center items-center mt-8 gap-4">
-        {/* Dot Indicators */}
         <div className="flex gap-2">
-          {SERVICES_DATA.map((_, index) => (
+          {cards.map((_, index) => (
             <button
               key={index}
               onClick={() => {
-                const targetIndex = index;
                 const currentCenterTitle = cards[centerIndex]?.title;
-                if (SERVICES_DATA[targetIndex]?.title !== currentCenterTitle) {
+                if (cards[index]?.title !== currentCenterTitle) {
                   rotateNext();
                 }
               }}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                cards[centerIndex]?.title === SERVICES_DATA[index]?.title
+                cards[centerIndex]?.title === cards[index]?.title
                   ? "bg-primary w-4"
                   : "bg-gray-300"
               }`}
@@ -203,35 +180,21 @@ const AccommodationCarousel: React.FC = () => {
           ))}
         </div>
 
-        {/* Next Button */}
         <motion.button
           onClick={rotateNext}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           disabled={isAnimating}
-          className="w-8 h-8 cursor-pointer bg-primary/15 rounded-full flex items-center justify-center shadow hover:shadow-md hover:bg-primary/25 transition-all duration-300 border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-8 h-8 cursor-pointer bg-primary/15 rounded-full flex items-center justify-center shadow hover:shadow-md hover:bg-primary/25 transition-all duration-300 border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Next service"
         >
           <FiChevronRight size={16} className="text-primary" />
         </motion.button>
       </div>
-
-      {/* Loading Skeleton */}
-      {!SERVICES_DATA.length && (
-        <div className="flex justify-center items-center gap-6 md:gap-8 py-8">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-60 md:w-72 rounded-2xl bg-gray-200 animate-pulse h-80"
-            />
-          ))}
-        </div>
-      )}
     </motion.section>
   );
 };
 
-// Animation constants (unchanged)
 const cardAnimations = {
   center: {
     scale: 1.12,
@@ -260,4 +223,4 @@ const transition = {
   duration: 0.5,
 };
 
-export default AccommodationCarousel;
+export default Accommodations;
