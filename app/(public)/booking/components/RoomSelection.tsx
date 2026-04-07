@@ -32,7 +32,6 @@ export default function RoomSelection({
   const adults = Number(bookingParams.adults) || 2;
   const children = Number(bookingParams.children) || 0;
 
-  // Remove debug logs for production
   const safeRoomTypes = Array.isArray(roomTypes) ? roomTypes : [];
 
   if (loading) {
@@ -148,7 +147,6 @@ function RoomCard({
   const safeAdults = Number(adults) || 2;
   const safeChildren = Number(children) || 0;
 
-  // Updated capacity logic considering both adults and children
   const totalGuests = safeAdults + safeChildren;
   const canAccommodate = room.capacity >= totalGuests;
   const isAvailable = room.available && (room.availableRoomsCount || 0) > 0;
@@ -193,14 +191,13 @@ function RoomCard({
                   onClick={() => openGallery(0)}
                 >
                   {room.images?.[0] ? (
-                    // Use regular img tag instead of Next/Image for external URLs
                     <img
                       src={room.images[0]}
                       alt={room.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        // Fallback if image fails to load
-                        e.currentTarget.style.display = "none";
+                        e.currentTarget.src = "/images/room-fallback.jpg";
+                        e.currentTarget.onerror = null;
                       }}
                     />
                   ) : (
@@ -211,9 +208,8 @@ function RoomCard({
                       </div>
                     </div>
                   )}
-
-                  {/* Rest of the code remains same */}
                 </div>
+
                 {/* Thumbnail Strip */}
                 {room.images && room.images.length > 1 && (
                   <div className="flex gap-2 mt-3 overflow-x-auto">
@@ -227,6 +223,10 @@ function RoomCard({
                           src={image}
                           alt={`${room.name} ${imgIndex + 1}`}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/images/room-fallback.jpg";
+                            e.currentTarget.onerror = null;
+                          }}
                         />
                       </div>
                     ))}
@@ -388,12 +388,8 @@ function CapacityStatus({
   const config = getStatusConfig();
 
   return (
-    <div
-      className={`mb-3 p-3 rounded-lg border bg-${config.color}-50 border-${config.color}-200`}
-    >
-      <p
-        className={`text-sm font-medium flex items-center gap-2 text-${config.color}-700`}
-      >
+    <div className="mb-3 p-3 rounded-lg border bg-gray-50 border-gray-200">
+      <p className="text-sm font-medium flex items-center gap-2 text-gray-700">
         <span>{config.icon}</span>
         {config.message}
       </p>
@@ -511,6 +507,10 @@ function ImageGalleryModal({
             src={images[selectedIndex]}
             alt={`${roomName} ${selectedIndex + 1}`}
             className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              e.currentTarget.src = "/images/room-fallback.jpg";
+              e.currentTarget.onerror = null;
+            }}
           />
         </div>
 
@@ -520,12 +520,12 @@ function ImageGalleryModal({
         </div>
 
         {/* Thumbnail Strip */}
-        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2 overflow-x-auto">
+        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2 overflow-x-auto pb-2">
           {images.map((image, index) => (
             <button
               key={index}
               onClick={() => {
-                /* You'd need to pass setSelectedImageIndex here */
+                // You'd need to pass setSelectedImageIndex here
               }}
               className={`w-16 h-12 bg-gray-800 rounded-md overflow-hidden flex-shrink-0 border-2 ${
                 index === selectedIndex ? "border-white" : "border-transparent"
@@ -535,6 +535,10 @@ function ImageGalleryModal({
                 src={image}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/images/room-fallback.jpg";
+                  e.currentTarget.onerror = null;
+                }}
               />
             </button>
           ))}
