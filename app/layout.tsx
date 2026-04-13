@@ -24,8 +24,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${rubik.variable} ${roboto.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://cloud.haileresorts.com" />
+        <link rel="dns-prefetch" href="https://cloud.haileresorts.com" />
+      </head>
       <body className="bg-bg text-text font-[var(--font-rubik)] w-full">
-        {/* Full-width wrapper */}
         {children}
       </body>
     </html>
