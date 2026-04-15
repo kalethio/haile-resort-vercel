@@ -27,22 +27,22 @@ export const DATA = {
   services: [
     {
       title: "Scenic Destinations",
-      image: "/images/main-hero/hero1.jpg",
+      image: "/images/main-hero/hero1.webp",
       alt: "Beautiful landscape view of Ethiopian highlands at Haile Resorts",
     },
     {
       title: "Luxurious treats",
-      image: "/images/main-hero/hero2.jpg",
+      image: "/images/main-hero/hero2.webp",
       alt: "Luxurious room interior and amenities at Haile Resorts",
     },
     {
       title: "Lakeside Adventures",
-      image: "/images/main-hero/hero3.jpg",
+      image: "/images/main-hero/hero3.webp",
       alt: "Serene lake view and water activities at Haile Resorts",
     },
     {
       title: "Nature Within Reach",
-      image: "/images/main-hero/hero4.jpg",
+      image: "/images/main-hero/hero4.webp",
       alt: "Natural surroundings and wildlife experiences at Haile Resorts",
     },
   ],
