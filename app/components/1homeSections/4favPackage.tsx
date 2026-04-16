@@ -145,6 +145,7 @@ function PackageCard({
                 src={pkg.image}
                 alt={pkg.title}
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 style={{ objectFit: "cover" }}
                 priority
               />

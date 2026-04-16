@@ -14,8 +14,17 @@ export default function BranchPage() {
 
   const [branchData, setBranchData] = useState<BranchType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Mark when component is mounted on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
+    // Only fetch after component is mounted on client
+    if (!isMounted) return;
+
     async function fetchBranch() {
       try {
         const res = await fetch(`/api/branches/${branchSlug}`);
@@ -45,9 +54,10 @@ export default function BranchPage() {
     }
 
     fetchBranch();
-  }, [branchSlug]);
+  }, [branchSlug, isMounted]);
 
-  if (loading) {
+  // Show loading on both server and client initially (no mismatch)
+  if (loading || !isMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center">
         <p className="text-xl font-semibold text-gray-700">Loading branch...</p>

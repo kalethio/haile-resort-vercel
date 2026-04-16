@@ -34,7 +34,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: ["cloud.haileresorts.com"],
-    unoptimized: true,
+    unoptimized: false,
   },
   typescript: {
     ignoreBuildErrors: true,
