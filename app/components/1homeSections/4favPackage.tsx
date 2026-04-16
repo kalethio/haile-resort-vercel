@@ -8,7 +8,7 @@ import BookingForm from "../bookingform";
 
 const serviceDescription = (
   <>
-    All-in-one service built by <strong>“ይቻላል”</strong> <br />
+    All-in-one service built by <strong>"ይቻላል"</strong> <br />
     <em>(It is possible)</em>
   </>
 );
@@ -136,7 +136,7 @@ function PackageCard({
         <div
           className={`${isReversed ? "order-2 md:order-1" : "order-1"} md:pr-10`}
         >
-          <div className="relative h-72 md:h-[480px] w-full overflow-hidden rounded-2xl shadow-xl">
+          <div className="relative h-72 md:h-[480px] w-full overflow-hidden rounded-2xl shadow-xl aspect-[4/3] md:aspect-auto">
             <motion.div
               style={{ scale: imgScale }}
               className="absolute inset-0"
@@ -146,6 +146,7 @@ function PackageCard({
                 alt={pkg.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
+                quality={75}
                 style={{ objectFit: "cover" }}
                 priority
               />
@@ -198,11 +199,13 @@ function MobilePackageCard({
       onClick={() => setOpen(!open)}
     >
       {/* Image */}
-      <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-lg mb-3">
+      <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-lg mb-3 aspect-[4/3]">
         <Image
           src={pkg.image}
           alt={pkg.title}
           fill
+          sizes="100vw"
+          quality={75}
           style={{ objectFit: "cover" }}
           className="rounded-2xl"
         />
