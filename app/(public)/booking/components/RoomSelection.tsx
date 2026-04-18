@@ -1,12 +1,146 @@
 // app/booking/components/RoomSelection.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   RoomType,
   BookingParams,
   BookingSummary as BookingSummaryType,
 } from "../types/booking";
 import BookingSummary from "./BookingSummary";
+
+// ========== OPTIMIZATION 5: Image URL Optimization Helper ==========
+const getOptimizedImageUrl = (
+  url: string,
+  width: number,
+  quality: number = 80
+): string => {
+  if (!url) return url;
+
+  // Check if URL is from common CDNs and add optimization parameters
+  if (url.includes("cloudinary.com")) {
+    return `${url}?w=${width}&q=${quality}&f=auto`;
+  }
+
+  if (url.includes("imgix.net")) {
+    return `${url}?w=${width}&q=${quality}&auto=format`;
+  }
+
+  if (url.includes("unsplash.com")) {
+    return `${url}&w=${width}&q=${quality}&fm=webp`;
+  }
+
+  // For local images or other sources, return original
+  // Could also add a generic query param if your backend supports it
+  return url;
+};
+
+// ========== OPTIMIZATION 3: Image with Placeholder Component ==========
+function ImageWithPlaceholder({
+  src,
+  alt,
+  className,
+  width = 400,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+  width?: number;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  // OPTIMIZATION 5 applied here too
+  const optimizedSrc = useMemo(
+    () => getOptimizedImageUrl(src, width, 85),
+    [src, width]
+  );
+  const lowQualitySrc = useMemo(
+    () => getOptimizedImageUrl(src, width, 30),
+    [src, width]
+  );
+
+  return (
+    <div className="relative w-full h-full bg-gray-100 overflow-hidden">
+      {/* Blur placeholder - shows low quality image first */}
+      {!isLoaded && !error && (
+        <>
+          <img
+            src={lowQualitySrc}
+            alt=""
+            className={`${className} blur-sm scale-105`}
+            style={{ filter: "blur(8px)" }}
+          />
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
+        </>
+      )}
+
+      {/* Main image with lazy loading */}
+      <img
+        src={optimizedSrc}
+        alt={alt}
+        loading="lazy" // OPTIMIZATION 1: Lazy loading
+        className={`${className} transition-all duration-500 ${
+          isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
+        }`}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setError(true)}
+      />
+
+      {/* Error fallback */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <div className="text-center text-primary">
+            <div className="text-4xl mb-2">🏨</div>
+            <div className="text-sm font-medium text-gray-500">
+              Image unavailable
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== OPTIMIZATION 3: Thumbnail with Placeholder ==========
+function ThumbnailImage({
+  src,
+  alt,
+  onClick,
+  isActive = false,
+}: {
+  src: string;
+  alt: string;
+  onClick: () => void;
+  isActive?: boolean;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const optimizedSrc = useMemo(() => getOptimizedImageUrl(src, 100, 75), [src]);
+
+  return (
+    <div
+      onClick={onClick}
+      className={`w-16 h-12 bg-gray-200 rounded-md overflow-hidden cursor-pointer flex-shrink-0 border-2 transition-all ${
+        isActive
+          ? "border-primary shadow-sm"
+          : "border-transparent hover:border-gray-300"
+      }`}
+    >
+      <div className="relative w-full h-full">
+        {!isLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-gray-200" />
+        )}
+        <img
+          src={optimizedSrc}
+          alt={alt}
+          loading="lazy" // OPTIMIZATION 1: Lazy loading for thumbnails
+          className="w-full h-full object-cover"
+          onLoad={() => setIsLoaded(true)}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface RoomSelectionProps {
   roomTypes: RoomType[];
@@ -31,7 +165,6 @@ export default function RoomSelection({
 }: RoomSelectionProps) {
   const adults = Number(bookingParams.adults) || 2;
   const children = Number(bookingParams.children) || 0;
-
   const safeRoomTypes = Array.isArray(roomTypes) ? roomTypes : [];
 
   if (loading) {
@@ -123,7 +256,7 @@ export default function RoomSelection({
   );
 }
 
-// Room Card Component with Image Gallery
+// Updated Room Card Component with Optimizations
 function RoomCard({
   room,
   index,
@@ -154,6 +287,13 @@ function RoomCard({
     room.availableRoomsCount && room.availableRoomsCount < 3;
   const isSelectable = isAvailable && canAccommodate;
 
+  // OPTIMIZATION 5: Memoize optimized image URLs
+  const optimizedMainImage = useMemo(
+    () =>
+      room.images?.[0] ? getOptimizedImageUrl(room.images[0], 400, 85) : null,
+    [room.images]
+  );
+
   const openGallery = (imgIndex: number) => {
     setSelectedImageIndex(imgIndex);
     setShowGallery(true);
@@ -182,23 +322,20 @@ function RoomCard({
       >
         <div className="p-6">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Room Image Gallery */}
+            {/* Room Image Gallery - OPTIMIZATIONS 1, 3, 5 applied */}
             <div className="lg:w-64 flex-shrink-0">
               <div className="relative">
-                {/* Main Image - Clickable */}
+                {/* Main Image with all optimizations */}
                 <div
                   className="h-48 bg-gray-100 rounded-xl overflow-hidden cursor-pointer group relative"
                   onClick={() => openGallery(0)}
                 >
                   {room.images?.[0] ? (
-                    <img
+                    <ImageWithPlaceholder
                       src={room.images[0]}
                       alt={room.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/room-fallback.jpg";
-                        e.currentTarget.onerror = null;
-                      }}
+                      width={400}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
@@ -210,29 +347,21 @@ function RoomCard({
                   )}
                 </div>
 
-                {/* Thumbnail Strip */}
+                {/* Thumbnail Strip with optimizations */}
                 {room.images && room.images.length > 1 && (
                   <div className="flex gap-2 mt-3 overflow-x-auto">
                     {room.images.slice(0, 4).map((image, imgIndex) => (
-                      <div
+                      <ThumbnailImage
                         key={imgIndex}
-                        className="w-16 h-12 bg-gray-200 rounded-md overflow-hidden cursor-pointer flex-shrink-0 border-2 border-transparent hover:border-primary transition-colors"
+                        src={image}
+                        alt={`${room.name} ${imgIndex + 1}`}
                         onClick={() => openGallery(imgIndex)}
-                      >
-                        <img
-                          src={image}
-                          alt={`${room.name} ${imgIndex + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "/images/room-fallback.jpg";
-                            e.currentTarget.onerror = null;
-                          }}
-                        />
-                      </div>
+                        isActive={false}
+                      />
                     ))}
                     {room.images.length > 4 && (
                       <div
-                        className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-600 cursor-pointer flex-shrink-0 border-2 border-dashed border-gray-300"
+                        className="w-16 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-600 cursor-pointer flex-shrink-0 border-2 border-dashed border-gray-300 hover:border-primary transition-colors"
                         onClick={() => openGallery(4)}
                       >
                         +{room.images.length - 4}
@@ -275,7 +404,6 @@ function RoomCard({
                         </span>
                       </h3>
 
-                      {/* Capacity Status */}
                       <CapacityStatus
                         room={room}
                         adults={safeAdults}
@@ -286,7 +414,6 @@ function RoomCard({
                         {room.description}
                       </p>
 
-                      {/* Amenities */}
                       {room.amenities && room.amenities.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
                           {room.amenities.slice(0, 4).map((amenity, idx) => (
@@ -308,7 +435,6 @@ function RoomCard({
                   </div>
                 </div>
 
-                {/* Price & Select Button */}
                 <RoomPriceSection
                   room={room}
                   bookingSummary={bookingSummary}
@@ -323,9 +449,9 @@ function RoomCard({
         </div>
       </div>
 
-      {/* Image Gallery Modal */}
+      {/* Image Gallery Modal with optimizations */}
       {showGallery && room.images && room.images.length > 0 && (
-        <ImageGalleryModal
+        <OptimizedImageGalleryModal
           images={room.images}
           selectedIndex={selectedImageIndex}
           roomName={room.name}
@@ -338,7 +464,103 @@ function RoomCard({
   );
 }
 
-// Capacity Status Component
+// OPTIMIZATION 5 & 3: Optimized Gallery Modal
+function OptimizedImageGalleryModal({
+  images,
+  selectedIndex,
+  roomName,
+  onClose,
+  onNext,
+  onPrev,
+}: {
+  images: string[];
+  selectedIndex: number;
+  roomName: string;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+}) {
+  const [currentImageLoaded, setCurrentImageLoaded] = useState(false);
+
+  // Optimize gallery images with higher quality
+  const currentOptimizedImage = useMemo(
+    () => getOptimizedImageUrl(images[selectedIndex], 1200, 90),
+    [images, selectedIndex]
+  );
+
+  // Preload adjacent images
+  const preloadImage = useCallback((src: string) => {
+    const img = new Image();
+    img.src = getOptimizedImageUrl(src, 800, 85);
+  }, []);
+
+  // Preload next/previous when index changes
+  React.useEffect(() => {
+    setCurrentImageLoaded(false);
+    if (selectedIndex + 1 < images.length) {
+      preloadImage(images[selectedIndex + 1]);
+    }
+    if (selectedIndex - 1 >= 0) {
+      preloadImage(images[selectedIndex - 1]);
+    }
+  }, [selectedIndex, images, preloadImage]);
+
+  return (
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+      <div className="relative max-w-6xl max-h-full w-full h-full flex items-center justify-center">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white text-3xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+        >
+          ×
+        </button>
+
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={onPrev}
+              className="absolute left-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              ‹
+            </button>
+            <button
+              onClick={onNext}
+              className="absolute right-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              ›
+            </button>
+          </>
+        )}
+
+        <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
+          {!currentImageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-pulse text-white text-lg">Loading...</div>
+            </div>
+          )}
+          <img
+            src={currentOptimizedImage}
+            alt={`${roomName} ${selectedIndex + 1}`}
+            loading="lazy" // OPTIMIZATION 1
+            className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
+              currentImageLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            onLoad={() => setCurrentImageLoaded(true)}
+          />
+        </div>
+
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+          {selectedIndex + 1} / {images.length}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Rest of the components remain the same (CapacityStatus, RoomPriceSection, etc.)
+// ... (keep all the existing helper components like CapacityStatus, RoomPriceSection,
+// RoomSelectionSkeleton, NoRoomsAvailable - they don't need changes)
+
 function CapacityStatus({
   room,
   adults,
@@ -388,8 +610,12 @@ function CapacityStatus({
   const config = getStatusConfig();
 
   return (
-    <div className="mb-3 p-3 rounded-lg border bg-gray-50 border-gray-200">
-      <p className="text-sm font-medium flex items-center gap-2 text-gray-700">
+    <div
+      className={`mb-3 p-3 rounded-lg border bg-${config.color}-50 border-${config.color}-200`}
+    >
+      <p
+        className={`text-sm font-medium flex items-center gap-2 text-${config.color}-700`}
+      >
         <span>{config.icon}</span>
         {config.message}
       </p>
@@ -402,7 +628,6 @@ function CapacityStatus({
   );
 }
 
-// Price Section Component
 function RoomPriceSection({
   room,
   bookingSummary,
@@ -456,99 +681,6 @@ function RoomPriceSection({
   );
 }
 
-// Image Gallery Modal Component
-function ImageGalleryModal({
-  images,
-  selectedIndex,
-  roomName,
-  onClose,
-  onNext,
-  onPrev,
-}: {
-  images: string[];
-  selectedIndex: number;
-  roomName: string;
-  onClose: () => void;
-  onNext: () => void;
-  onPrev: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-      <div className="relative max-w-6xl max-h-full w-full h-full flex items-center justify-center">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white text-3xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70"
-        >
-          ×
-        </button>
-
-        {/* Navigation Arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={onPrev}
-              className="absolute left-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70"
-            >
-              ‹
-            </button>
-            <button
-              onClick={onNext}
-              className="absolute right-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70"
-            >
-              ›
-            </button>
-          </>
-        )}
-
-        {/* Main Image */}
-        <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
-          <img
-            src={images[selectedIndex]}
-            alt={`${roomName} ${selectedIndex + 1}`}
-            className="max-w-full max-h-full object-contain"
-            onError={(e) => {
-              e.currentTarget.src = "/images/room-fallback.jpg";
-              e.currentTarget.onerror = null;
-            }}
-          />
-        </div>
-
-        {/* Image Counter */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
-          {selectedIndex + 1} / {images.length}
-        </div>
-
-        {/* Thumbnail Strip */}
-        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2 overflow-x-auto pb-2">
-          {images.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                // You'd need to pass setSelectedImageIndex here
-              }}
-              className={`w-16 h-12 bg-gray-800 rounded-md overflow-hidden flex-shrink-0 border-2 ${
-                index === selectedIndex ? "border-white" : "border-transparent"
-              }`}
-            >
-              <img
-                src={image}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/images/room-fallback.jpg";
-                  e.currentTarget.onerror = null;
-                }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Skeleton Loading Component
 function RoomSelectionSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -590,7 +722,6 @@ function RoomSelectionSkeleton() {
   );
 }
 
-// No Rooms Available Component
 function NoRoomsAvailable({ adults }: { adults: number }) {
   return (
     <div className="text-center py-12">
