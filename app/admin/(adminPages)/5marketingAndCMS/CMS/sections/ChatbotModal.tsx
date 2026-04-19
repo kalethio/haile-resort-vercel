@@ -8,8 +8,7 @@ type ChatbotItem = {
   id: number;
   response: string;
   triggers?: string[];
-  role?: string;
-  type: "RESPONSE" | "QUICK_REPLY";
+  role?: string | null;
   active: boolean;
 };
 
@@ -17,7 +16,7 @@ type ChatbotForm = {
   response: string;
   triggers: string;
   role: string;
-  type: "RESPONSE" | "QUICK_REPLY";
+  quickReplyLabel: string;
   active: boolean;
 };
 
@@ -29,24 +28,42 @@ export default function ChatbotModal({ onClose }: Props) {
     response: "",
     triggers: "",
     role: "",
-    type: "RESPONSE",
+    quickReplyLabel: "",
     active: true,
   });
   const [loading, setLoading] = useState(false);
-
   const [confirmAction, setConfirmAction] = useState<null | {
     type: "add" | "update" | "delete";
     id?: number;
   }>(null);
 
-  // Load items from API
-  useEffect(() => {
+  const loadItems = async () => {
     setLoading(true);
-    fetch("/api/admin/chatbot")
-      .then((res) => res.json())
-      .then((data) => setItems(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    try {
+      const response = await fetch("/api/admin/chatbot");
+      const data = await response.json();
+      // Handle both array and object responses
+      if (Array.isArray(data)) {
+        setItems(data);
+      } else if (
+        data &&
+        data.botResponses &&
+        Array.isArray(data.botResponses)
+      ) {
+        setItems(data.botResponses);
+      } else {
+        setItems([]);
+      }
+    } catch (error) {
+      console.error("Failed to load items:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadItems();
   }, []);
 
   const handleChange = (
@@ -64,7 +81,6 @@ export default function ChatbotModal({ onClose }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editId !== null) {
       setConfirmAction({ type: "update", id: editId });
     } else {
@@ -72,23 +88,25 @@ export default function ChatbotModal({ onClose }: Props) {
     }
   };
 
+  const getRoleToSave = () => {
+    if (formData.quickReplyLabel.trim()) {
+      return `btn:${formData.quickReplyLabel.trim()}`;
+    }
+    return formData.role || null;
+  };
+
   const confirmSubmit = async () => {
     if (!confirmAction) return;
-
     setLoading(true);
 
     try {
       const itemData = {
         response: formData.response,
-        triggers:
-          formData.type === "RESPONSE"
-            ? formData.triggers
-                .split(",")
-                .map((t) => t.trim())
-                .filter((t) => t)
-            : [],
-        role: formData.role || null,
-        type: formData.type,
+        triggers: formData.triggers
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t),
+        role: getRoleToSave(),
         active: formData.active,
       };
 
@@ -106,17 +124,14 @@ export default function ChatbotModal({ onClose }: Props) {
         });
       }
 
-      const response = await fetch("/api/admin/chatbot");
-      const data = await response.json();
-      setItems(data);
+      await loadItems();
       handleCloseForm();
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setConfirmAction(null);
     }
-
-    setConfirmAction(null);
   };
 
   const handleDelete = (id: number) => {
@@ -125,33 +140,36 @@ export default function ChatbotModal({ onClose }: Props) {
 
   const confirmDelete = async () => {
     if (confirmAction?.id === undefined) return;
-
     setLoading(true);
 
     try {
       await fetch(`/api/admin/chatbot/${confirmAction.id}`, {
         method: "DELETE",
       });
-
-      const response = await fetch("/api/admin/chatbot");
-      const data = await response.json();
-      setItems(data);
+      await loadItems();
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setConfirmAction(null);
     }
-
-    setConfirmAction(null);
   };
 
   const handleEdit = (item: ChatbotItem) => {
+    let quickReplyLabel = "";
+    let role = item.role || "";
+
+    if (item.role && item.role.startsWith("btn:")) {
+      quickReplyLabel = item.role.replace("btn:", "");
+      role = "";
+    }
+
     setEditId(item.id);
     setFormData({
       response: item.response,
       triggers: item.triggers?.join(", ") || "",
-      role: item.role || "",
-      type: item.type,
+      role: role,
+      quickReplyLabel: quickReplyLabel,
       active: item.active,
     });
     setIsFormOpen(true);
@@ -162,15 +180,24 @@ export default function ChatbotModal({ onClose }: Props) {
       response: "",
       triggers: "",
       role: "",
-      type: "RESPONSE",
+      quickReplyLabel: "",
       active: true,
     });
     setEditId(null);
     setIsFormOpen(false);
   };
 
-  const botResponses = items.filter((item) => item.type === "RESPONSE");
-  const quickReplies = items.filter((item) => item.type === "QUICK_REPLY");
+  const getDisplayRole = (role: string | null | undefined) => {
+    if (!role) return null;
+    if (role.startsWith("btn:")) return null;
+    return role;
+  };
+
+  const getQuickReplyLabel = (role: string | null | undefined) => {
+    if (!role) return null;
+    if (role.startsWith("btn:")) return role.replace("btn:", "");
+    return null;
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto h-full flex flex-col">
@@ -187,29 +214,11 @@ export default function ChatbotModal({ onClose }: Props) {
 
         {isFormOpen && (
           <div className="mt-6 p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editId !== null ? "Edit Chatbot Item" : "Add Chatbot Item"}
-              </h2>
-            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              {editId !== null ? "Edit Chatbot Item" : "Add Chatbot Item"}
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Type *
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
-                >
-                  <option value="RESPONSE">Bot Response</option>
-                  <option value="QUICK_REPLY">Quick Reply</option>
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Response Text *
@@ -222,44 +231,64 @@ export default function ChatbotModal({ onClose }: Props) {
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium resize-none"
                   placeholder="Enter the response text..."
-                ></textarea>
+                />
               </div>
 
-              {formData.type === "RESPONSE" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                      Triggers (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      name="triggers"
-                      value={formData.triggers}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium"
-                      placeholder="hi, hello, greetings"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Triggers (comma separated)
+                </label>
+                <input
+                  type="text"
+                  name="triggers"
+                  value={formData.triggers}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium"
+                  placeholder="destination, locations, places, where is the hotel"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Keywords that trigger this response
+                </p>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                      Role
-                    </label>
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
-                    >
-                      <option value="">None</option>
-                      <option value="reception">Reception</option>
-                      <option value="spa">Spa</option>
-                      <option value="restaurant">Restaurant</option>
-                      <option value="booking">Booking</option>
-                    </select>
-                  </div>
-                </>
-              )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Quick Reply Button (optional)
+                </label>
+                <input
+                  type="text"
+                  name="quickReplyLabel"
+                  value={formData.quickReplyLabel}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 placeholder-gray-500 font-medium"
+                  placeholder="e.g., Destinations"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  If filled, this button appears in chatbot. Clicking sends this
+                  text as a message.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Role (for WhatsApp)
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+                >
+                  <option value="">None</option>
+                  <option value="reception">Reception</option>
+                  <option value="spa">Spa</option>
+                  <option value="restaurant">Restaurant</option>
+                  <option value="booking">Booking</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Determines which WhatsApp contact appears
+                </p>
+              </div>
 
               <div className="flex items-center justify-end">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
@@ -293,32 +322,32 @@ export default function ChatbotModal({ onClose }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Bot Responses ({botResponses.length})
-            </h3>
-            <div className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 text-lg font-medium">
-                    Loading...
-                  </p>
-                </div>
-              ) : botResponses.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 text-lg font-medium">
-                    No bot responses yet.
-                  </p>
-                </div>
-              ) : (
-                botResponses.map((item) => (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            All Chatbot Items ({items.length})
+          </h3>
+          <div className="space-y-4">
+            {loading ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <p className="text-gray-500 text-lg font-medium">Loading...</p>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <p className="text-gray-500 text-lg font-medium">
+                  No chatbot items yet.
+                </p>
+              </div>
+            ) : (
+              items.map((item) => {
+                const displayRole = getDisplayRole(item.role);
+                const quickLabel = getQuickReplyLabel(item.role);
+                return (
                   <div
                     key={item.id}
                     className="flex justify-between items-start p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span
                           className={`px-2 py-1 text-xs rounded ${
                             item.active
@@ -328,20 +357,36 @@ export default function ChatbotModal({ onClose }: Props) {
                         >
                           {item.active ? "Active" : "Inactive"}
                         </span>
-                        {item.role && (
+                        {displayRole && (
                           <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                            {item.role}
+                            Role: {displayRole}
+                          </span>
+                        )}
+                        {quickLabel && (
+                          <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
+                            Quick Reply: {quickLabel}
                           </span>
                         )}
                       </div>
                       <p className="text-gray-900 font-medium mb-2">
                         {item.response}
                       </p>
-                      {item.triggers && item.triggers.length > 0 && (
-                        <p className="text-gray-600 text-sm">
-                          <strong>Triggers:</strong> {item.triggers.join(", ")}
-                        </p>
-                      )}
+                      {item.triggers &&
+                        item.triggers.length > 0 &&
+                        !quickLabel && (
+                          <p className="text-gray-600 text-sm">
+                            <strong>Triggers:</strong>{" "}
+                            {item.triggers.join(", ")}
+                          </p>
+                        )}
+                      {quickLabel &&
+                        item.triggers &&
+                        item.triggers.length > 0 && (
+                          <p className="text-gray-600 text-sm">
+                            <strong>Keywords:</strong>{" "}
+                            {item.triggers.join(", ")}
+                          </p>
+                        )}
                     </div>
                     <div className="flex gap-2 ml-4 flex-shrink-0">
                       <button
@@ -360,70 +405,9 @@ export default function ChatbotModal({ onClose }: Props) {
                       </button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Quick Replies ({quickReplies.length})
-            </h3>
-            <div className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 text-lg font-medium">
-                    Loading...
-                  </p>
-                </div>
-              ) : quickReplies.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 text-lg font-medium">
-                    No quick replies yet.
-                  </p>
-                </div>
-              ) : (
-                quickReplies.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between items-start p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${
-                            item.active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {item.active ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                      <p className="text-gray-900 font-medium">
-                        {item.response}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4 flex-shrink-0">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4 text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

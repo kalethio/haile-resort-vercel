@@ -1,13 +1,11 @@
-// app/api/admin/chatbot/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const items = await prisma.chatbotResponse.findMany({
-      orderBy: { id: "asc" }, // Auto-sort by ID (oldest first)
+      orderBy: { id: "asc" },
     });
-
     return NextResponse.json(items);
   } catch (error) {
     console.error("Failed to fetch chatbot items:", error);
@@ -27,9 +25,7 @@ export async function POST(request: Request) {
         response: data.response,
         triggers: data.triggers || [],
         role: data.role,
-        type: data.type,
         active: data.active !== false,
-        // order field removed ✅
       },
     });
 

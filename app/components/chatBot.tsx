@@ -2,22 +2,21 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Remove static data imports - we'll fetch from database
-// import { INITIAL_MESSAGES, BOT_RESPONSES, DEFAULT_RESPONSE, STAFF_CONTACTS, StaffRole } from "../data/chatBot";
-
 type StaffRole = "reception" | "spa" | "restaurant" | "booking";
 
 type BotResponse = {
+  id: number;
   triggers: string[];
   response: string;
-  role?: StaffRole;
+  role?: string | null;
+  active: boolean;
 };
 
 const STAFF_CONTACTS: Record<StaffRole, string> = {
-  reception: "https://wa.me/251900000001",
-  spa: "https://wa.me/251900000002",
-  restaurant: "https://wa.me/251900000003",
-  booking: "https://wa.me/251900000004",
+  reception: "https://wa.me/251956797979",
+  spa: "https://wa.me/251956797979",
+  restaurant: "https://wa.me/251956797979",
+  booking: "https://wa.me/251956797979",
 };
 
 const DEFAULT_RESPONSE =
@@ -33,28 +32,26 @@ const ChatBot = () => {
   const [showExpandedFAQ, setShowExpandedFAQ] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [chatHeight, setChatHeight] = useState(350);
-  const [hasUnread, setHasUnread] = useState(false);
 
-  // Database state
   const [botResponses, setBotResponses] = useState<BotResponse[]>([]);
-  const [quickReplies, setQuickReplies] = useState<string[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [quickReplyButtons, setQuickReplyButtons] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load chatbot data from database
   useEffect(() => {
     const loadChatbotData = async () => {
       try {
         const response = await fetch("/api/chatbot/data");
         const data = await response.json();
-
         setBotResponses(data.botResponses);
-        setQuickReplies(data.quickReplies);
-
-        // Set initial welcome message
+        const quickReplies = data.botResponses
+          .filter(
+            (item: BotResponse) => item.role && item.role.startsWith("btn:")
+          )
+          .map((item: BotResponse) => item.role!.replace("btn:", ""));
+        setQuickReplyButtons(quickReplies);
         setMessages([
           {
             from: "bot",
@@ -63,22 +60,17 @@ const ChatBot = () => {
         ]);
       } catch (error) {
         console.error("Failed to load chatbot data:", error);
-        // Fallback to initial message only
         setMessages([
           {
             from: "bot",
             text: "👋 Hello! Welcome to Haile Resorts. How can I assist you today?",
           },
         ]);
-      } finally {
-        setLoadingData(false);
       }
     };
-
     loadChatbotData();
   }, []);
 
-  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -89,36 +81,19 @@ const ChatBot = () => {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Auto-open with welcome - INCREASED DELAY
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsOpen(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Auto-scroll and focus
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 400);
   }, [messages, isTyping, isOpen]);
 
-  // Expand chat height when messages increase
   useEffect(() => {
-    if (messages.length > 2) {
-      setChatHeight(500);
-    }
+    if (messages.length > 2) setChatHeight(500);
   }, [messages.length]);
 
-  // Enhanced fuzzy matching for better understanding
   const normalizeText = (text: string): string => {
     return text
       .toLowerCase()
@@ -127,46 +102,86 @@ const ChatBot = () => {
       .replace(/\s+/g, " ");
   };
 
+  // Expand a word with common variations (plural, -ing, -ed)
+  const expandWord = (word: string): string[] => {
+    const expanded = new Set<string>();
+    expanded.add(word);
+
+    // Plural handling
+    if (word.endsWith("s")) {
+      expanded.add(word.slice(0, -1));
+    } else {
+      expanded.add(word + "s");
+    }
+
+    // -ing handling
+    if (word.endsWith("ing")) {
+      expanded.add(word.slice(0, -3));
+    } else {
+      expanded.add(word + "ing");
+    }
+
+    // -ed handling
+    if (word.endsWith("ed")) {
+      expanded.add(word.slice(0, -2));
+    } else {
+      expanded.add(word + "ed");
+    }
+
+    return Array.from(expanded);
+  };
+
+  // Check if user sentence contains any trigger word (with variations)
+  const sentenceContainsTrigger = (
+    userMessage: string,
+    triggerWords: string[]
+  ): boolean => {
+    const normalizedMessage = normalizeText(userMessage);
+
+    for (const trigger of triggerWords) {
+      const normalizedTrigger = normalizeText(trigger);
+      const expandedTriggers = expandWord(normalizedTrigger);
+
+      for (const expandedTrigger of expandedTriggers) {
+        if (normalizedMessage.includes(expandedTrigger)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const findBestMatch = (message: string) => {
-    if (botResponses.length === 0) {
+    const activeResponses = botResponses.filter((item) => item.active);
+    if (activeResponses.length === 0) {
       return { response: DEFAULT_RESPONSE, role: "reception" as StaffRole };
     }
 
-    const normalized = normalizeText(message);
+    // Step 1: Exact word match
+    const normalizedMessage = normalizeText(message);
+    const userWords = normalizedMessage.split(" ");
 
-    // Check for exact matches first
-    for (const bot of botResponses) {
+    for (const bot of activeResponses) {
       for (const trigger of bot.triggers) {
         const normalizedTrigger = normalizeText(trigger);
-        if (normalized.includes(normalizedTrigger)) {
-          return {
-            response: bot.response,
-            role: bot.role || ("reception" as StaffRole),
-          };
+        if (userWords.includes(normalizedTrigger)) {
+          let role = "reception" as StaffRole;
+          if (bot.role && !bot.role.startsWith("btn:")) {
+            role = bot.role as StaffRole;
+          }
+          return { response: bot.response, role };
         }
       }
     }
 
-    // Fuzzy matching for common misspellings and variations
-    for (const bot of botResponses) {
-      for (const trigger of bot.triggers) {
-        const normalizedTrigger = normalizeText(trigger);
-
-        const triggerWords = normalizedTrigger.split(" ");
-        const messageWords = normalized.split(" ");
-
-        const matchingWords = triggerWords.filter((word) =>
-          messageWords.some(
-            (msgWord) => msgWord.includes(word) || word.includes(msgWord)
-          )
-        );
-
-        if (matchingWords.length >= Math.ceil(triggerWords.length * 0.5)) {
-          return {
-            response: bot.response,
-            role: bot.role || ("reception" as StaffRole),
-          };
+    // Step 2: Sentence-level match (trigger word appears anywhere in sentence)
+    for (const bot of activeResponses) {
+      if (sentenceContainsTrigger(message, bot.triggers)) {
+        let role = "reception" as StaffRole;
+        if (bot.role && !bot.role.startsWith("btn:")) {
+          role = bot.role as StaffRole;
         }
+        return { response: bot.response, role };
       }
     }
 
@@ -180,14 +195,12 @@ const ChatBot = () => {
     setMessages((prev) => [...prev, { from: "user", text: userMessage }]);
     setInput("");
     setShowExpandedFAQ(false);
-
     setIsTyping(true);
 
     setTimeout(
       () => {
         const { response: botReply, role } = findBestMatch(userMessage);
         setCurrentLink(STAFF_CONTACTS[role]);
-
         setMessages((prev) => [...prev, { from: "bot", text: botReply }]);
         setIsTyping(false);
       },
@@ -195,17 +208,12 @@ const ChatBot = () => {
     );
   };
 
-  const toggleExpandedFAQ = () => {
-    setShowExpandedFAQ(!showExpandedFAQ);
-  };
-
-  // Use database quick replies
-  const MAIN_QUICK_REPLIES = quickReplies.slice(0, 3); // First 3 for main area
-  const EXPANDED_FAQ = quickReplies.slice(3); // Rest for expanded area
+  const toggleExpandedFAQ = () => setShowExpandedFAQ(!showExpandedFAQ);
+  const MAIN_QUICK_REPLIES = quickReplyButtons.slice(0, 3);
+  const EXPANDED_QUICK_REPLIES = quickReplyButtons.slice(3);
 
   return (
     <div ref={containerRef} className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* Floating Button */}
       <motion.div
         className="flex flex-col items-center gap-2"
         whileHover={{ scale: 1.05 }}
@@ -233,8 +241,6 @@ const ChatBot = () => {
               </motion.span>
             )}
           </AnimatePresence>
-
-          {/* Pulse dot */}
           {!isOpen && (
             <motion.div
               className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"
@@ -245,7 +251,6 @@ const ChatBot = () => {
         </button>
       </motion.div>
 
-      {/* Chat Window - Dynamic height */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -253,23 +258,19 @@ const ChatBot = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className="w-80 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-primary/10 mt-4 backdrop-blur-sm bg-white/95"
-            style={{ height: `${chatHeight}px` }} // Dynamic height
+            style={{ height: `${chatHeight}px` }}
           >
-            {/* Header */}
             <div className="bg-gradient-to-r from-primary/70 to-primary/50 text-white py-2 px-4">
               <div className="flex items-center justify-center">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className="font-bold text-sm">Haile Concierge</div>
-                    <div className="text-xs opacity-90">
-                      Online • FAQ Assistant
-                    </div>
+                <div>
+                  <div className="font-bold text-sm">Haile Concierge</div>
+                  <div className="text-xs opacity-90">
+                    Online • FAQ Assistant
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Messages Area */}
             <div className="flex-1 p-4 space-y-3 overflow-y-auto">
               {messages.map((msg, i) => (
                 <motion.div
@@ -285,8 +286,6 @@ const ChatBot = () => {
                   {msg.text}
                 </motion.div>
               ))}
-
-              {/* Typing Indicator */}
               {isTyping && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -315,37 +314,36 @@ const ChatBot = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Reply Suggestions */}
-            <div className="px-4 pt-2">
-              <div className="flex flex-wrap gap-2 justify-start">
-                {MAIN_QUICK_REPLIES.map((reply, i) => (
-                  <motion.button
-                    key={i}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleSend(reply)}
-                    className="px-3 py-1.5 text-primary text-sm font-normal rounded-full hover:bg-primary/5 transition-colors border border-primary/20 whitespace-nowrap"
-                  >
-                    {reply}
-                  </motion.button>
-                ))}
+            {MAIN_QUICK_REPLIES.length > 0 && (
+              <div className="px-4 pt-2">
+                <div className="flex flex-wrap gap-2 justify-start">
+                  {MAIN_QUICK_REPLIES.map((reply, i) => (
+                    <motion.button
+                      key={i}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSend(reply)}
+                      className="px-3 py-1.5 text-primary text-sm font-normal rounded-full hover:bg-primary/5 transition-colors border border-primary/20 whitespace-nowrap"
+                    >
+                      {reply}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Hint Section */}
-            <motion.button
-              onClick={toggleExpandedFAQ}
-              className="mx-4 my-2 py-2 text-sm text-gray-600 hover:text-primary transition-colors flex items-center justify-center gap-2 bg-gray-100/50 hover:bg-gray-200/50 rounded-full border border-gray-200/50"
-              whileHover={{ scale: 1.02 }}
-            >
-              <span>💡</span>
-              more
-              <span>▼</span>
-            </motion.button>
+            {EXPANDED_QUICK_REPLIES.length > 0 && (
+              <motion.button
+                onClick={toggleExpandedFAQ}
+                className="mx-4 my-2 py-2 text-sm text-gray-600 hover:text-primary transition-colors flex items-center justify-center gap-2 bg-gray-100/50 hover:bg-gray-200/50 rounded-full border border-gray-200/50"
+                whileHover={{ scale: 1.02 }}
+              >
+                <span>💡</span> more <span>▼</span>
+              </motion.button>
+            )}
 
-            {/* Expandable FAQ Section */}
             <AnimatePresence>
-              {showExpandedFAQ && (
+              {showExpandedFAQ && EXPANDED_QUICK_REPLIES.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
@@ -364,7 +362,7 @@ const ChatBot = () => {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {EXPANDED_FAQ.map((faq, i) => (
+                    {EXPANDED_QUICK_REPLIES.map((reply, i) => (
                       <motion.button
                         key={i}
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -372,11 +370,11 @@ const ChatBot = () => {
                         transition={{ delay: i * 0.05 }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => handleSend(faq)}
+                        onClick={() => handleSend(reply)}
                         className="px-3 py-2 bg-white text-gray-700 text-xs rounded-lg hover:bg-primary/5 hover:text-primary transition-all border border-gray-200 text-left truncate"
-                        title={faq}
+                        title={reply}
                       >
-                        {faq}
+                        {reply}
                       </motion.button>
                     ))}
                   </div>
@@ -384,10 +382,8 @@ const ChatBot = () => {
               )}
             </AnimatePresence>
 
-            {/* Input Area with WhatsApp Icon */}
             <div className="p-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
               <div className="flex gap-2">
-                {/* WhatsApp Icon Button */}
                 <motion.a
                   href={currentLink}
                   target="_blank"
@@ -405,8 +401,6 @@ const ChatBot = () => {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893c0-3.18-1.24-6.17-3.495-8.416" />
                   </svg>
                 </motion.a>
-
-                {/* Input Field */}
                 <input
                   ref={inputRef}
                   type="text"
@@ -416,8 +410,6 @@ const ChatBot = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 />
-
-                {/* Send Button */}
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

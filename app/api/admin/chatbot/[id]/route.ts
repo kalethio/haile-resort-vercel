@@ -1,22 +1,20 @@
-// app/api/admin/chatbot/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> } // Add Promise here
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
     const data = await request.json();
 
     const item = await prisma.chatbotResponse.update({
-      where: { id: parseInt(id) }, // Use the awaited id
+      where: { id: parseInt(id) },
       data: {
         response: data.response,
         triggers: data.triggers,
         role: data.role,
-        type: data.type,
         active: data.active,
       },
     });
@@ -33,13 +31,13 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> } // Add Promise here
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
 
     await prisma.chatbotResponse.delete({
-      where: { id: parseInt(id) }, // Use the awaited id
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ success: true });

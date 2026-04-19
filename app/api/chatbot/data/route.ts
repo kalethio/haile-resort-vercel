@@ -1,54 +1,26 @@
-// app/api/chatbot/data/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    console.log("🔍 Fetching chatbot data from database...");
+    const items = await prisma.chatbotResponse.findMany({
+      where: { active: true },
+      orderBy: { id: "asc" },
+    });
 
-    const [botResponses, quickReplies] = await Promise.all([
-      prisma.chatbotResponse.findMany({
-        where: {
-          type: "RESPONSE",
-          active: true,
-        },
-        orderBy: { id: "asc" },
-      }),
-      prisma.chatbotResponse.findMany({
-        where: {
-          type: "QUICK_REPLY",
-          active: true,
-        },
-        orderBy: { id: "asc" },
-      }),
-    ]);
+    // Format for public consumption
+    const botResponses = items.map((item) => ({
+      id: item.id,
+      triggers: item.triggers,
+      response: item.response,
+      role: item.role,
+      quickReplyLabel: item.quickReplyLabel,
+      active: item.active,
+    }));
 
-    console.log("📊 Bot Responses found:", botResponses.length);
-    console.log("📊 Quick Replies found:", quickReplies.length);
-
-    if (botResponses.length > 0) {
-      console.log("Sample bot response:", botResponses[0]);
-    }
-
-    const result = {
-      botResponses: botResponses.map((r) => ({
-        triggers: (r.triggers as string[]) || [],
-        response: r.response,
-        role: r.role as
-          | "reception"
-          | "spa"
-          | "restaurant"
-          | "booking"
-          | undefined,
-      })),
-      quickReplies: quickReplies.map((r) => r.response),
-    };
-
-    console.log("✅ Final data being sent:", result);
-
-    return NextResponse.json(result);
+    return NextResponse.json({ botResponses });
   } catch (error) {
-    console.error("❌ Failed to fetch chatbot data:", error);
+    console.error("Failed to fetch chatbot data:", error);
     return NextResponse.json(
       { error: "Failed to fetch chatbot data" },
       { status: 500 }

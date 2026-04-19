@@ -1,6 +1,6 @@
 // app/booking/components/RoomSelection.tsx
 "use client";
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   RoomType,
   BookingParams,
@@ -8,34 +8,84 @@ import {
 } from "../types/booking";
 import BookingSummary from "./BookingSummary";
 
-// ========== OPTIMIZATION 5: Image URL Optimization Helper ==========
+// ========== Detect mobile device ==========
+const isMobileDevice = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) || window.innerWidth < 768
+  );
+};
+
+// ========== OPTIMIZATION 5: Simplified for mobile ==========
 const getOptimizedImageUrl = (
   url: string,
   width: number,
-  quality: number = 80
+  quality: number = 80,
+  isMobile: boolean = false
 ): string => {
   if (!url) return url;
 
-  // Check if URL is from common CDNs and add optimization parameters
+  // Mobile: Use smaller width and lower quality
+  const mobileWidth = Math.min(width, 300); // Max 300px on mobile
+  const mobileQuality = isMobile ? 60 : quality;
+  const finalWidth = isMobile ? mobileWidth : width;
+
   if (url.includes("cloudinary.com")) {
-    return `${url}?w=${width}&q=${quality}&f=auto`;
+    return `${url}?w=${finalWidth}&q=${mobileQuality}&f=auto`;
   }
 
   if (url.includes("imgix.net")) {
-    return `${url}?w=${width}&q=${quality}&auto=format`;
+    return `${url}?w=${finalWidth}&q=${mobileQuality}&auto=format`;
   }
 
   if (url.includes("unsplash.com")) {
-    return `${url}&w=${width}&q=${quality}&fm=webp`;
+    return `${url}&w=${finalWidth}&q=${mobileQuality}&fm=webp`;
   }
 
-  // For local images or other sources, return original
-  // Could also add a generic query param if your backend supports it
   return url;
 };
 
-// ========== OPTIMIZATION 3: Image with Placeholder Component ==========
-function ImageWithPlaceholder({
+// ========== Mobile-friendly image component (no complex animations) ==========
+function MobileImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+}) {
+  const [error, setError] = useState(false);
+
+  // Direct load without placeholder animations on mobile
+  const optimizedSrc = useMemo(
+    () => getOptimizedImageUrl(src, 300, 60, true),
+    [src]
+  );
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+        <span className="text-2xl">🏨</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={optimizedSrc}
+      alt={alt}
+      loading="lazy"
+      className={className}
+      onError={() => setError(true)}
+    />
+  );
+}
+
+// ========== Desktop image component with placeholders ==========
+function DesktopImage({
   src,
   alt,
   className,
@@ -49,19 +99,17 @@ function ImageWithPlaceholder({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  // OPTIMIZATION 5 applied here too
   const optimizedSrc = useMemo(
-    () => getOptimizedImageUrl(src, width, 85),
+    () => getOptimizedImageUrl(src, width, 85, false),
     [src, width]
   );
   const lowQualitySrc = useMemo(
-    () => getOptimizedImageUrl(src, width, 30),
+    () => getOptimizedImageUrl(src, width, 20, false),
     [src, width]
   );
 
   return (
     <div className="relative w-full h-full bg-gray-100 overflow-hidden">
-      {/* Blur placeholder - shows low quality image first */}
       {!isLoaded && !error && (
         <>
           <img
@@ -74,26 +122,22 @@ function ImageWithPlaceholder({
         </>
       )}
 
-      {/* Main image with lazy loading */}
       <img
         src={optimizedSrc}
         alt={alt}
-        loading="lazy" // OPTIMIZATION 1: Lazy loading
-        className={`${className} transition-all duration-500 ${
-          isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
+        loading="lazy"
+        className={`${className} transition-all duration-300 ${
+          isLoaded ? "opacity-100" : "opacity-0"
         }`}
         onLoad={() => setIsLoaded(true)}
         onError={() => setError(true)}
       />
 
-      {/* Error fallback */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="text-center text-primary">
+          <div className="text-center">
             <div className="text-4xl mb-2">🏨</div>
-            <div className="text-sm font-medium text-gray-500">
-              Image unavailable
-            </div>
+            <div className="text-xs text-gray-500">Image unavailable</div>
           </div>
         </div>
       )}
@@ -101,8 +145,37 @@ function ImageWithPlaceholder({
   );
 }
 
-// ========== OPTIMIZATION 3: Thumbnail with Placeholder ==========
-function ThumbnailImage({
+// ========== Adaptive Image Component ==========
+function AdaptiveImage({
+  src,
+  alt,
+  className,
+  width = 400,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+  width?: number;
+}) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
+
+  // On mobile, use simpler component
+  if (isMobile) {
+    return <MobileImage src={src} alt={alt} className={className} />;
+  }
+
+  // On desktop, use enhanced component
+  return (
+    <DesktopImage src={src} alt={alt} className={className} width={width} />
+  );
+}
+
+// ========== Simplified Thumbnail for Mobile ==========
+function AdaptiveThumbnail({
   src,
   alt,
   onClick,
@@ -113,35 +186,38 @@ function ThumbnailImage({
   onClick: () => void;
   isActive?: boolean;
 }) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const optimizedSrc = useMemo(() => getOptimizedImageUrl(src, 100, 75), [src]);
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
+
+  const optimizedSrc = useMemo(() => {
+    const width = isMobile ? 80 : 100;
+    const quality = isMobile ? 50 : 75;
+    return getOptimizedImageUrl(src, width, quality, isMobile);
+  }, [src, isMobile]);
 
   return (
     <div
       onClick={onClick}
-      className={`w-16 h-12 bg-gray-200 rounded-md overflow-hidden cursor-pointer flex-shrink-0 border-2 transition-all ${
+      className={`w-12 h-10 md:w-16 md:h-12 bg-gray-200 rounded-md overflow-hidden cursor-pointer flex-shrink-0 border-2 transition-all ${
         isActive
           ? "border-primary shadow-sm"
           : "border-transparent hover:border-gray-300"
       }`}
     >
-      <div className="relative w-full h-full">
-        {!isLoaded && (
-          <div className="absolute inset-0 animate-pulse bg-gray-200" />
-        )}
-        <img
-          src={optimizedSrc}
-          alt={alt}
-          loading="lazy" // OPTIMIZATION 1: Lazy loading for thumbnails
-          className="w-full h-full object-cover"
-          onLoad={() => setIsLoaded(true)}
-        />
-      </div>
+      <img
+        src={optimizedSrc}
+        alt={alt}
+        loading="lazy"
+        className="w-full h-full object-cover"
+      />
     </div>
   );
 }
 
+// Rest of the imports and interfaces remain the same...
 interface RoomSelectionProps {
   roomTypes: RoomType[];
   selectedRoom: number | null;
@@ -191,7 +267,6 @@ export default function RoomSelection({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Room List */}
       <div className="lg:col-span-2 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-light text-gray-900 tracking-tight">
@@ -205,7 +280,6 @@ export default function RoomSelection({
           </span>
         </div>
 
-        {/* Guest Composition Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-2">
           <div className="flex items-center gap-3">
             <span className="text-blue-600 text-lg">👥</span>
@@ -244,7 +318,6 @@ export default function RoomSelection({
         )}
       </div>
 
-      {/* Booking Summary Sidebar */}
       <BookingSummary
         bookingParams={bookingParams}
         bookingSummary={bookingSummary}
@@ -256,7 +329,7 @@ export default function RoomSelection({
   );
 }
 
-// Updated Room Card Component with Optimizations
+// Updated Room Card Component
 function RoomCard({
   room,
   index,
@@ -276,9 +349,14 @@ function RoomCard({
 }) {
   const [showGallery, setShowGallery] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const safeAdults = Number(adults) || 2;
   const safeChildren = Number(children) || 0;
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
 
   const totalGuests = safeAdults + safeChildren;
   const canAccommodate = room.capacity >= totalGuests;
@@ -286,13 +364,6 @@ function RoomCard({
   const isLowInventory =
     room.availableRoomsCount && room.availableRoomsCount < 3;
   const isSelectable = isAvailable && canAccommodate;
-
-  // OPTIMIZATION 5: Memoize optimized image URLs
-  const optimizedMainImage = useMemo(
-    () =>
-      room.images?.[0] ? getOptimizedImageUrl(room.images[0], 400, 85) : null,
-    [room.images]
-  );
 
   const openGallery = (imgIndex: number) => {
     setSelectedImageIndex(imgIndex);
@@ -320,18 +391,18 @@ function RoomCard({
             : "border-gray-100 hover:border-gray-200"
         } ${!isSelectable ? "opacity-60 cursor-not-allowed" : ""}`}
       >
-        <div className="p-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Room Image Gallery - OPTIMIZATIONS 1, 3, 5 applied */}
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+            {/* Room Image Gallery - Adaptive based on device */}
             <div className="lg:w-64 flex-shrink-0">
               <div className="relative">
-                {/* Main Image with all optimizations */}
+                {/* Main Image */}
                 <div
                   className="h-48 bg-gray-100 rounded-xl overflow-hidden cursor-pointer group relative"
                   onClick={() => openGallery(0)}
                 >
                   {room.images?.[0] ? (
-                    <ImageWithPlaceholder
+                    <AdaptiveImage
                       src={room.images[0]}
                       alt={room.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -347,11 +418,11 @@ function RoomCard({
                   )}
                 </div>
 
-                {/* Thumbnail Strip with optimizations */}
-                {room.images && room.images.length > 1 && (
+                {/* Thumbnail Strip - Hide on mobile to save bandwidth */}
+                {room.images && room.images.length > 1 && !isMobile && (
                   <div className="flex gap-2 mt-3 overflow-x-auto">
                     {room.images.slice(0, 4).map((image, imgIndex) => (
-                      <ThumbnailImage
+                      <AdaptiveThumbnail
                         key={imgIndex}
                         src={image}
                         alt={`${room.name} ${imgIndex + 1}`}
@@ -367,6 +438,13 @@ function RoomCard({
                         +{room.images.length - 4}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Mobile: Show simple indicator instead of thumbnails */}
+                {room.images && room.images.length > 1 && isMobile && (
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                    {room.images.length} photos
                   </div>
                 )}
               </div>
@@ -391,13 +469,13 @@ function RoomCard({
               </div>
             </div>
 
-            {/* Room Details */}
+            {/* Room Details - Rest remains the same */}
             <div className="flex-1">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-xl font-normal text-gray-900 mb-2">
+                      <h3 className="text-lg md:text-xl font-normal text-gray-900 mb-2">
                         {room.name}
                         <span className="ml-2 text-sm font-medium text-gray-600">
                           (Sleeps {room.capacity})
@@ -410,23 +488,25 @@ function RoomCard({
                         children={safeChildren}
                       />
 
-                      <p className="text-gray-600 leading-relaxed font-light mb-4">
+                      <p className="text-gray-600 leading-relaxed font-light mb-4 text-sm md:text-base">
                         {room.description}
                       </p>
 
                       {room.amenities && room.amenities.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {room.amenities.slice(0, 4).map((amenity, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-600 border border-gray-200 font-light"
-                            >
-                              {amenity}
-                            </span>
-                          ))}
-                          {room.amenities.length > 4 && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-500 border border-gray-200 font-light">
-                              +{room.amenities.length - 4} more
+                          {room.amenities
+                            .slice(0, isMobile ? 3 : 4)
+                            .map((amenity, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-600 border border-gray-200 font-light"
+                              >
+                                {amenity}
+                              </span>
+                            ))}
+                          {room.amenities.length > (isMobile ? 3 : 4) && (
+                            <span className="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs bg-gray-50 text-gray-500 border border-gray-200 font-light">
+                              +{room.amenities.length - (isMobile ? 3 : 4)} more
                             </span>
                           )}
                         </div>
@@ -449,7 +529,7 @@ function RoomCard({
         </div>
       </div>
 
-      {/* Image Gallery Modal with optimizations */}
+      {/* Image Gallery Modal - Simplified for mobile */}
       {showGallery && room.images && room.images.length > 0 && (
         <OptimizedImageGalleryModal
           images={room.images}
@@ -464,7 +544,7 @@ function RoomCard({
   );
 }
 
-// OPTIMIZATION 5 & 3: Optimized Gallery Modal
+// Simplified Gallery Modal for better mobile performance
 function OptimizedImageGalleryModal({
   images,
   selectedIndex,
@@ -480,37 +560,53 @@ function OptimizedImageGalleryModal({
   onNext: () => void;
   onPrev: () => void;
 }) {
+  const [isMobile, setIsMobile] = useState(false);
   const [currentImageLoaded, setCurrentImageLoaded] = useState(false);
 
-  // Optimize gallery images with higher quality
-  const currentOptimizedImage = useMemo(
-    () => getOptimizedImageUrl(images[selectedIndex], 1200, 90),
-    [images, selectedIndex]
-  );
-
-  // Preload adjacent images
-  const preloadImage = useCallback((src: string) => {
-    const img = new Image();
-    img.src = getOptimizedImageUrl(src, 800, 85);
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
   }, []);
 
-  // Preload next/previous when index changes
-  React.useEffect(() => {
+  const currentOptimizedImage = useMemo(() => {
+    const width = isMobile ? 800 : 1200;
+    const quality = isMobile ? 70 : 90;
+    return getOptimizedImageUrl(
+      images[selectedIndex],
+      width,
+      quality,
+      isMobile
+    );
+  }, [images, selectedIndex, isMobile]);
+
+  // Only preload on desktop to save mobile bandwidth
+  const preloadImage = useCallback(
+    (src: string) => {
+      if (!isMobile) {
+        const img = new Image();
+        img.src = getOptimizedImageUrl(src, 800, 85, false);
+      }
+    },
+    [isMobile]
+  );
+
+  useEffect(() => {
     setCurrentImageLoaded(false);
-    if (selectedIndex + 1 < images.length) {
-      preloadImage(images[selectedIndex + 1]);
+    if (!isMobile) {
+      if (selectedIndex + 1 < images.length) {
+        preloadImage(images[selectedIndex + 1]);
+      }
+      if (selectedIndex - 1 >= 0) {
+        preloadImage(images[selectedIndex - 1]);
+      }
     }
-    if (selectedIndex - 1 >= 0) {
-      preloadImage(images[selectedIndex - 1]);
-    }
-  }, [selectedIndex, images, preloadImage]);
+  }, [selectedIndex, images, preloadImage, isMobile]);
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-      <div className="relative max-w-6xl max-h-full w-full h-full flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2 md:p-4">
+      <div className="relative w-full h-full flex items-center justify-center">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white text-3xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+          className="absolute top-2 right-2 md:top-4 md:right-4 text-white text-2xl md:text-3xl z-10 bg-black/50 rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/70"
         >
           ×
         </button>
@@ -519,37 +615,37 @@ function OptimizedImageGalleryModal({
           <>
             <button
               onClick={onPrev}
-              className="absolute left-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+              className="absolute left-2 md:left-4 text-white text-xl md:text-2xl z-10 bg-black/50 rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/70"
             >
               ‹
             </button>
             <button
               onClick={onNext}
-              className="absolute right-4 text-white text-2xl z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors"
+              className="absolute right-2 md:right-4 text-white text-xl md:text-2xl z-10 bg-black/50 rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/70"
             >
               ›
             </button>
           </>
         )}
 
-        <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
+        <div className="relative w-full h-full flex items-center justify-center">
           {!currentImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-pulse text-white text-lg">Loading...</div>
+              <div className="animate-pulse text-white text-sm md:text-lg">
+                Loading...
+              </div>
             </div>
           )}
           <img
             src={currentOptimizedImage}
             alt={`${roomName} ${selectedIndex + 1}`}
-            loading="lazy" // OPTIMIZATION 1
-            className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
-              currentImageLoaded ? "opacity-100" : "opacity-0"
-            }`}
+            loading="lazy"
+            className="max-w-full max-h-full object-contain"
             onLoad={() => setCurrentImageLoaded(true)}
           />
         </div>
 
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm">
           {selectedIndex + 1} / {images.length}
         </div>
       </div>
@@ -557,10 +653,7 @@ function OptimizedImageGalleryModal({
   );
 }
 
-// Rest of the components remain the same (CapacityStatus, RoomPriceSection, etc.)
-// ... (keep all the existing helper components like CapacityStatus, RoomPriceSection,
-// RoomSelectionSkeleton, NoRoomsAvailable - they don't need changes)
-
+// Keep the remaining components (CapacityStatus, RoomPriceSection, etc.) exactly as they were
 function CapacityStatus({
   room,
   adults,
@@ -646,12 +739,14 @@ function RoomPriceSection({
   return (
     <div className="mt-4 lg:mt-0 lg:text-right lg:pl-6">
       <div className="space-y-3">
-        <div className="text-2xl font-light text-gray-900">
+        <div className="text-xl md:text-2xl font-light text-gray-900">
           ${room.basePrice}
-          <span className="text-sm font-light text-gray-600 ml-1">/night</span>
+          <span className="text-xs md:text-sm font-light text-gray-600 ml-1">
+            /night
+          </span>
         </div>
         {bookingSummary && (
-          <div className="text-sm text-gray-500 font-light">
+          <div className="text-xs md:text-sm text-gray-500 font-light">
             ${(room.basePrice * bookingSummary.nights).toLocaleString()} total
           </div>
         )}
@@ -663,7 +758,7 @@ function RoomPriceSection({
       <button
         onClick={() => onSelect(room.id)}
         disabled={!isSelectable}
-        className={`mt-4 w-full lg:w-auto px-6 py-2.5 rounded-xl font-medium transition-all duration-300 ${
+        className={`mt-4 w-full lg:w-auto px-4 md:px-6 py-2 rounded-xl font-medium transition-all duration-300 text-sm md:text-base ${
           isSelected
             ? "bg-primary text-white shadow-sm hover:bg-primary/90"
             : isSelectable
