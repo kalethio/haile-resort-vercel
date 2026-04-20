@@ -1,16 +1,49 @@
-// app/api/admin/system/users/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
-
+function validatePasswordStrength(password: string): {
+  valid: boolean;
+  message: string;
+} {
+  if (password.length < 8) {
+    return { valid: false, message: "Password must be at least 8 characters" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one uppercase letter",
+    };
+  }
+  if (!/[a-z]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one lowercase letter",
+    };
+  }
+  if (!/[0-9]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one number",
+    };
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    return {
+      valid: false,
+      message:
+        "Password must contain at least one special character (!@#$%^&*)",
+    };
+  }
+  return { valid: true, message: "" };
+}
 // GET single user
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // Add Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
     const user = await prisma.user.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -40,12 +73,12 @@ export async function GET(
 // UPDATE user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // Add Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
     const body = await request.json();
-    const { name, email, roleId, branchSlug, status } = body;
+    const { name, email, roleId, branchSlug, status, newPassword } = body;
 
     // Validate status
     const validStatuses = ["ACTIVE", "INACTIVE", "SUSPENDED"];
@@ -68,15 +101,30 @@ export async function PUT(
       where: { id: parseInt(id) },
     });
 
+    // Prepare update data
+    const updateData: any = {
+      name,
+      email,
+      roleId: parsedRoleId,
+      branchId: parsedBranchId,
+      status: userStatus,
+    };
+
+    // Validate password strength if provided
+    if (newPassword && newPassword.trim() !== "") {
+      const validation = validatePasswordStrength(newPassword);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.message },
+          { status: 400 }
+        );
+      }
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: {
-        name,
-        email,
-        roleId: parsedRoleId,
-        branchId: parsedBranchId,
-        status: userStatus,
-      },
+      data: updateData,
       include: {
         role: true,
         branch: true,
@@ -109,10 +157,10 @@ export async function PUT(
 // DELETE user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // Add Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params
+    const { id } = await params;
 
     // Get user data for audit before deleting
     const user = await prisma.user.findUnique({

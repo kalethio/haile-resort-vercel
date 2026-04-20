@@ -118,7 +118,10 @@ export default function Navbar() {
       {/* About Us Dropdown */}
       <div className="relative">
         <button
-          onClick={() => setAboutOpen((p) => !p)}
+          onClick={() => {
+            setAboutOpen((p) => !p);
+            setDestOpen(false);
+          }}
           className={linkCls(false) + " flex items-center gap-1 cursor-pointer"}
         >
           About Us <span className="text-sm">&#9662;</span>
@@ -146,7 +149,10 @@ export default function Navbar() {
       {/* Destinations Dropdown */}
       <div className="relative">
         <button
-          onClick={() => setDestOpen((p) => !p)}
+          onClick={() => {
+            setDestOpen((p) => !p);
+            setAboutOpen(false);
+          }}
           className={linkCls(false) + " flex items-center gap-1 cursor-pointer"}
         >
           Destinations <span className="text-sm">&#9662;</span>

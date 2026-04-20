@@ -1,12 +1,15 @@
+"use client";
+
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 export default function DashboardHeader() {
-  // Mock user data
-  const user = {
-    name: "Kalkidan Belachew",
-    role: "Hotel Manager",
-    branch: "Addis Ababa",
-  };
+  const { data: session, status } = useSession();
+
+  const user = session?.user;
+  const userName = user?.name || user?.email?.split("@")[0] || "User";
+  const userRole = user?.role || "Staff";
+  const userBranch = user?.branch?.name || user?.branch?.branchName || "System";
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -15,15 +18,29 @@ export default function DashboardHeader() {
     day: "numeric",
   });
 
+  if (status === "loading") {
+    return (
+      <section>
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 mt-2 animate-pulse"></div>
+          </div>
+          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Welcome back, {user.name}
+            Welcome back, {userName}
           </h1>
           <p className="text-gray-600 mt-1">
-            {user.role} • {user.branch} Branch • {currentDate}
+            {userRole} • {userBranch} Branch • {currentDate}
           </p>
         </div>
         <Link

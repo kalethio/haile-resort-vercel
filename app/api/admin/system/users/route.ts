@@ -1,9 +1,42 @@
-// app/api/admin/system/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
-
+function validatePasswordStrength(password: string): {
+  valid: boolean;
+  message: string;
+} {
+  if (password.length < 8) {
+    return { valid: false, message: "Password must be at least 8 characters" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one uppercase letter",
+    };
+  }
+  if (!/[a-z]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one lowercase letter",
+    };
+  }
+  if (!/[0-9]/.test(password)) {
+    return {
+      valid: false,
+      message: "Password must contain at least one number",
+    };
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    return {
+      valid: false,
+      message:
+        "Password must contain at least one special character (!@#$%^&*)",
+    };
+  }
+  return { valid: true, message: "" };
+}
 // GET all users with roles and branches
 export async function GET(request: NextRequest) {
   try {
@@ -82,7 +115,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, roleId, branchSlug, status } = body; // Changed to branchSlug
+    const { name, email, password, roleId, branchSlug, status } = body;
 
     // Validate and convert IDs
     const validStatuses = ["ACTIVE", "INACTIVE", "SUSPENDED"];
@@ -112,13 +145,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate password strength if provided
+    let hashedPassword = null;
+    if (password && password.trim() !== "") {
+      const validation = validatePasswordStrength(password);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.message },
+          { status: 400 }
+        );
+      }
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: password
-          ? `$2b$10$HASHED_${password}`
-          : `$2b$10$HASHED_default123`,
+        password: hashedPassword,
         roleId: parsedRoleId,
         branchId: parsedBranchId,
         status: userStatus,

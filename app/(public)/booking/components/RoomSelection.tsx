@@ -239,9 +239,18 @@ export default function RoomSelection({
   onRoomSelect,
   onProceed,
 }: RoomSelectionProps) {
+  const [mounted, setMounted] = useState(false);
   const adults = Number(bookingParams.adults) || 2;
   const children = Number(bookingParams.children) || 0;
   const safeRoomTypes = Array.isArray(roomTypes) ? roomTypes : [];
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <RoomSelectionSkeleton />;
+  }
 
   if (loading) {
     return <RoomSelectionSkeleton />;

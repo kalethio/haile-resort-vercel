@@ -19,13 +19,6 @@ export default function SystemAdmin() {
       requiredRole: ["SUPER_ADMIN", "ADMIN"],
       requiredPermission: "system_audit",
     },
-    {
-      title: "API Connections",
-      description: "Configure external integrations",
-      href: "/admin/8systemAdmin/api-connections",
-      requiredRole: ["SUPER_ADMIN"],
-      requiredPermission: "system_api",
-    },
   ];
 
   // Filter cards based on user role and permissions
