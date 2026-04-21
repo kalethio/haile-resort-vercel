@@ -1,9 +1,9 @@
 "use client";
 
 import { signIn, getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
 
 export default function LoginContent() {
   const [email, setEmail] = useState("");
@@ -13,56 +13,78 @@ export default function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [lockoutTime, setLockoutTime] = useState<number | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaId, setCaptchaId] = useState("");
   const [captchaCode, setCaptchaCode] = useState("");
+  const [captchaLoading, setCaptchaLoading] = useState(false);
   const [callbackUrl, setCallbackUrl] = useState("/admin");
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Generate random CAPTCHA
-  const generateCaptcha = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCaptchaCode(result);
-  };
-
+  // Load failed attempts from localStorage
   useEffect(() => {
     const url = searchParams?.get("callbackUrl") || "/admin";
     setCallbackUrl(url);
 
-    // Load remembered email from localStorage
     const rememberedEmail = localStorage.getItem("rememberedEmail");
     if (rememberedEmail) {
       setEmail(rememberedEmail);
       setRememberMe(true);
     }
 
-    // Check lockout from localStorage
-    const storedLockout = localStorage.getItem("loginLockout");
-    if (storedLockout) {
-      const lockoutEnd = parseInt(storedLockout);
-      if (lockoutEnd > Date.now()) {
-        setLockoutTime(lockoutEnd);
-      } else {
-        localStorage.removeItem("loginLockout");
-        localStorage.removeItem("loginAttempts");
-        setAttempts(0);
+    const storedAttempts = localStorage.getItem("failedAttempts");
+    if (storedAttempts) {
+      const attempts = parseInt(storedAttempts);
+      setFailedAttempts(attempts);
+      if (attempts >= 3) {
+        setShowCaptcha(true);
+        generateCaptcha();
       }
-    } else {
-      const storedAttempts = localStorage.getItem("loginAttempts");
-      if (storedAttempts) setAttempts(parseInt(storedAttempts));
     }
-
-    generateCaptcha();
   }, [searchParams]);
 
-  // Check if user is already logged in
+  // Generate CAPTCHA from server
+  const generateCaptcha = async () => {
+    setCaptchaLoading(true);
+    try {
+      const res = await fetch("/api/auth/captcha", { method: "POST" });
+      const data = await res.json();
+      setCaptchaId(data.captchaId);
+      setCaptchaCode(data.captchaCode);
+    } catch (err) {
+      console.error("CAPTCHA generation failed:", err);
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  // Verify CAPTCHA with server
+  const verifyCaptcha = async (): Promise<boolean> => {
+    if (!showCaptcha) return true;
+
+    try {
+      const res = await fetch("/api/auth/captcha", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ captchaId, userInput: captchaInput }),
+      });
+      const data = await res.json();
+
+      if (!data.valid) {
+        setError(data.error || "Invalid CAPTCHA code");
+        generateCaptcha(); // Refresh CAPTCHA
+        setCaptchaInput("");
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setError("CAPTCHA verification failed");
+      return false;
+    }
+  };
+
   useEffect(() => {
     const checkSession = async () => {
       const session = await getSession();
@@ -80,35 +102,18 @@ export default function LoginContent() {
     setInfoMessage(
       "Please contact system administrator to reset your password."
     );
-    setTimeout(() => {
-      setInfoMessage("");
-    }, 3000);
+    setTimeout(() => setInfoMessage(""), 3000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    // Check lockout
-    if (lockoutTime && lockoutTime > Date.now()) {
-      const minutesLeft = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
-      setError(
-        `Too many failed attempts. Please try again in ${minutesLeft} minutes.`
-      );
-      return;
-    }
-
-    // Verify CAPTCHA if shown
-    if (showCaptcha) {
-      if (captchaInput.toUpperCase() !== captchaCode) {
-        setError("Incorrect CAPTCHA code. Please try again.");
-        generateCaptcha();
-        setCaptchaInput("");
-        return;
-      }
-    }
+    // Verify CAPTCHA first
+    const isCaptchaValid = await verifyCaptcha();
+    if (!isCaptchaValid) return;
 
     setLoading(true);
-    setError("");
 
     try {
       const result = await signIn("credentials", {
@@ -118,37 +123,27 @@ export default function LoginContent() {
       });
 
       if (result?.error) {
-        // Increment failed attempts
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        localStorage.setItem("loginAttempts", newAttempts.toString());
+        const newAttempts = failedAttempts + 1;
+        setFailedAttempts(newAttempts);
+        localStorage.setItem("failedAttempts", newAttempts.toString());
 
-        // Show CAPTCHA after 3 failed attempts
         if (newAttempts >= 3 && !showCaptcha) {
           setShowCaptcha(true);
           generateCaptcha();
           setError("Too many failed attempts. Please verify CAPTCHA.");
-        }
-
-        // Lock after 5 failed attempts
-        if (newAttempts >= 5) {
-          const lockoutEnd = Date.now() + 15 * 60 * 1000; // 15 minutes
-          setLockoutTime(lockoutEnd);
-          localStorage.setItem("loginLockout", lockoutEnd.toString());
-          setError("Too many failed attempts. Account locked for 15 minutes.");
         } else {
+          const remaining = 3 - (newAttempts % 3);
           setError(
-            `Invalid email or password. ${5 - newAttempts} attempts remaining.`
+            `Invalid email or password. ${remaining} attempts remaining before CAPTCHA.`
           );
         }
       } else {
-        // Reset attempts on successful login
-        setAttempts(0);
+        // Successful login - reset everything
+        setFailedAttempts(0);
         setShowCaptcha(false);
-        localStorage.removeItem("loginAttempts");
-        localStorage.removeItem("loginLockout");
+        setCaptchaInput("");
+        localStorage.removeItem("failedAttempts");
 
-        // Save email if remember me checked
         if (rememberMe) {
           localStorage.setItem("rememberedEmail", email);
         } else {
@@ -164,69 +159,35 @@ export default function LoginContent() {
     }
   };
 
-  // Calculate remaining lockout time
-  const getLockoutMessage = () => {
-    if (lockoutTime && lockoutTime > Date.now()) {
-      const minutesLeft = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
-      const secondsLeft = Math.ceil((lockoutTime - Date.now()) / 1000);
-      if (minutesLeft < 1) return `${secondsLeft} seconds`;
-      return `${minutesLeft} minute${minutesLeft !== 1 ? "s" : ""}`;
-    }
-    return null;
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <p className="mt-3 text-center text-xl text-gray-600">
-            Sign in to your account
-          </p>
+          <p className="text-xl text-gray-600">Sign in to your account</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div
-              className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded shadow-sm"
-              role="alert"
-            >
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded shadow-sm">
               <p className="text-sm">{error}</p>
             </div>
           )}
 
           {infoMessage && (
-            <div
-              className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 px-4 py-3 rounded shadow-sm"
-              role="alert"
-            >
+            <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 px-4 py-3 rounded shadow-sm">
               <p className="text-sm">{infoMessage}</p>
-            </div>
-          )}
-
-          {lockoutTime && lockoutTime > Date.now() && (
-            <div className="bg-orange-50 border-l-4 border-orange-500 text-orange-700 px-4 py-3 rounded shadow-sm">
-              <p className="text-sm">
-                Account temporarily locked. Try again in {getLockoutMessage()}.
-              </p>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
               </label>
               <input
-                id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
                 required
-                disabled={!!(lockoutTime && lockoutTime > Date.now())}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-gray-900"
                 placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -234,21 +195,14 @@ export default function LoginContent() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
                   required
-                  disabled={!!(lockoutTime && lockoutTime > Date.now())}
-                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm pr-10 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-gray-900 pr-10"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -263,32 +217,39 @@ export default function LoginContent() {
               </div>
             </div>
 
-            {/* CAPTCHA Section - appears after 3 failed attempts */}
+            {/* CAPTCHA Section */}
             {showCaptcha && (
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Verify you are human
                 </label>
-                <div className="bg-gray-800 p-3 rounded-lg text-center mb-3">
-                  <span className="text-2xl font-mono tracking-wider text-white bg-gray-800 px-4 py-2 rounded">
-                    {captchaCode}
+                <div className="bg-gray-800 p-3 rounded-lg text-center mb-3 flex items-center justify-between">
+                  <span className="text-2xl font-mono tracking-wider text-white">
+                    {captchaLoading ? "••••••" : captchaCode}
                   </span>
+                  <button
+                    type="button"
+                    onClick={generateCaptcha}
+                    disabled={captchaLoading}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <RefreshCw
+                      size={18}
+                      className={captchaLoading ? "animate-spin" : ""}
+                    />
+                  </button>
                 </div>
                 <input
                   type="text"
                   placeholder="Enter code above"
                   value={captchaInput}
                   onChange={(e) => setCaptchaInput(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-sm"
+                  className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-sm"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={generateCaptcha}
-                  className="mt-2 text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Refresh CAPTCHA
-                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  CAPTCHA expires after 5 minutes
+                </p>
               </div>
             )}
           </div>
@@ -297,7 +258,6 @@ export default function LoginContent() {
             <div className="flex items-center">
               <input
                 id="remember-me"
-                name="remember-me"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
@@ -310,51 +270,32 @@ export default function LoginContent() {
                 Remember me
               </label>
             </div>
-            <div className="text-sm">
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="font-medium text-black hover:text-gray-700"
-              >
-                Forgot password?
-              </button>
-            </div>
-          </div>
-
-          <div>
             <button
-              type="submit"
-              disabled={loading || !!(lockoutTime && lockoutTime > Date.now())}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-sm font-medium text-black hover:text-gray-700"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign in"
-              )}
+              Forgot password?
             </button>
           </div>
 
-          {/* Attempts counter - only show if >0 and not locked and not showing CAPTCHA */}
-          {attempts > 0 && attempts < 5 && !lockoutTime && !showCaptcha && (
-            <div className="text-center text-xs text-gray-500">
-              {5 - attempts} login attempt{5 - attempts !== 1 ? "s" : ""}{" "}
-              remaining
-            </div>
-          )}
-
-          {/* CAPTCHA warning */}
-          {showCaptcha && !lockoutTime && (
-            <div className="text-center text-xs text-orange-600">
-              CAPTCHA verification required due to multiple failed attempts
-            </div>
-          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center py-2 px-4 text-sm font-medium rounded-lg text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 transition-colors"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-gray-400 border-t pt-4">
+        <div className="text-center text-xs text-gray-400 border-t pt-4">
           <p>Haile Hotels & Resorts - Admin Portal</p>
         </div>
       </div>
