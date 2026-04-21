@@ -50,6 +50,7 @@ export default function EditUserModal({
       newPassword: "",
       confirmPassword: "",
     });
+    setShowResetConfirm(false);
   }, [user]);
 
   const fetchData = async () => {
@@ -79,7 +80,6 @@ export default function EditUserModal({
       return;
     }
 
-    // If password is being changed
     if (formData.newPassword) {
       const passwordValidation = validatePassword(formData.newPassword);
       if (!passwordValidation.valid) {
@@ -136,7 +136,11 @@ export default function EditUserModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          onClick={(e) => e.stopPropagation()}
+          className="p-6 space-y-4"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-black mb-1">

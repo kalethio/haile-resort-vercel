@@ -1,4 +1,3 @@
-// components/PasswordInput.tsx
 "use client";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -31,7 +30,7 @@ export default function PasswordInput({
   };
 
   return (
-    <div>
+    <div onClick={(e) => e.stopPropagation()}>
       <label className="block text-sm font-medium text-black mb-1">
         {label} {required && "*"}
       </label>
