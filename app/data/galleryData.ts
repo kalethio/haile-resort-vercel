@@ -12,60 +12,6 @@ export interface Photo {
   type: PhotoType;
 }
 
-// === Branches ===
-export const branches: Branch[] = [
-  {
-    id: "addis",
-    name: "Haile Grand — Addis Ababa",
-    thumbnail: "/images/gallery/AddisGrand.jpg",
-  },
-  {
-    id: "hawassa",
-    name: "Haile Resort — Hawassaa",
-    thumbnail: "/images/gallery/Hawassa.JPG",
-  },
-  {
-    id: "jimma",
-    name: "Haile Resort — Jimma",
-    thumbnail: "/images/gallery/Jimma.jpg",
-  },
-  {
-    id: "Arbaminch",
-    name: "Haile Resort — Arba Minch",
-    thumbnail: "/images/gallery/arbaminchi.jpg",
-  },
-  {
-    id: "Adama",
-    name: "Haile Resort — Adama",
-    thumbnail: "/images/gallery/Adama.JPG",
-  },
-  {
-    id: "Batu",
-    name: "Haile Resort — Batu",
-    thumbnail: "/images/gallery/Batu.JPG",
-  },
-  {
-    id: "Sululta",
-    name: " Haile Village — Sululta",
-    thumbnail: "/images/gallery/yaya_7_layer1.jpeg",
-  },
-  {
-    id: "Wolaita",
-    name: "Haile Hotel — Wolaita",
-    thumbnail: "/images/gallery/wolaita-sodo.jpeg",
-  },
-  {
-    id: "Gondar",
-    name: "Haile Resort — Gondar",
-    thumbnail: "/images/gallery/gonder_6_layer.jpeg",
-  },
-  {
-    id: "Shashemene",
-    name: "Haile Resort — Shashemene",
-    thumbnail: "/images/gallery/Shashemene.jpg",
-  },
-];
-
 // === Categories ===
 export const categories = [
   "All",
@@ -82,7 +28,7 @@ export const photos: Photo[] = [
     id: 1,
     src: "/images/gallery/Accommodation/lobby1.jpg",
     title: "Lobby Elegance",
-    branch: "addis",
+    branch: "addis-ababa",
     categories: ["Accommodation"],
     type: "photo",
   },
@@ -90,7 +36,7 @@ export const photos: Photo[] = [
     id: 2,
     src: "/images/gallery/Activities/Grand-wellness-2.jpg",
     title: "Pool View",
-    branch: "addis",
+    branch: "addis-ababa",
     categories: ["Activities"],
     type: "photo",
   },
@@ -99,7 +45,7 @@ export const photos: Photo[] = [
     src: "/images/gallery/Activities/curture.jpg",
     title: "Sunset Yoga",
     description: "Relax your mind with our evening sessions",
-    branch: "addis",
+    branch: "addis-ababa",
     categories: ["Activities", "Nature"],
     type: "story",
   },
@@ -107,7 +53,7 @@ export const photos: Photo[] = [
     id: 4,
     src: "/images/gallery/Accommodation/beutiy1.jpg",
     title: "Luxurious Suite",
-    branch: "addis",
+    branch: "addis-ababa",
     categories: ["Accommodation"],
     type: "photo",
   },
@@ -130,7 +76,7 @@ export const photos: Photo[] = [
   },
   {
     id: 7,
-    src: "/images/gallery/Activities/hawassa pool.jpg",
+    src: "/images/gallery/Activities/",
     title: "Cultural Evenings",
     description: "Experience local traditions & music",
     branch: "hawassa",
@@ -235,7 +181,7 @@ export const photos: Photo[] = [
     id: 23,
     src: "/images/gallery/Activities/Pool.jpg",
     title: "Swimming Pool",
-    branch: "Adama",
+    branch: "adama",
     categories: ["Activities"],
     type: "photo",
   },
@@ -243,7 +189,7 @@ export const photos: Photo[] = [
     id: 24,
     src: "/images/gallery/Dining/haile-resorts-rooms-1-4.jpg",
     title: "Pool Bar",
-    branch: "Adama",
+    branch: "adama",
     categories: ["Dining", "Activities"],
     type: "photo",
   },
@@ -252,7 +198,7 @@ export const photos: Photo[] = [
     id: 25,
     src: "/images/gallery/Nature/batu1.jpg",
     title: "Botanical Garden",
-    branch: "Batu",
+    branch: "batu",
     categories: ["Nature"],
     type: "photo",
   },
@@ -260,7 +206,7 @@ export const photos: Photo[] = [
     id: 26,
     src: "/images/gallery/Dining/haile-resorts-rooms-1-4.jpg",
     title: "Pool Bar",
-    branch: "Batu",
+    branch: "batu",
     categories: ["Dining", "Activities"],
     type: "photo",
   },
@@ -268,7 +214,7 @@ export const photos: Photo[] = [
     id: 27,
     src: "/images/gallery/Accommodation/restorant.jpg",
     title: "Private Villa",
-    branch: "Batu",
+    branch: "batu",
     categories: ["Accommodation"],
     type: "photo",
   },
@@ -276,7 +222,7 @@ export const photos: Photo[] = [
     id: 28,
     src: "/images/gallery/Activities/Pool1.jpg",
     title: "Swimming Pool",
-    branch: "Batu",
+    branch: "batu",
     categories: ["Activities"],
     type: "photo",
   },

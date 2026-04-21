@@ -1,13 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { branches, categories, photos, Photo } from "../../data/galleryData";
+import { categories, photos, Photo } from "../../data/galleryData";
+
+interface Branch {
+  id: string;
+  branchName: string;
+  slug: string;
+}
 
 export default function CreativeGalleryWithCategories() {
   const [activeBranch, setActiveBranch] = useState("all");
   const [activeCategory, setActiveCategory] = useState("All");
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
   const [showBranchSelector, setShowBranchSelector] = useState(false);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/branches-list")
+      .then((res) => res.json())
+      .then((data) => setBranches(data.branches));
+  }, []);
 
   const filteredPhotos = photos.filter((item) => {
     if (activeBranch !== "all" && item.branch !== activeBranch) return false;
@@ -43,12 +56,75 @@ export default function CreativeGalleryWithCategories() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [lightboxPhoto, filteredPhotos]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".branch-selector")) {
+        setShowBranchSelector(false);
+      }
+    };
+    if (showBranchSelector) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showBranchSelector]);
+
   return (
     <div className="flex mt-24 relative">
       {/* Main Gallery Section */}
       <div className="flex-1">
+        {/* Branch Selector Section */}
+        <div className="sticky top-[88px] z-20 bg-transparent py-2 px-6 max-w-[1200px] mx-auto">
+          <div className="branch-selector">
+            <button
+              onClick={() => setShowBranchSelector(!showBranchSelector)}
+              className="px-4 py-1 rounded-full border-2 border-gray-300 font-semibold text-sm cursor-pointer hover:scale-105 bg-white text-gray-700"
+            >
+              {activeBranch === "all"
+                ? "Choose a branch"
+                : branches.find((b) => b.slug === activeBranch)?.branchName ||
+                  "Choose a branch"}
+            </button>
+
+            {/* Branch List - stays open after selection */}
+            {showBranchSelector && (
+              <div className="flex flex-wrap gap-4 mt-3">
+                <button
+                  onClick={() => {
+                    setActiveBranch("all");
+                    // Do NOT close popup
+                  }}
+                  className={`text-sm cursor-pointer hover:scale-105 ${
+                    activeBranch === "all"
+                      ? "font-bold text-primary"
+                      : "text-gray-600"
+                  }`}
+                >
+                  All Branches
+                </button>
+                {branches.map((branch) => (
+                  <button
+                    key={branch.id}
+                    onClick={() => {
+                      setActiveBranch(branch.slug);
+                      // Do NOT close popup
+                    }}
+                    className={`text-sm cursor-pointer hover:scale-105 ${
+                      activeBranch === branch.slug
+                        ? "font-bold text-primary"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {branch.branchName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Category Pills */}
-        <div className="sticky top-[88px] z-20 bg-white/90 backdrop-blur-md py-2 px-6 flex flex-wrap gap-3 max-w-[1200px] mx-auto">
+        <div className="sticky top-[136px] z-20 backdrop-blur-md py-2 px-6 flex flex-wrap gap-3 max-w-[1200px] mx-auto">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -56,10 +132,10 @@ export default function CreativeGalleryWithCategories() {
                 setActiveCategory(cat);
                 setLightboxPhoto(null);
               }}
-              className={`px-4 py-1 rounded-full border-2 font-semibold text-sm cursor-pointer transition ${
+              className={`px-4 py-1 rounded-full border-2 font-semibold text-sm cursor-pointer transition hover:scale-105 ${
                 activeCategory === cat
                   ? "bg-primary border-primary text-white shadow-md"
-                  : "border-gray-300 text-gray-700 hover:bg-primary/10 hover:text-primary hover:border-primary"
+                  : "border-gray-300 text-gray-700 bg-white"
               }`}
             >
               {cat}
@@ -76,7 +152,7 @@ export default function CreativeGalleryWithCategories() {
             item.type === "photo" ? (
               <div
                 key={item.id}
-                className={`break-inside-avoid relative rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-2xl ${
+                className={`break-inside-avoid relative rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 ${
                   (idx + 1) % 7 === 0 ? "lg:col-span-2 lg:row-span-2" : ""
                 }`}
                 onClick={() => setLightboxPhoto(item)}
@@ -105,83 +181,6 @@ export default function CreativeGalleryWithCategories() {
             )
           )}
         </div>
-      </div>
-
-      {/* Branch Selector Toggle Button - Now on the Right */}
-      <div className="sticky top-24 z-30 h-fit">
-        <button
-          onClick={() => setShowBranchSelector(!showBranchSelector)}
-          className="mr-4 flex items-center gap-2 bg-white/90 backdrop-blur-md border border-gray-300 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <span className="font-semibold text-gray-700">Branches</span>
-          <svg
-            className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-              showBranchSelector ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-
-        {/* Branch Selector Dropdown */}
-        {showBranchSelector && (
-          <div className="absolute top-full right-4 mt-2 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg py-3 w-48 z-40">
-            {/* All Branches */}
-            <button
-              onClick={() => {
-                setActiveBranch("all");
-                setShowBranchSelector(false);
-                setLightboxPhoto(null);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`flex items-center gap-3 w-full px-4 py-2 transition-all ${
-                activeBranch === "all"
-                  ? "bg-green-50 text-green-800 font-semibold"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <div className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 bg-gray-100">
-                🌍
-              </div>
-              <span>All Branches</span>
-            </button>
-
-            {branches.map((branch) => (
-              <button
-                key={branch.id}
-                onClick={() => {
-                  setActiveBranch(branch.id);
-                  setShowBranchSelector(false);
-                  setLightboxPhoto(null);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className={`flex items-center gap-3 w-full px-4 py-2 transition-all ${
-                  activeBranch === branch.id
-                    ? "bg-green-50 text-green-800 font-semibold"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 shadow-sm">
-                  <img
-                    src={branch.thumbnail}
-                    alt={branch.name}
-                    className="object-cover w-full h-full"
-                    loading="lazy"
-                  />
-                </div>
-                <span>{branch.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Lightbox */}
