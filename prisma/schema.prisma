@@ -82,6 +82,7 @@ model Branch {
   description      String?
   heroImage        String?
   directionsUrl    String?
+  externalBookingUrl   String?
   starRating       Int?
   published        Boolean           @default(false)
   createdAt        DateTime          @default(now())

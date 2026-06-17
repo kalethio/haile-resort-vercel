@@ -1,4 +1,4 @@
-//app/aip / branches / [slug] / route.ts;
+//app/api/branches/[slug]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: Params) {
         location: true,
         contact: true,
         attractions: {
-          orderBy: { order: "asc" }, // NEW: Added ordering
+          orderBy: { order: "asc" },
         },
         accommodations: true,
         experiences: {
@@ -40,9 +40,9 @@ export async function GET(req: Request, { params }: Params) {
       directionsUrl: branch.directionsUrl || "",
       starRating: branch.starRating || 4,
       published: branch.published || false,
-      // NEW FIELDS ADDED:
       heroVideoUrl: branch.heroVideoUrl || "",
       heroTagline: branch.heroTagline || "",
+      externalBookingUrl: branch.externalBookingUrl || "", // ← ADD THIS LINE
       location: {
         city: branch.location?.city || "",
         region: branch.location?.region || "",

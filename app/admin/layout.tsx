@@ -1,16 +1,17 @@
 // /app/admin/layout.tsx
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import Sidebar from "./components/sidebar";
+import Sidebar from "./components/Sidebar";
 import { PERMISSION_MODULES } from "@/app/admin/lib/permissions";
 
 // Inner component that handles auth protection
 function AdminContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -35,7 +36,7 @@ function AdminContent({ children }: { children: React.ReactNode }) {
   if (status === "loading") {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <div className="flex-1 ml-64 flex flex-col">
+        <div className="flex-1 flex flex-col">
           <main className="flex-1 p-6 overflow-y-auto flex items-center justify-center">
             <div className="text-lg">Loading...</div>
           </main>
@@ -74,11 +75,14 @@ function AdminContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white border-r shadow-sm fixed top-0 left-0 h-screen z-20">
-        <Sidebar user={session.user} permissions={userPermissions} />
-      </aside>
-
-      <div className="flex-1 ml-64 flex flex-col">
+      <Sidebar
+        user={session.user}
+        permissions={userPermissions}
+        onCollapse={setSidebarCollapsed}
+      />
+      <div
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? "ml-20" : "ml-64"}`}
+      >
         <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>
     </div>

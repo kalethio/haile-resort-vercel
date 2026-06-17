@@ -90,6 +90,7 @@ export async function PATCH(req: Request, { params }: Params) {
       "published",
       "heroVideoUrl", // NEW
       "heroTagline", // NEW
+      "externalBookingUrl",
     ];
 
     const filteredBranchUpdates = Object.keys(updates)

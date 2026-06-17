@@ -47,6 +47,7 @@ export default function BranchTemplate({ branch }: BranchTemplateProps) {
           heroTagline: branch.heroTagline,
           contact: branch.contact,
           directionsUrl: branch.directionsUrl,
+          externalBookingUrl: branch.externalBookingUrl, // ← ADDED
         }}
       />
 

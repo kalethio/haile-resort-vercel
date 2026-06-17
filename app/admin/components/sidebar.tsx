@@ -43,6 +43,7 @@ interface SidebarProps {
   permissions: {
     [key: string]: boolean;
   };
+  onCollapse?: (collapsed: boolean) => void;
 }
 
 const menuItems: MenuItem[] = [
@@ -91,7 +92,11 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-export default function Sidebar({ user, permissions }: SidebarProps) {
+export default function Sidebar({
+  user,
+  permissions,
+  onCollapse,
+}: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const pathname = usePathname();
@@ -101,7 +106,9 @@ export default function Sidebar({ user, permissions }: SidebarProps) {
   };
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    onCollapse?.(newState);
   };
 
   const filteredMenuItems = menuItems.filter((item) => {
@@ -274,11 +281,6 @@ export default function Sidebar({ user, permissions }: SidebarProps) {
           </div>
         </div>
       </aside>
-
-      {/* Content margin */}
-      <div
-        className={`transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"}`}
-      />
 
       {/* Change Password Modal */}
       {showChangePassword && (

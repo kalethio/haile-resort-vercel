@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
-import BookingForm from "../bookingform";
 
 interface Branch {
   branchName: string;
@@ -16,6 +15,7 @@ interface Branch {
     email?: string;
   };
   directionsUrl?: string;
+  externalBookingUrl?: string;
 }
 
 interface HeroSectionProps {
@@ -23,23 +23,18 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ branch }: HeroSectionProps) {
-  const [showBookingForm, setShowBookingForm] = useState(false);
   const [videoError, setVideoError] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(false); // ← Fixed: added = sign
   const [bgOpacity, setBgOpacity] = useState(0);
 
   const textPanelRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(textPanelRef, { once: true, amount: 0.3 });
   const { scrollY } = useScroll();
 
-  // Scroll animations
   const videoScale = useTransform(scrollY, [0, 300], [1, 1.05]);
   const textPanelY = useTransform(scrollY, [0, 200], [0, 50]);
-
-  // Text panel background opacity: starts transparent (0), becomes solid white (1) after scrolling 50px
   const panelBgOpacity = useTransform(scrollY, [0, 50], [0, 1]);
 
-  // Update bgOpacity when panelBgOpacity changes
   useEffect(() => {
     const unsubscribe = panelBgOpacity.onChange((value) => {
       setBgOpacity(value);
@@ -47,15 +42,18 @@ export default function HeroSection({ branch }: HeroSectionProps) {
     return () => unsubscribe();
   }, [panelBgOpacity]);
 
-  useEffect(() => {
-    console.log("HeroSection received:", {
-      videoUrl: branch.heroVideoUrl,
-      imageUrl: branch.heroImage,
-    });
-  }, [branch]);
-
   const tagline = branch.heroTagline || "Turn Your Vacation Dream Into Reality";
   const contact = branch.contact || {};
+
+  const handleBookNow = () => {
+    if (branch.externalBookingUrl) {
+      window.open(branch.externalBookingUrl, "_blank");
+    } else {
+      alert(
+        "Booking URL not configured for this branch. Please contact the administrator."
+      );
+    }
+  };
 
   const getVideoUrl = (videoId: string) => {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&showinfo=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&loop=1&playlist=${videoId}`;
@@ -63,7 +61,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
 
   const showVideo = branch.heroVideoUrl && !videoError;
 
-  // Animation variants for text appearance
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -111,9 +108,8 @@ export default function HeroSection({ branch }: HeroSectionProps) {
 
   return (
     <>
-      {/* Desktop: Overlapping design (lg and up) */}
+      {/* Desktop */}
       <div className="hidden lg:relative lg:block w-full h-screen max-h-screen overflow-hidden">
-        {/* Video Background with scale animation on scroll */}
         <motion.div className="absolute inset-0" style={{ scale: videoScale }}>
           {showVideo ? (
             <div className="absolute inset-0 overflow-hidden">
@@ -143,7 +139,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
           )}
         </motion.div>
 
-        {/* Text Panel - Bottom centered with scroll animation and dynamic background */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none"
           style={{ y: textPanelY }}
@@ -249,7 +244,7 @@ export default function HeroSection({ branch }: HeroSectionProps) {
               animate={isInView ? "visible" : "hidden"}
               whileHover="hover"
               whileTap="tap"
-              onClick={() => setShowBookingForm(true)}
+              onClick={handleBookNow}
               className="w-full py-3 text-base font-semibold rounded-lg bg-[rgb(120,17,45)] text-white hover:bg-[rgb(100,12,38)] transition-colors duration-300 sm:py-4 sm:text-lg max-w-md mx-auto block"
             >
               Book Now
@@ -258,9 +253,8 @@ export default function HeroSection({ branch }: HeroSectionProps) {
         </motion.div>
       </div>
 
-      {/* Mobile: COMPLETELY SEPARATE - Video on top, Text box below (no overlap, no absolute positioning) */}
+      {/* Mobile */}
       <div className="lg:hidden flex flex-col w-full min-h-screen">
-        {/* Video section - full width, 50vh height, NO text overlay */}
         <div className="relative w-full h-[50vh] bg-black overflow-hidden flex-shrink-0">
           {showVideo ? (
             <div className="absolute inset-0 overflow-hidden">
@@ -290,7 +284,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
           )}
         </div>
 
-        {/* Text section - SEPARATE, below video, white background, scrollable, NO absolute positioning */}
         <div className="flex-1 bg-white px-6 py-10 overflow-y-auto">
           <motion.div
             initial="hidden"
@@ -364,7 +357,7 @@ export default function HeroSection({ branch }: HeroSectionProps) {
               animate="visible"
               whileHover="hover"
               whileTap="tap"
-              onClick={() => setShowBookingForm(true)}
+              onClick={handleBookNow}
               className="w-full py-3 text-base font-semibold rounded-lg bg-[rgb(120,17,45)] text-white hover:bg-[rgb(100,12,38)] transition-colors duration-300 max-w-md mx-auto block"
             >
               Book Now
@@ -372,21 +365,6 @@ export default function HeroSection({ branch }: HeroSectionProps) {
           </motion.div>
         </div>
       </div>
-
-      {/* Booking Form Modal */}
-      {showBookingForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowBookingForm(false)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-            >
-              <span className="text-xl">×</span>
-            </button>
-            <BookingForm />
-          </div>
-        </div>
-      )}
     </>
   );
 }

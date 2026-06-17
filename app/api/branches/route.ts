@@ -12,6 +12,7 @@ export async function GET() {
         heroImage: true,
         description: true,
         starRating: true,
+        externalBookingUrl: true,
         location: {
           select: {
             city: true,

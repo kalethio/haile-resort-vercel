@@ -89,6 +89,7 @@ export default function EditBranchForm({
             description: seo.description || branch.seo?.description || "",
             keywords: seo.keywords || branch.seo?.keywords || [],
           },
+          externalBookingUrl: branch.externalBookingUrl || "",
         });
       } catch (error) {
         console.error("❌ FETCH ERROR:", error);
@@ -177,6 +178,7 @@ export default function EditBranchForm({
           directionsUrl: formData.directionsUrl,
           starRating: formData.starRating,
           published: formData.published,
+          externalBookingUrl: formData.externalBookingUrl, // ← ADD THIS LINE
         }),
       });
 
@@ -565,7 +567,6 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
               Used as fallback if video is not available
             </p>
           </div>
-
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <VideoIcon className="w-4 h-4 text-primary" />
@@ -582,7 +583,6 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
               YouTube Video ID (e.g., iCS0YIJx3Ek)
             </p>
           </div>
-
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" />
@@ -597,6 +597,22 @@ function ContactTab({ formData, onChange }: BasicInfoTabProps) {
             />
             <p className="text-xs text-gray-500 mt-2">
               Google Maps navigation link
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              External Booking URL
+            </label>
+            <input
+              type="url"
+              value={formData.externalBookingUrl || ""}
+              onChange={(e) => onChange("externalBookingUrl", e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white text-gray-900 font-medium"
+              placeholder="https://swiftbook.io/inst/#home?propertyId=..."
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Direct booking link (SwiftBook or other external booking system)
             </p>
           </div>
         </div>
