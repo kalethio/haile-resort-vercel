@@ -176,17 +176,6 @@ export default function Navbar() {
           </div>
         )}
       </div>
-
-      <button
-        onClick={() => {
-          if (isMobile) setMenuOpen(false);
-          toggleBooking();
-        }}
-        className="block px-4 py-2 cursor-pointer rounded-md font-semibold bg-gradient-to-r from-primary/40 to-primary/80 text-text shadow transition-all duration-300 hover:scale-105 hover:from-primary/50 hover:to-primary/90"
-        aria-expanded={bookingOpen}
-      >
-        Reserve Your Stay
-      </button>
     </>
   );
 
@@ -303,13 +292,6 @@ export default function Navbar() {
             >
               ✕
             </button>
-
-            <div className="p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-red-900">
-                Reserve Your Stay
-              </h2>
-            </div>
-
             <div className="p-6 sm:p-8 bg-white/10">
               <BookingForm />
             </div>
