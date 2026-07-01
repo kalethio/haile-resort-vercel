@@ -4,7 +4,6 @@ import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { PACKAGES, Package } from "../../data/favPackages";
-import BookingForm from "../bookingform";
 
 const serviceDescription = (
   <>
@@ -15,7 +14,6 @@ const serviceDescription = (
 
 export default function HaileFavouritePackages() {
   const containerRef = useRef<HTMLElement | null>(null);
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -57,12 +55,7 @@ export default function HaileFavouritePackages() {
           <div className="max-w-6xl mx-auto w-full px-6 md:px-12 lg:px-20">
             <div className="space-y-28">
               {PACKAGES.map((pkg, index) => (
-                <PackageCard
-                  key={pkg.id}
-                  pkg={pkg}
-                  index={index}
-                  onBookNow={() => setIsBookingOpen(true)}
-                />
+                <PackageCard key={pkg.id} pkg={pkg} index={index} />
               ))}
             </div>
           </div>
@@ -74,41 +67,14 @@ export default function HaileFavouritePackages() {
       {/* Mobile Version: stacked cards with expand/collapse */}
       <div className="md:hidden max-w-3xl mx-auto px-4 space-y-6">
         {PACKAGES.map((pkg) => (
-          <MobilePackageCard
-            key={pkg.id}
-            pkg={pkg}
-            onBookNow={() => setIsBookingOpen(true)}
-          />
+          <MobilePackageCard key={pkg.id} pkg={pkg} />
         ))}
       </div>
-
-      {/* Booking Form Popup */}
-      {isBookingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setIsBookingOpen(false)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-            >
-              <span className="text-xl">×</span>
-            </button>
-            <BookingForm />
-          </div>
-        </div>
-      )}
     </section>
   );
 }
 
-function PackageCard({
-  pkg,
-  index,
-  onBookNow,
-}: {
-  pkg: Package;
-  index: number;
-  onBookNow: () => void;
-}) {
+function PackageCard({ pkg, index }: { pkg: Package; index: number }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   const { scrollYProgress } = useScroll({
@@ -171,12 +137,9 @@ function PackageCard({
             {pkg.description}
           </p>
           {pkg.ctaLabel && (
-            <button
-              onClick={onBookNow}
-              className="inline-block mt-5 w-fit rounded-lg px-8 py-3 text-sm font-semibold bg-primary/90 text-white shadow-md hover:bg-primary transition"
-            >
+            <div className="inline-block mt-5 w-fit rounded-lg px-8 py-3 text-sm font-semibold bg-gray-300 text-gray-500 cursor-not-allowed">
               {pkg.ctaLabel}
-            </button>
+            </div>
           )}
         </div>
       </motion.div>
@@ -184,13 +147,7 @@ function PackageCard({
   );
 }
 
-function MobilePackageCard({
-  pkg,
-  onBookNow,
-}: {
-  pkg: Package;
-  onBookNow: () => void;
-}) {
+function MobilePackageCard({ pkg }: { pkg: Package }) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -232,12 +189,9 @@ function MobilePackageCard({
           {pkg.description}
         </p>
         {pkg.ctaLabel && (
-          <button
-            onClick={onBookNow}
-            className="inline-block rounded-lg px-6 py-2 text-xs font-semibold bg-black text-white shadow-md hover:bg-primary transition"
-          >
+          <div className="inline-block rounded-lg px-6 py-2 text-xs font-semibold bg-gray-300 text-gray-500 cursor-not-allowed">
             {pkg.ctaLabel}
-          </button>
+          </div>
         )}
       </motion.div>
     </div>

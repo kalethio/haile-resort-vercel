@@ -7,17 +7,33 @@ type NewsItem = {
   title: string;
   desc: string;
   detail: string;
+  imageUrl?: string;
+  brochureUrl?: string;
 };
 
 export default function LatestNews() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [selectedNews, setSelectedNews] = useState<number | null>(null);
 
-  // Fetch news from API on component load
   useEffect(() => {
     fetch("/api/news")
       .then((res) => res.json())
-      .then((data) => setNews(data))
+      .then((data) => {
+        const parsed = data.map((item: any) => {
+          try {
+            const parsed = JSON.parse(item.detail);
+            return {
+              ...item,
+              detail: parsed.detail || item.detail,
+              imageUrl: parsed.imageUrl || null,
+              brochureUrl: parsed.brochureUrl || null,
+            };
+          } catch {
+            return { ...item, imageUrl: null, brochureUrl: null };
+          }
+        });
+        setNews(parsed);
+      })
       .catch((err) => console.error("Failed to load news:", err));
   }, []);
 
@@ -28,7 +44,6 @@ export default function LatestNews() {
           Latest News & Events
         </h2>
 
-        {/* Mobile: horizontal scroll; Desktop: grid */}
         <div className="grid md:grid-cols-3 gap-8 md:gap-10 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none">
           {news.map((item, idx) => (
             <motion.div
@@ -44,6 +59,14 @@ export default function LatestNews() {
               viewport={{ once: true, amount: 0.3 }}
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/80 to-primary rounded-t-2xl" />
+
+              {item.imageUrl && (
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  className="w-full h-40 object-cover rounded-lg mb-4"
+                />
+              )}
 
               <h3 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4 text-primary/70">
                 {item.title}
@@ -73,7 +96,7 @@ export default function LatestNews() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 md:p-10 mx-4 md:mx-0 relative"
+              className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 md:p-10 mx-4 md:mx-0 relative max-h-[90vh] overflow-y-auto"
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
@@ -81,16 +104,37 @@ export default function LatestNews() {
             >
               <button
                 onClick={() => setSelectedNews(null)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold z-10"
               >
                 &times;
               </button>
+
+              {news[selectedNews].imageUrl && (
+                <img
+                  src={news[selectedNews].imageUrl}
+                  alt={news[selectedNews].title}
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                />
+              )}
+
               <h3 className="text-2xl md:text-3xl font-semibold text-primary mb-4">
                 {news[selectedNews].title}
               </h3>
-              <p className="text-gray-700 text-base md:text-lg leading-relaxed">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed whitespace-pre-line">
                 {news[selectedNews].detail}
               </p>
+
+              {news[selectedNews].brochureUrl && (
+                <a
+                  href={news[selectedNews].brochureUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-6 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  download
+                >
+                  📄 Download Brochure
+                </a>
+              )}
             </motion.div>
           </motion.div>
         )}

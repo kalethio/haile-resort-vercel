@@ -4,20 +4,26 @@ import { useState, useEffect } from "react";
 import { Plus, Edit, Trash } from "lucide-react";
 
 type Props = { onClose: () => void };
-type NewsForm = { title: string; desc: string; detail: string };
+type NewsForm = {
+  title: string;
+  desc: string;
+  detail: string;
+  imageUrl: string;
+  brochureUrl: string;
+};
 
 export default function NewsModal({ onClose }: Props) {
-  const [news, setNews] = useState<NewsForm[]>([]);
+  const [news, setNews] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState<NewsForm>({
     title: "",
     desc: "",
     detail: "",
+    imageUrl: "",
+    brochureUrl: "",
   });
   const [loading, setLoading] = useState(false);
-
-  // Confirmation modal states
   const [confirmAction, setConfirmAction] = useState<null | {
     type: "add" | "update" | "delete";
     index?: number;
@@ -28,7 +34,23 @@ export default function NewsModal({ onClose }: Props) {
     setLoading(true);
     fetch("/api/news")
       .then((res) => res.json())
-      .then((data) => setNews(data))
+      .then((data) => {
+        // Parse JSON detail if present
+        const parsed = data.map((item: any) => {
+          try {
+            const parsed = JSON.parse(item.detail);
+            return {
+              ...item,
+              detail: parsed.detail || item.detail,
+              imageUrl: parsed.imageUrl || null,
+              brochureUrl: parsed.brochureUrl || null,
+            };
+          } catch {
+            return { ...item, imageUrl: null, brochureUrl: null };
+          }
+        });
+        setNews(parsed);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -42,21 +64,29 @@ export default function NewsModal({ onClose }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (editIndex !== null) {
-      setConfirmAction({ type: "update" });
-    } else {
-      setConfirmAction({ type: "add" });
-    }
+    setConfirmAction({ type: editIndex !== null ? "update" : "add" });
   };
 
   const confirmSubmit = async () => {
     const updatedNews = [...news];
 
+    // Package media data into JSON string
+    const mediaData = {
+      detail: formData.detail,
+      imageUrl: formData.imageUrl || null,
+      brochureUrl: formData.brochureUrl || null,
+    };
+
+    const newItem = {
+      title: formData.title,
+      desc: formData.desc,
+      detail: JSON.stringify(mediaData),
+    };
+
     if (confirmAction?.type === "update" && editIndex !== null) {
-      updatedNews[editIndex] = formData;
+      updatedNews[editIndex] = { ...updatedNews[editIndex], ...newItem };
     } else if (confirmAction?.type === "add") {
-      updatedNews.push(formData);
+      updatedNews.push(newItem);
     }
 
     setNews(updatedNews);
@@ -84,7 +114,6 @@ export default function NewsModal({ onClose }: Props) {
 
   const confirmDelete = async () => {
     if (confirmAction?.index === undefined) return;
-
     const updatedNews = news.filter((_, i) => i !== confirmAction.index);
     setNews(updatedNews);
     setLoading(true);
@@ -106,12 +135,24 @@ export default function NewsModal({ onClose }: Props) {
 
   const handleEdit = (index: number) => {
     setEditIndex(index);
-    setFormData(news[index]);
+    setFormData({
+      title: news[index].title,
+      desc: news[index].desc,
+      detail: news[index].detail || "",
+      imageUrl: news[index].imageUrl || "",
+      brochureUrl: news[index].brochureUrl || "",
+    });
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
-    setFormData({ title: "", desc: "", detail: "" });
+    setFormData({
+      title: "",
+      desc: "",
+      detail: "",
+      imageUrl: "",
+      brochureUrl: "",
+    });
     setEditIndex(null);
     setIsFormOpen(false);
   };
@@ -186,6 +227,66 @@ export default function NewsModal({ onClose }: Props) {
                 ></textarea>
               </div>
 
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Image (optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          imageUrl: reader.result as string,
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white"
+                />
+                {formData.imageUrl && (
+                  <img
+                    src={formData.imageUrl}
+                    alt="Preview"
+                    className="mt-2 h-20 object-cover rounded"
+                  />
+                )}
+              </div>
+
+              {/* Brochure Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Brochure PDF (optional)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          brochureUrl: reader.result as string,
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white"
+                />
+                {formData.brochureUrl && (
+                  <p className="mt-2 text-sm text-green-600">✅ PDF uploaded</p>
+                )}
+              </div>
+
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
@@ -234,6 +335,23 @@ export default function NewsModal({ onClose }: Props) {
                   <p className="text-gray-600 text-sm line-clamp-3">
                     {item.detail}
                   </p>
+                  {item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="mt-2 h-16 object-cover rounded"
+                    />
+                  )}
+                  {item.brochureUrl && (
+                    <a
+                      href={item.brochureUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-sm text-primary hover:underline"
+                    >
+                      📄 View Brochure
+                    </a>
+                  )}
                 </div>
                 <div className="flex gap-2 ml-4 flex-shrink-0">
                   <button
