@@ -126,7 +126,8 @@ export default function Footer() {
       </div>
 
       <div className="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-700/30">
-        © {currentYear} {footerData.company.name}. All rights reserved.
+        © {currentYear} {footerData.company.name}. All rights reserved. Built
+        by BitCom Technology PLC
       </div>
     </footer>
   );

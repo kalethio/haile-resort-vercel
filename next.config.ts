@@ -1,4 +1,4 @@
-// next.config.js
+// next.config.ts
 
 /** @type {import('next').NextConfig} */
 
@@ -31,6 +31,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // ✅ FIX: Add this line to enable standalone output
+  output: "standalone",
+
   reactStrictMode: true,
 
   images: {
