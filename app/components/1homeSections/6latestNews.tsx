@@ -61,11 +61,13 @@ export default function LatestNews() {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/80 to-primary rounded-t-2xl" />
 
               {item.imageUrl && (
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-full h-40 object-cover rounded-lg mb-4"
-                />
+                <div className="w-full mb-4 flex justify-center">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full max-h-60 object-contain rounded-lg"
+                  />
+                </div>
               )}
 
               <h3 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4 text-primary/70">
@@ -110,11 +112,13 @@ export default function LatestNews() {
               </button>
 
               {news[selectedNews].imageUrl && (
-                <img
-                  src={news[selectedNews].imageUrl}
-                  alt={news[selectedNews].title}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
-                />
+                <div className="w-full mb-4 flex justify-center">
+                  <img
+                    src={news[selectedNews].imageUrl}
+                    alt={news[selectedNews].title}
+                    className="w-full max-h-80 object-contain rounded-lg"
+                  />
+                </div>
               )}
 
               <h3 className="text-2xl md:text-3xl font-semibold text-primary mb-4">
