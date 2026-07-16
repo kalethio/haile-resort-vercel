@@ -1,4 +1,4 @@
-// app/about/aboutData.ts
+// app/about/data.ts
 export const brand = {
   burgundy: "#000000",
   lemon: "#D8E032",
@@ -17,19 +17,36 @@ export const heroData = {
 
 export const ceoData = {
   name: "Haile Gebrselassie (Major)",
-  title: "Owner & CEO, Haile Hotels and Resorts",
+  title: "Owner & CEO, Haile & Alem International PLC",
   portrait: "/images/about/lead-haile.jpg",
-  greetingAmharic: "“Tena Yistilign” ጤና ይስጥልኝ!",
+  greetingAmharic: "ጤና ይስጥልኝ!",
   letter: [
-    `Welcome, and thank you for visiting the official website of Haile Hotels and Resorts. It is with great pride that I introduce you to our family of dedicated professionals, who collectively embody the spirit of Ethiopian hospitality and resilience. Our group stands as a symbol of unwavering commitment to excellence, warm service, and memorable guest experiences.`,
-    `Since our inception, Haile Hotels and Resorts has been driven by a clear vision: to become Ethiopia's great locally-owned chain of hotels and resorts. We are currently proud to operate 10 distinguished properties across the country, and through our strategic growth plan, we are well underway toward expanding our footprint to 20 exceptional destinations.`,
-    `Our upcoming projects, including new developments in Konso, Debre Birhan, and several other key locations, reflect both our confidence in Ethiopia's tourism potential and our dedication to raising industry standards. Each hotel and resort in our portfolio not only offer world-class amenities but also stands as a testament to the resilient spirit of our people and the rich cultural heritage of our nation.`,
-    `We are deeply grateful for the trust that our guests, partners, and communities have placed in us. We look forward to welcoming you to our hotels and resorts—whether as valued guests or as ambassadors who share and celebrate the unique story of Haile Hotels and Resorts.`,
-    `Thank you for being part of this journey with us.`,
+    `Welcome to the official website of Haile Hotels and Resorts. It is with great pride that I introduce you to our family of dedicated professionals, who truly embody the warm spirit of Ethiopian hospitality and resilience.`,
+    `Driven by a clear vision to become Ethiopia's premier locally owned hospitality chain, we currently operate 11 distinguished properties across the country. Through our strategic growth plan, including upcoming developments in Dire Dawa and Konso, we are well on our way to expanding our footprint to 20 exceptional destinations.`,
+    `Each of our locations offers world class amenities while celebrating the rich cultural heritage and resilient spirit of our nation.`,
+    `We are deeply grateful for your trust and look forward to welcoming you to our hotels and resorts, whether as a valued guest or an ambassador of our unique story.`,
+    `Thank you for being part of this journey with us!`,
   ],
 };
 
-// Updated with numeric values for counting animation
+export const managingDirectorData = {
+  name: "Gadisa Girma",
+  title: "Managing Director, Haile Hotels & Resorts Group",
+  portrait: "/images/about/lead-md.jpg",
+  letter: [
+    `Greetings to all,`,
+    `At Haile Hotels & Resorts Group, our success is anchored in a leadership philosophy that combines servant and transformative guidance. We operate with a strong conviction: "Happy associates create delighted guests." By investing deeply in the learning and development of our team, we have cultivated a robust service culture that redefines our competitive edge, secures sustainable profitability for our owners, and drives our nationwide expansion.`,
+    `The core of our success lies in putting people first, acting with integrity, and serving both our community and the environment. This commitment is brought to life through our unique service culture, "I am… Haile."`,
+    `Inspired by the legendary athletic achievements and mindset of excellence demonstrated by Major Haile Gebrselassie, our team proudly lives and breathes five core values every single day:`,
+    `• H – Hospitality`,
+    `• A – Accountability`,
+    `• I – Integrity`,
+    `• L – Leadership`,
+    `• E – Environmental and Community Support`,
+    `Together, these principles empower us to provide a truly memorable experience to every person, every time, everywhere.`,
+  ],
+};
+
 export const statsData = [
   { label: "Locations", value: 10, suffix: "" },
   { label: "Upcoming Destinations", value: 3, suffix: "" },
