@@ -1,18 +1,76 @@
 // app/api/admin/career/applications/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  sendApplicationAccepted,
+  sendApplicationRejected,
+} from "@/lib/email-service";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { status } = await request.json();
+    const body = await request.json();
+    const { status, interview } = body as {
+      status: string;
+      interview?: {
+        date: string;
+        time: string;
+        location: string;
+      };
+    };
+
+    // Fetch current application with job info before update
+    const existing = await prisma.jobApplication.findUnique({
+      where: { id: parseInt(params.id) },
+      include: { job: { select: { title: true } } },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Application not found" },
+        { status: 404 }
+      );
+    }
+
+    const previousStatus = existing.status;
 
     const application = await prisma.jobApplication.update({
       where: { id: parseInt(params.id) },
-      data: { status },
+      data: { status: status as any },
     });
+
+    // Only send email if the status actually changed
+    const statusChanged = previousStatus !== status;
+
+    if (statusChanged) {
+      if (status === "ACCEPTED") {
+        if (!interview?.date || !interview?.time || !interview?.location) {
+          // Status updated but no email sent – interview details missing
+          return NextResponse.json({
+            ...application,
+            warning:
+              "Status updated but interview details missing; email not sent.",
+          });
+        }
+
+        await sendApplicationAccepted({
+          toEmail: existing.email,
+          applicantName: existing.fullName,
+          jobTitle: existing.job.title,
+          interviewDate: interview.date,
+          interviewTime: interview.time,
+          interviewLocation: interview.location,
+        });
+      } else if (status === "REJECTED") {
+        await sendApplicationRejected({
+          toEmail: existing.email,
+          applicantName: existing.fullName,
+          jobTitle: existing.job.title,
+        });
+      }
+    }
 
     return NextResponse.json(application);
   } catch (error) {

@@ -180,3 +180,123 @@ async function findOrCreateBookingTemplate() {
   }
   return template;
 }
+// ============================================================
+// Job Application Emails
+// ============================================================
+
+interface ApplicationEmailBase {
+  toEmail: string;
+  applicantName: string;
+  jobTitle: string;
+}
+
+interface ApplicationAcceptedData extends ApplicationEmailBase {
+  interviewDate: string;
+  interviewTime: string;
+  interviewLocation: string;
+}
+
+export async function sendApplicationAccepted(data: ApplicationAcceptedData) {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; color: #333; border: 1px solid #eee; padding: 20px;">
+        <div style="text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px;">
+          <h1 style="margin: 0; color: #8b0000; letter-spacing: 4px; text-transform: uppercase;">HAILE</h1>
+          <p style="margin: 0; font-weight: bold; font-size: 14px; text-transform: uppercase;">Hotels &amp; Resorts Group</p>
+        </div>
+
+        <p>Dear ${data.applicantName},</p>
+
+        <p>Thank you for taking the time to apply for a position with our organization and for participating in our initial selection process.</p>
+
+        <p>We are pleased to inform you that your application for the <strong>${data.jobTitle}</strong> position has been successful, and you have been selected to advance to the next stage of our interview process. Congratulations on reaching this milestone.</p>
+
+        <p>Your interview has been scheduled as follows:</p>
+        <ul>
+          <li><strong>Date:</strong> ${data.interviewDate}</li>
+          <li><strong>Time:</strong> ${data.interviewTime}</li>
+          <li><strong>Location / Platform:</strong> ${data.interviewLocation}</li>
+        </ul>
+
+        <p>Please reply to this email to confirm your availability for this appointment. If you need to reschedule, kindly inform us as soon as possible.</p>
+
+        <p>We look forward to speaking with you again and learning more about your professional experience.</p>
+
+        <p>Sincerely,</p>
+        <p><strong>Hiring Team</strong><br/>Haile Hotels and Resorts Group</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"Haile Hotels and Resorts Group" <${process.env.SMTP_USER}>`,
+      to: data.toEmail,
+      subject: `Interview Invitation – ${data.jobTitle}`,
+      html,
+    });
+
+    return true;
+  } catch (error) {
+    console.error("❌ Accepted email failed:", error);
+    return false;
+  }
+}
+
+interface ApplicationRejectedData extends ApplicationEmailBase {}
+
+export async function sendApplicationRejected(data: ApplicationRejectedData) {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; color: #333; border: 1px solid #eee; padding: 20px;">
+        <div style="text-align: center; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px;">
+          <h1 style="margin: 0; color: #8b0000; letter-spacing: 4px; text-transform: uppercase;">HAILE</h1>
+          <p style="margin: 0; font-weight: bold; font-size: 14px; text-transform: uppercase;">Hotels &amp; Resorts Group</p>
+        </div>
+
+        <p>Dear ${data.applicantName},</p>
+
+        <p>Thank you for taking the time to apply for the <strong>${data.jobTitle}</strong> position at our organization and for giving us the opportunity to review your qualifications.</p>
+
+        <p>We received a large number of applications from many talented individuals, making our selection process very competitive. After careful consideration, we regret to inform you that we have decided to move forward with another candidate whose qualifications and experience more closely align with the specific requirements of this role at this time.</p>
+
+        <p>We sincerely appreciate your interest in joining our team and the effort you put into your application. We were impressed by your background and experience, and we would welcome the opportunity to consider you for future openings. We encourage you to keep an eye on our career updates and apply for future positions that match your profile.</p>
+
+        <p>We wish you all the very best in your professional endeavors.</p>
+
+        <p>Sincerely,</p>
+        <p><strong>Hiring Team</strong><br/>Haile Hotels and Resorts Group</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"Haile Hotels and Resorts Group" <${process.env.SMTP_USER}>`,
+      to: data.toEmail,
+      subject: `Update on your application – ${data.jobTitle}`,
+      html,
+    });
+
+    return true;
+  } catch (error) {
+    console.error("❌ Rejected email failed:", error);
+    return false;
+  }
+}

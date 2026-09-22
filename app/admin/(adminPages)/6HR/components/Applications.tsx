@@ -25,6 +25,17 @@ export default function Applications() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // NEW: pending accept + interview details
+  const [pendingAccept, setPendingAccept] = useState<{
+    id: number;
+    jobTitle: string;
+  } | null>(null);
+  const [interview, setInterview] = useState({
+    date: "",
+    time: "",
+    location: "",
+  });
+
   // Fetch all data
   const fetchData = async () => {
     try {
@@ -75,7 +86,6 @@ export default function Applications() {
     try {
       let applicationsToExport = applications;
 
-      // If not exporting all, use current filters
       if (!exportAll && filters.branch) {
         applicationsToExport = applications.filter(
           (app) => app.job?.branch?.branchName === filters.branch
@@ -178,9 +188,7 @@ export default function Applications() {
     message: string,
     type: "success" | "error" | "info"
   ) => {
-    // Simple notification - you can replace with a proper toast library
     console.log(`${type.toUpperCase()}: ${message}`);
-    // For now, we'll use alert for simplicity
     if (type === "error") {
       alert(`Error: ${message}`);
     } else if (type === "success") {
@@ -206,6 +214,7 @@ export default function Applications() {
     return true;
   });
 
+  // Raw updater (used by reject + bulk + non-accept flows)
   const updateApplicationStatus = async (
     id: number,
     status: Application["status"]
@@ -221,7 +230,6 @@ export default function Applications() {
         throw new Error("Failed to update application status");
       }
 
-      // Update local state
       setApplications((prev) =>
         prev.map((app) => (app.id === id ? { ...app, status } : app))
       );
@@ -230,6 +238,59 @@ export default function Applications() {
     } catch (error) {
       console.error("Failed to update application:", error);
       showNotification("Failed to update application status", "error");
+    }
+  };
+
+  // NEW: Intercept ACCEPTED — open interview modal; else update directly
+  const handleStatusChange = (id: number, newStatus: Application["status"]) => {
+    if (newStatus === "ACCEPTED") {
+      const app = applications.find((a) => a.id === id);
+      setInterview({ date: "", time: "", location: "" });
+      setPendingAccept({ id, jobTitle: app?.job?.title || "" });
+      return;
+    }
+    updateApplicationStatus(id, newStatus);
+  };
+
+  // NEW: Confirm accept with interview details
+  const confirmAccept = async () => {
+    if (!pendingAccept) return;
+    if (!interview.date || !interview.time || !interview.location) {
+      showNotification("Please fill all interview fields", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/admin/career/applications/${pendingAccept.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "ACCEPTED",
+            interview: {
+              date: interview.date,
+              time: interview.time,
+              location: interview.location,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update application");
+
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === pendingAccept.id ? { ...app, status: "ACCEPTED" } : app
+        )
+      );
+
+      showNotification("Application accepted and email sent", "success");
+      setPendingAccept(null);
+      setSelectedApplication(null);
+    } catch (error) {
+      console.error(error);
+      showNotification("Failed to accept application", "error");
     }
   };
 
@@ -248,7 +309,6 @@ export default function Applications() {
         )
       );
 
-      // Update local state
       setApplications((prev) =>
         prev.map((app) =>
           selectedApplications.includes(app.id) ? { ...app, status } : app
@@ -312,12 +372,10 @@ export default function Applications() {
     }
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({ status: "", job: "", branch: "", search: "" });
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -329,7 +387,6 @@ export default function Applications() {
     );
   }
 
-  // Show error state if there's an issue
   if (error) {
     return (
       <div className="text-center py-12">
@@ -522,7 +579,7 @@ export default function Applications() {
                   onChange={(e) =>
                     bulkUpdateStatus(e.target.value as Application["status"])
                   }
-                  className="text-sm border border-blue-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-sm border border-blue-300 rounded-lg px-3 py-2 bg-white text-gray-900 [&>option]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Update Status</option>
                   <option value="PENDING">Mark as Pending</option>
@@ -587,7 +644,7 @@ export default function Applications() {
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, status: e.target.value }))
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 [&>option]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Status</option>
                 <option value="PENDING">⏳ Pending</option>
@@ -606,7 +663,7 @@ export default function Applications() {
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, job: e.target.value }))
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 [&>option]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Jobs</option>
                 {jobs.map((job) => (
@@ -626,7 +683,7 @@ export default function Applications() {
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, branch: e.target.value }))
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 [&>option]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Branches</option>
                 {branches.map((branch) => (
@@ -638,7 +695,6 @@ export default function Applications() {
             </div>
           </div>
 
-          {/* Clear Filters Button */}
           {(filters.status ||
             filters.job ||
             filters.branch ||
@@ -665,7 +721,6 @@ export default function Applications() {
           )}
         </div>
 
-        {/* Results Summary */}
         <div className="flex justify-between items-center text-sm text-gray-600">
           <span>
             Showing <strong>{filteredApplications.length}</strong> of{" "}
@@ -704,7 +759,7 @@ export default function Applications() {
           selectedApplications={selectedApplications}
           onSelectionChange={toggleApplicationSelection}
           onSelectAll={toggleSelectAll}
-          onStatusUpdate={updateApplicationStatus}
+          onStatusUpdate={handleStatusChange}
           onViewDetails={setSelectedApplication}
           getStatusColor={getStatusColor}
           getStatusIcon={getStatusIcon}
@@ -712,7 +767,7 @@ export default function Applications() {
       ) : (
         <CardView
           applications={filteredApplications}
-          onStatusUpdate={updateApplicationStatus}
+          onStatusUpdate={handleStatusChange}
           onViewDetails={setSelectedApplication}
           getStatusColor={getStatusColor}
           getStatusIcon={getStatusIcon}
@@ -724,14 +779,90 @@ export default function Applications() {
         <EnhancedApplicationDetailModal
           application={selectedApplication}
           onClose={() => setSelectedApplication(null)}
-          onStatusUpdate={updateApplicationStatus}
+          onStatusUpdate={handleStatusChange}
         />
+      )}
+
+      {/* Interview Details Modal (NEW) */}
+      {pendingAccept && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Schedule Interview
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Accepting application for{" "}
+              <strong>{pendingAccept.jobTitle}</strong>. Fill in the interview
+              details — they will be sent to the applicant.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Interview Date
+                </label>
+                <input
+                  type="date"
+                  value={interview.date}
+                  onChange={(e) =>
+                    setInterview((p) => ({ ...p, date: e.target.value }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Interview Time
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., 10:00 AM"
+                  value={interview.time}
+                  onChange={(e) =>
+                    setInterview((p) => ({ ...p, time: e.target.value }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location / Platform
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Head Office or Zoom link"
+                  value={interview.location}
+                  onChange={(e) =>
+                    setInterview((p) => ({ ...p, location: e.target.value }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setPendingAccept(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAccept}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Accept &amp; Send Email
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
-
-// Enhanced Table View Component (keep the same as before)
+// Enhanced Table View Component
 const EnhancedTableView = ({
   applications,
   selectedApplications,
@@ -925,7 +1056,6 @@ const EnhancedTableView = ({
       </table>
     </div>
 
-    {/* Empty State for filtered results */}
     {applications.length === 0 && (
       <div className="text-center py-16">
         <div className="text-gray-400 mb-4 text-6xl">🔍</div>
@@ -941,7 +1071,7 @@ const EnhancedTableView = ({
   </div>
 );
 
-// Card View Component (keep the same as before)
+// Card View Component
 const CardView = ({
   applications,
   onStatusUpdate,
@@ -955,7 +1085,6 @@ const CardView = ({
         key={application.id}
         className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300 group"
       >
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -979,7 +1108,6 @@ const CardView = ({
           </span>
         </div>
 
-        {/* Job Info */}
         <div className="mb-4">
           <h4 className="font-medium text-gray-900 mb-1">
             {application.job?.title}
@@ -993,7 +1121,6 @@ const CardView = ({
           </div>
         </div>
 
-        {/* Details */}
         <div className="grid grid-cols-2 gap-3 text-sm mb-4">
           <div className="flex items-center space-x-2">
             <span className="text-gray-400">🎓</span>
@@ -1019,7 +1146,6 @@ const CardView = ({
           </div>
         </div>
 
-        {/* Skills Preview */}
         {application.skills && application.skills.length > 0 && (
           <div className="mb-4">
             <div className="flex flex-wrap gap-1">
@@ -1040,7 +1166,6 @@ const CardView = ({
           </div>
         )}
 
-        {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <span className="text-sm text-gray-500">
             {new Date(application.submittedAt).toLocaleDateString()}
@@ -1069,7 +1194,7 @@ const CardView = ({
   </div>
 );
 
-// Enhanced Application Detail Modal Component (keep the same as before)
+// Enhanced Application Detail Modal Component
 const EnhancedApplicationDetailModal = ({
   application,
   onClose,
@@ -1082,7 +1207,6 @@ const EnhancedApplicationDetailModal = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-700 p-6 text-white">
           <div className="flex justify-between items-start">
             <div>
@@ -1114,12 +1238,9 @@ const EnhancedApplicationDetailModal = ({
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Cover Letter */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <span className="mr-2">📝</span> Cover Letter
@@ -1131,7 +1252,6 @@ const EnhancedApplicationDetailModal = ({
                 </div>
               </div>
 
-              {/* Skills & Qualifications */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -1169,9 +1289,7 @@ const EnhancedApplicationDetailModal = ({
               </div>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
-              {/* Quick Info Card */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Quick Info
@@ -1234,7 +1352,6 @@ const EnhancedApplicationDetailModal = ({
                 </div>
               </div>
 
-              {/* Actions Card */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Actions
@@ -1272,7 +1389,7 @@ const EnhancedApplicationDetailModal = ({
                         e.target.value as Application["status"]
                       )
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 [&>option]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="PENDING">⏳ Mark as Pending</option>
                     <option value="REVIEWED">👁️ Mark as Reviewed</option>

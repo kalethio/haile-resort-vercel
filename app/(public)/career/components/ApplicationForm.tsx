@@ -169,9 +169,10 @@ export default function ApplicationForm({
                 />
 
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
+                  Phone *
                 </label>
                 <input
+                  required
                   value={formState.phone ?? ""}
                   onChange={(e) =>
                     setFormState({ ...formState, phone: e.target.value })
@@ -218,9 +219,10 @@ export default function ApplicationForm({
                 />
 
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Education Level
+                  Education Level *
                 </label>
                 <input
+                  required
                   value={formState.educationLevel ?? ""}
                   onChange={(e) =>
                     setFormState({

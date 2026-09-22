@@ -117,26 +117,20 @@ export default function JobListings({
               </p>
             </div>
 
-            <div className="mt-6 flex items-center justify-between gap-4">
-              <div className="text-sm text-gray-600">
-                Applicants: <strong>{job.applicants ?? 0}</strong>
-              </div>
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                onClick={() => onViewDetails(job)}
+                className="py-2 px-4 border rounded-lg text-sm text-primary hover:bg-primary/5 transition"
+              >
+                View Details
+              </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onViewDetails(job)}
-                  className="py-2 px-4 border rounded-lg text-sm text-primary hover:bg-primary/5 transition"
-                >
-                  View Details
-                </button>
-
-                <button
-                  onClick={() => onApplyNow(job)}
-                  className="py-2 px-4 bg-accent text-white rounded-lg hover:opacity-95 transition"
-                >
-                  Apply Now
-                </button>
-              </div>
+              <button
+                onClick={() => onApplyNow(job)}
+                className="py-2 px-4 bg-accent text-white rounded-lg hover:opacity-95 transition"
+              >
+                Apply Now
+              </button>
             </div>
           </motion.article>
         ))}

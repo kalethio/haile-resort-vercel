@@ -1,11 +1,16 @@
-// app/api/career/jobs/route.ts - FIXED
+// app/api/career/jobs/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    const now = new Date();
+
     const jobs = await prisma.jobOpening.findMany({
-      where: { published: true },
+      where: {
+        published: true,
+        OR: [{ deadline: null }, { deadline: { gte: now } }],
+      },
       include: {
         branch: {
           select: { id: true, branchName: true, slug: true },
@@ -13,9 +18,8 @@ export async function GET() {
       },
     });
 
-    console.log("📊 Found", jobs.length, "jobs in database");
+    console.log("📊 Found", jobs.length, "active jobs");
 
-    // Transform using ONLY fields that exist in your schema
     const formattedJobs = jobs.map((job) => ({
       id: job.id.toString(),
       title: job.title,
@@ -24,8 +28,6 @@ export async function GET() {
       branchIds: [job.branch.id],
       type: job.type || "Full-time",
       location: job.location || job.branch.branchName,
-      // REMOVED: experienceLevel - field doesn't exist
-      // REMOVED: salaryRange - field doesn't exist
       deadline: job.deadline?.toISOString().split("T")[0],
       description: job.description || "",
       responsibilities: [],

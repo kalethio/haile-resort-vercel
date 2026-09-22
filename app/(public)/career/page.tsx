@@ -5,6 +5,7 @@ import JobListings from "./components/JobListings";
 import JobDetailsModal from "./components/JobDetails";
 import ApplicationForm from "./components/ApplicationForm";
 import ValuesSection from "./components/ValueSection";
+import AcceptedList from "./components/AcceptedList";
 import { Job, Branch } from "./components/types";
 
 export default function CareerPage() {
@@ -37,6 +38,8 @@ export default function CareerPage() {
         onViewDetails={setDetailsJob}
         onApplyNow={setApplyJob}
       />
+
+      <AcceptedList />
 
       <JobDetailsModal
         job={detailsJob}
